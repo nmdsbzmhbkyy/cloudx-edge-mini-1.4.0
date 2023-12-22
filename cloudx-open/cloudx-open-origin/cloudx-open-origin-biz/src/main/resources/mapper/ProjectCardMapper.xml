@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectCardMapper">
+
+    <resultMap id="projectCardMap" type="com.aurine.cloudx.open.origin.entity.ProjectCard">
+        <id property="seq" column="seq"/>
+        <result property="cardNo" column="cardNo"/>
+        <result property="personType" column="personType"/>
+        <result property="personId" column="personId"/>
+        <result property="status" column="status"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="getByCode" resultType="com.aurine.cloudx.open.origin.entity.ProjectCard">
+            SELECT
+            card.seq,
+            card.cardId,
+            card.cardCode,
+            card.cardNo,
+            card.projectId,
+            card.personType,
+            card.personId,
+            card.`status`,
+            card.tenant_id,
+            card.operator,
+            card.createTime,
+            card.updateTime
+            FROM
+            project_card AS card
+            WHERE
+            card.projectId = #{projectId} AND
+            card.cardCode = #{code}
+
+    </select>
+    <select id="getByCardNo" resultType="com.aurine.cloudx.open.origin.entity.ProjectCard">
+            SELECT
+            card.seq,
+            card.cardId,
+            card.cardCode,
+            card.cardNo,
+            card.projectId,
+            card.personType,
+            card.personId,
+            card.`status`,
+            card.tenant_id,
+            card.operator,
+            card.createTime,
+            card.updateTime
+            FROM
+            project_card AS card
+            WHERE
+            card.projectId = #{projectId} AND
+            card.cardNo = #{cardNo}
+    </select>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectCard"
+            resultType="com.aurine.cloudx.open.common.entity.vo.CardInfoVo"
+    >
+        SELECT
+        *
+        FROM project_card pc
+        <where>
+            <if test="query.projectId != null">
+                AND pc.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND pc.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.cardId != null and query.cardId != ''">
+                AND pc.cardId = #{query.cardId}
+            </if>
+            <if test="query.cardCode != null and query.cardCode != ''">
+                AND pc.cardCode = #{query.cardCode}
+            </if>
+            <if test="query.cardNo != null and query.cardNo != ''">
+                AND pc.cardNo = #{query.cardNo}
+            </if>
+            <if test="query.personType != null and query.personType != ''">
+                AND pc.personType = #{query.personType}
+            </if>
+            <if test="query.personId != null and query.personId != ''">
+                AND pc.personId = #{query.personId}
+            </if>
+            <if test="query.status != null and query.status != ''">
+                AND pc.status = #{query.status}
+            </if>
+        </where>
+    </select>
+</mapper>

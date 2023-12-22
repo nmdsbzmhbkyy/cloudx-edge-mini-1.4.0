@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>cloudx</artifactId>
+        <groupId>com.aurine</groupId>
+        <version>2107.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <packaging>pom</packaging>
+    <description>边缘网关-入云服务</description>
+    <modules>
+        <module>cloudx-edge-sync-platform</module>
+        <module>cloudx-edge-sync-platform-master</module>
+        <module>cloudx-edge-sync-master-slave</module>
+        <module>cloudx-edge-sync-slave</module>
+        <module>cloudx-edge-sync-common</module>
+    </modules>
+    <artifactId>cloudx-edge-sync</artifactId>
+
+
+</project>

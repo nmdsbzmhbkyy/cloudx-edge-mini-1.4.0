@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.aurine</groupId>
+		<artifactId>cert-adown</artifactId>
+		<version>2107.0.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>cert-adown-biz</artifactId>
+	<description>凭证下发服务实现</description>
+
+	<properties>
+		<log-path>/log</log-path>
+	</properties>
+
+
+	<dependencies>
+		<!-- **********************本项目模块依赖***************************** -->
+		<!--必备: 依赖api模块-->
+		<dependency>
+			<groupId>com.aurine</groupId>
+			<artifactId>cert-adown-api</artifactId>
+			<version>2107.0.0-SNAPSHOT</version>
+		</dependency>
+		<!--数据相关-->
+		<dependency>
+			<groupId>com.pig4cloud</groupId>
+			<artifactId>pigx-common-data</artifactId>
+		</dependency>
+		<!-- kafka -->
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+		</dependency>
+	</dependencies>
+
+</project>

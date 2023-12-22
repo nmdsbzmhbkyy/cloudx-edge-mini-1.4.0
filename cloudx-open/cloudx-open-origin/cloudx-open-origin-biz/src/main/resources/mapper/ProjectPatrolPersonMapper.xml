@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectPatrolPersonMapper">
+
+
+    <select id="listByDetailId" resultType="com.aurine.cloudx.open.origin.vo.ProjectPatrolPersonVo">
+        SELECT
+               patrol_person_point.createtime,patrol_person_point.updatetime,
+               patrol_person.*,
+               patrol_person_point.*
+        FROM project_patrol_person_point patrol_person_point
+                 LEFT JOIN project_patrol_detail patrol_detail
+                           ON patrol_detail.patrolDetailId = patrol_person_point.patrolDetailId
+                 LEFT JOIN project_patrol_person patrol_person
+                           ON patrol_person.patrolPersonId = patrol_person_point.patrolPersonId
+        WHERE patrol_detail.patrolDetailId = #{partrolDetailId}
+          AND patrol_detail.seq IS NOT NULL
+    </select>
+
+    <select id="countPatrolBypatrolId" resultType="java.lang.Integer">
+        SELECT
+        COUNT( patrol_detail.patrolId )
+        FROM
+        project_patrol_person_point patrol_person_point
+        LEFT JOIN project_patrol_detail patrol_detail ON patrol_detail.patrolDetailId = patrol_person_point.patrolDetailId
+        LEFT JOIN project_patrol_person patrol_person ON patrol_person.patrolPersonId = patrol_person_point.patrolPersonId
+        WHERE
+        patrol_detail.seq IS NOT NULL
+        AND patrol_detail.patrolId = #{patrolId}
+        <if test="isUnPatrol">
+            AND patrolResult = 0
+        </if>
+        <if test="!isUnPatrol">
+            AND patrolResult != 0
+        </if>
+        GROUP BY patrol_detail.patrolId
+    </select>
+
+    <select id="countTimeOutByPatrolId" resultType="java.lang.Integer">
+        SELECT
+        	COUNT( patrol_detail.patrolId )
+        FROM
+        	project_patrol_person_point patrol_person_point
+        	LEFT JOIN project_patrol_detail patrol_detail ON patrol_detail.patrolDetailId = patrol_person_point.patrolDetailId
+        	LEFT JOIN project_patrol_person patrol_person ON patrol_person.patrolPersonId = patrol_person_point.patrolPersonId
+        WHERE
+	    patrol_detail.seq IS NOT NULL
+          AND patrol_detail.patrolId = #{patrolId}
+          AND checkInStatus = #{checkInStatus}
+    </select>
+
+    <select id="countNormalByPatrolId" resultType="java.lang.Integer">
+        SELECT
+        	COUNT( patrol_detail.patrolId )
+        FROM
+        	project_patrol_person_point patrol_person_point
+        	LEFT JOIN project_patrol_detail patrol_detail ON patrol_detail.patrolDetailId = patrol_person_point.patrolDetailId
+        	LEFT JOIN project_patrol_person patrol_person ON patrol_person.patrolPersonId = patrol_person_point.patrolPersonId
+        WHERE
+	    patrol_detail.seq IS NOT NULL
+          AND patrol_detail.patrolId = #{patrolId}
+          AND patrolResult = #{patrolResult}
+    </select>
+
+    <select id="getDetailByPatrolId" resultType="com.aurine.cloudx.open.origin.vo.ProjectPatrolPersonPointVo">
+        select point.*, detail.patrolId, detail.pointId, detail.pointName, staff.staffId, staff.staffName
+        from aurine.project_patrol_detail detail
+                 left join
+             project_patrol_person_point point on detail.patrolDetailId = point.patrolDetailId
+                 left join aurine.project_patrol_person ppp on point.patrolPersonId = ppp.patrolPersonId
+                 left join aurine.project_staff staff on staff.staffId = ppp.staffId
+        where detail.patrolId = #{patrolId}
+    </select>
+</mapper>

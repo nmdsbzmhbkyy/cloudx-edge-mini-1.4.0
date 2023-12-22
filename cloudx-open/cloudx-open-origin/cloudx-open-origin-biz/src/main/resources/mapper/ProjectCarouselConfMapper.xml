@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectCarouselConfMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectCarouselConf" id="ProjectCarouseInfoconfMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="infoId" column="infoId" jdbcType="VARCHAR"/>
+        <result property="title" column="title" jdbcType="VARCHAR"/>
+        <result property="coverPic" column="coverPic" jdbcType="VARCHAR"/>
+        <result property="origin" column="origin" jdbcType="VARCHAR"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="outLink" column="outLink" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="fetchList" resultType="com.aurine.cloudx.open.origin.vo.ProjectCarouselConfVo">
+        SELECT
+        conf.*,
+        user.`true_name` operateName,
+        DATE_FORMAT(conf.createTime, '%Y-%m-%d %H:%i:%s') createTimeStr
+        FROM project_carousel_conf conf
+        LEFT JOIN pigxx.sys_user user
+        ON user.user_id = conf.operator
+        <where>
+            <if test="query.timeRange != null and query.timeRange.length == 2">
+                conf.createTime &lt;= #{query.timeRange[1]}
+                AND
+                conf.createTime &gt;= #{query.timeRange[0]}
+            </if>
+            <if test="query.title != null">
+                AND conf.title like concat('%', #{query.title},'%')
+            </if>
+        </where>
+        order by conf.createTime desc
+    </select>
+
+</mapper>

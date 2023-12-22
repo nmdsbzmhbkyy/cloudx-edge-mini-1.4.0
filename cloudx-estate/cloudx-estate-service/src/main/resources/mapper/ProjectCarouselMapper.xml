@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectCarouselMapper">
+    <resultMap id="carouselMap" type="com.aurine.cloudx.estate.entity.ProjectCarousel">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="carouselId" column="carouselId" jdbcType="VARCHAR"/>
+        <result property="sort" column="sort" jdbcType="TINYINT"/>
+        <result property="type" column="type" jdbcType="CHAR"/>
+        <result property="title" column="title" jdbcType="VARCHAR"/>
+        <result property="coverPic" column="coverPic" jdbcType="VARCHAR"/>
+        <result property="origin" column="origin" jdbcType="CHAR"/>
+        <result property="infoId" column="infoId" jdbcType="VARCHAR"/>
+        <result property="outLink" column="outLink" jdbcType="VARCHAR"/>
+        <result property="expTime" column="expTime" jdbcType="TIMESTAMP"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="pageVo" resultType="com.aurine.cloudx.estate.vo.ProjectCarouselVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectCarouselVo">
+        select c.*,ps.staffName createName from project_carousel c left join project_staff ps on ps.userId=c.operator and ps.projectId=c.projectId
+        <where>
+            <if test="query != null and query.coverPic!=null ">
+                and c.coverPic = #{query.coverPic}
+            </if>
+            <if test="query != null and query.expTime!=null ">
+                and c.expTime = #{query.expTime}
+            </if>
+            <if test="query != null and query.createTime!=null ">
+                and c.createTime = #{query.createTime}
+            </if>
+            <if test="query != null and query.operator!=null ">
+                and c.operator = #{query.operator}
+            </if>
+        </where>
+        order by c.createTime desc
+    </select>
+    <select id="listVo" resultType="com.aurine.cloudx.estate.vo.ProjectCarouselVo">
+        select t.* ,p.staffName createName from project_carousel t left join project_staff p on t.operator = p.userId and p.projectId=t.projectId
+        where t.type=#{type} order by t.sort
+    </select>
+
+
+</mapper>

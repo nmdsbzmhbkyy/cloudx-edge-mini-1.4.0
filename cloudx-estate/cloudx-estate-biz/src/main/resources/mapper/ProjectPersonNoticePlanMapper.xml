@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPersonNoticePlanMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectPersonNoticePlan" id="ProjectPersonNoticePlanMap">
+        <id property="planId" column="planId" jdbcType="VARCHAR"/>
+        <result property="planName" column="planName" jdbcType="VARCHAR"/>
+        <result property="frequency" column="frequency" jdbcType="VARCHAR"/>
+        <result property="beginTime" column="beginTime" jdbcType="TIMESTAMP"/>
+        <result property="endTime" column="endTime" jdbcType="TIMESTAMP"/>
+        <result property="title" column="title" jdbcType="VARCHAR"/>
+        <result property="targetType" column="targetType" jdbcType="VARCHAR"/>
+        <result property="noticeCatetory" column="noticeCatetory" jdbcType="VARCHAR"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="isActive" column="isActive" jdbcType="VARCHAR"/>
+        <result property="creator" column="creator" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="pageNoticePlan" resultType="com.aurine.cloudx.estate.vo.ProjectPersonNoticePlanPageVo">
+        select ppnp.*, ps.staffName as creatorName
+        from project_person_notice_plan ppnp
+        left join project_staff ps ON ppnp.creator = ps.userId and ppnp.projectId = ps.projectId --加入projectId遍历确保数据唯一
+        <where>
+
+            <if test="query.planName !=null and query.planName!=''">
+                and ppnp.planName like concat('%',#{query.planName},'%')
+            </if>
+            <if test="query.content!=null and query.content!=''">
+                and ppnp.content like concat('%',#{query.content},'%')
+            </if>
+            <if test="query.createStartTime!=null">
+                AND date(ppnp.createTime) &gt;=
+                #{query.createStartTime,jdbcType=DATE}
+            </if>
+            <if test="query.createEndTime!=null">
+                AND date(ppnp.createTime) &lt;=
+                #{query.createEndTime,jdbcType=DATE}
+            </if>
+            <if test="query.isActive!=null and query.isActive!=''">
+                and ppnp.isActive = #{query.isActive}
+            </if>
+        </where>
+    </select>
+</mapper>

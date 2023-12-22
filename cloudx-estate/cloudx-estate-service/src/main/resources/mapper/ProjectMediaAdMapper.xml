@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectMediaAdMapper">
+
+    <resultMap id="projectMediaAdMap" type="com.aurine.cloudx.estate.entity.ProjectMediaAd">
+        <id property="adId" column="adId"/>
+        <result property="adName" column="adName"/>
+        <result property="frequency" column="frequency"/>
+        <result property="startTime" column="startTime"/>
+        <result property="appId" column="appId"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <select id="pageMediaAd" resultType="com.aurine.cloudx.estate.vo.ProjectMediaAdVo">
+        select pn.*,(case when fc.countFailNum is null
+        then 0 else fc.countFailNum end ) countFailNum from aurine.project_media_ad pn left join
+        (
+        select count(1) countFailNum,adId from project_media_ad_dev_cfg where dlStatus ='2' group by adId
+        ) fc on pn.adId = fc.adId
+        <where>
+            <if test="query.adName !=null and query.adName != '' ">
+                and pn.adName like concat('%', #{query.adName}, '%')
+            </if>
+            <if test="query.beginTime != null">
+                AND date(pn.startTime) <![CDATA[>=]]>
+                #{query.beginTime,jdbcType=DATE}
+            </if>
+            <if test="query.endTime != null">
+                AND date(pn.startTime) <![CDATA[<=]]>
+                #{query.endTime,jdbcType=DATE}
+            </if>
+        </where>
+        order by pn.startTime desc
+    </select>
+</mapper>

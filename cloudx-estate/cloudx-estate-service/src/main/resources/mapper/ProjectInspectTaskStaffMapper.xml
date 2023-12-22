@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectInspectTaskStaffMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectInspectTaskStaff" id="ProjectInspectTaskStaffMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="taskId" column="taskId" jdbcType="VARCHAR"/>
+        <result property="staffId" column="staffId" jdbcType="VARCHAR"/>
+        <result property="staffType" column="staffType" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="countCompleteByStaffId" resultType="java.lang.Integer">
+        SELECT
+        COUNT(*) num
+        FROM
+        project_inspect_task_staff task_staff
+        LEFT JOIN project_inspect_task task ON task_staff.taskId = task.taskId
+        WHERE
+        staffType = '2'
+        AND staffId = #{staffId}
+        AND task.`status` IN
+        <foreach collection="status" item="item" index="index" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        <if test="date != null">
+        AND
+        DATE_FORMAT(task_staff.createTime, '%Y-%m') = DATE_FORMAT(#{date}, '%Y-%m')
+        </if>
+
+    </select>
+
+</mapper>

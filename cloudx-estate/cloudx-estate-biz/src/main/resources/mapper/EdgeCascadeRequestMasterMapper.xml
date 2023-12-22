@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.EdgeCascadeRequestMasterMapper">
+
+    <select id="pageCascadeManage" resultType="com.aurine.cloudx.estate.vo.CascadeProjectInfoVo">
+        SELECT
+            project_info.projectId,
+            project_info.projectName,
+            IFNULL( request_master.slaveContactPerson, project_info.contactPerson ) slaveContactPerson,
+            IFNULL( request_master.slaveContactPhone, project_info.contactPhone ) slaveContactPhone,
+            request_master.deviceStatus,
+            #{masterProjectId} masterProjectId,
+            IFNULL( cloud_request.cloudStatus, '0' ) cloudStatus ,
+            cloud_request.requestId cloudRequestId,
+            master_conf.isSyncCloud masterIsSyncCloud,
+            cloud_project_info.projectName cloudProjectName
+        FROM
+            project_info
+                LEFT JOIN edge_cascade_request_master request_master ON project_info.projectUUID = request_master.projectCode
+                LEFT JOIN edge_cloud_request cloud_request ON project_info.projectUUID = cloud_request.projectCode
+                LEFT JOIN project_thirdparty_info cloud_project_info ON cloud_request.requestId = cloud_project_info.requestId
+                LEFT JOIN (SELECT isSyncCloud FROM edge_cascade_conf WHERE projectId = #{masterProjectId}) master_conf ON master_conf.isSyncCloud IS NOT NULL
+        <where>
+            <if test="query != null">
+                <if test="query.slaveContactPerson != null and query.slaveContactPerson != ''">
+                    and slaveContactPerson like concat('%',#{query.slaveContactPerson},'%')
+                </if>
+                <if test="query.projectName != null and query.projectName != ''">
+                    and project_info.projectName like concat('%',#{query.projectName},'%')
+                </if>
+                <if test="query.edgeStatus != null and query.edgeStatus != ''">
+                    and deviceStatus like concat('%',#{query.edgeStatus},'%')
+                </if>
+            </if>
+            and (request_master.cascadeStatus = '3' or project_info.projectId = #{masterProjectId})
+        </where>
+    </select>
+
+    <select id="getAdminRoleId" resultType="Integer">
+        SELECT
+            role_id
+        FROM
+            pigxx.sys_role
+        WHERE
+            dept_id = #{projectId}
+          AND del_flag != '1'
+	      AND ds_type = '3'
+    </select>
+
+    <select id="getOriginProjectId" resultType="Integer">
+        SELECT
+            project_info.projectId
+        FROM
+            project_info
+                LEFT JOIN edge_cascade_request_master request ON request.projectCode = project_info.projectCode
+        WHERE project_info.`status` != '0' AND request.requestId IS NULL LIMIT 1
+    </select>
+</mapper>

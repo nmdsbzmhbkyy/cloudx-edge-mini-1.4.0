@@ -1,0 +1,72 @@
+### gradle ###
+.gradle
+/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+### STS ###
+.settings/
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+bin/
+logs/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+*.lock
+rebel.xml
+
+### NetBeans ###
+nbproject/private/
+build/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+### maven ###
+target/
+*.war
+*.ear
+*.zip
+*.tar
+*.tar.gz
+
+### logs ####
+/logs/
+*.log
+
+### temp ignore ###
+*.cache
+*.diff
+*.patch
+*.tmp
+*.java~
+*.properties~
+*.xml~
+
+### system ignore ###
+.DS_Store
+Thumbs.db
+Servers
+.metadata
+upload
+gen_code
+
+### node ###
+node_modules
+/temporary/
+/cloudx-common/cloudx-common-core/.rebel.xml.bak
+/cloudx-common/cloudx-common-data/.rebel.xml.bak
+/cloudx-common/cloudx-common-log/.rebel.xml.bak
+/cloudx-common/cloudx-common-push/.rebel.xml.bak
+/cloudx-common/cloudx-common-stream/.rebel.xml.bak
+/cloudx-push/cloudx-push-api/.rebel.xml.bak
+/cloudx-push/cloudx-push-biz/.rebel.xml.bak
+/package-lock.json
+/saas_sync_dev-tcp12470921361883/.lck

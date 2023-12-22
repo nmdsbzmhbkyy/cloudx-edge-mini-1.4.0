@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectNoticePlanTargetMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectNoticePlanTarget" id="ProjectNoticePlanTargetMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="planId" column="planId" jdbcType="VARCHAR"/>
+        <result property="houseId" column="houseId" jdbcType="VARCHAR"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+    </resultMap>
+
+</mapper>

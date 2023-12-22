@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectShiftConfMapper">
+
+    <resultMap id="projectShiftConfMap" type="com.aurine.cloudx.estate.entity.ProjectShiftConf">
+        <id property="shiftId" column="shiftId"/>
+        <result property="shiftName" column="shiftName"/>
+        <result property="shiftType" column="shiftType"/>
+        <result property="shiftName1" column="shiftName1"/>
+        <result property="shiftTimeBegin1" column="shiftTimeBegin1"/>
+        <result property="shiftTimeEnd1" column="shiftTimeEnd1"/>
+        <result property="shiftName2" column="shiftName2"/>
+        <result property="shiftTimeBegin2" column="shiftTimeBegin2"/>
+        <result property="shiftTimeEnd2" column="shiftTimeEnd2"/>
+        <result property="shiftName3" column="shiftName3"/>
+        <result property="shiftTimeBegin3" column="shiftTimeBegin3"/>
+        <result property="shiftTimeEnd3" column="shiftTimeEnd3"/>
+        <result property="projectId" column="projectId"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <select id="pageShiftConf" resultType="com.aurine.cloudx.estate.vo.ProjectShiftConfPageVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectShiftConfPageVo">
+        select psc.*, u.true_name as operatorName from aurine.project_shift_conf psc
+        left join pigxx.sys_user u on psc.operator = u.user_id
+        <where>
+            <if test="query.shiftName != null and query.shiftName != ''">
+                and psc.shiftName like concat('%',#{query.shiftName},'%')
+            </if>
+            <if test="query.startTime != null">
+                AND date(psc.createTime) <![CDATA[>=]]>
+                #{query.startTime,jdbcType=DATE}
+            </if>
+            <if test="query.endTime != null">
+                AND date(psc.createTime) <![CDATA[<=]]>
+                #{query.endTime,jdbcType=DATE}
+            </if>
+        </where>
+        order by psc.createTime desc
+    </select>
+</mapper>

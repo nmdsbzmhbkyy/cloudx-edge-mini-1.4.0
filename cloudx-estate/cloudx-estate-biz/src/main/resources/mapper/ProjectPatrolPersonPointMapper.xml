@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPatrolPersonPointMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectPatrolPersonPoint" id="ProjectPatrolPersonPointMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="patrolPersonId" column="patrolPersonId" jdbcType="VARCHAR"/>
+        <result property="patrolDetailId" column="patrolDetailId" jdbcType="VARCHAR"/>
+        <result property="partrolStatus" column="partrolStatus" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="countStatusByStaffId" resultType="java.lang.Integer">
+        SELECT COUNT( * ) num
+        FROM project_patrol_person_point person_point
+        LEFT JOIN project_patrol_detail patrol_detail ON person_point.patrolDetailId = patrol_detail.patrolDetailId
+        LEFT JOIN project_patrol_info patrol_info ON patrol_detail.patrolId = patrol_info.patrolId
+        WHERE patrolPersonId = #{staffId}
+        AND patrol_info.status IN
+        <foreach collection="status" item="item" index="index" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        <if test="date != null">
+            AND DATE_FORMAT(patrolDate, '%Y-%m') = DATE_FORMAT(#{date}, '%Y-%m')
+        </if>
+    </select>
+
+</mapper>

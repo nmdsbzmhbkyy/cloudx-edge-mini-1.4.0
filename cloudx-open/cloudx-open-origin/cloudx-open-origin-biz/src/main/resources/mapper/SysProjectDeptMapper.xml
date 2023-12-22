@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.SysProjectDeptMapper">
+
+    <select id="selectByTemplate" resultType="com.aurine.cloudx.open.origin.entity.SysProjectDept">
+        SELECT
+        deptName,
+        deptDesc
+        FROM
+        sys_project_dept
+        <where>
+            projectId = 0
+        </where>
+    </select>
+
+    <select id="defaultDept" resultType="com.aurine.cloudx.open.origin.entity.SysProjectDept">
+        SELECT
+        *
+        FROM
+        sys_project_dept
+        <where>
+        projectId = #{projectId}
+        AND deptName IN (#{office},#{finance},#{comprehensive},#{securityStaff},#{repair},#{environment})
+        </where>
+    </select>
+    <select id="getPage" resultType="com.aurine.cloudx.open.origin.vo.SysProjectDeptVo">
+       SELECT
+    	sys_project_dept.deptId,
+    	projectId,
+    	deptCode,
+    	deptName,
+    	deptDesc,
+    	contactPhone,
+    	operator,
+    	createTime,
+    	updateTime,
+    	principal,
+    	IFNULL( co.num, 0 ) AS staffCount
+        FROM
+    	sys_project_dept
+    	LEFT JOIN (
+    	SELECT
+    		spd.deptId,
+    		count( 1 ) AS num
+    	FROM
+    		sys_project_dept spd
+    		JOIN project_staff ps ON spd.deptId = ps.departmentId
+    	GROUP BY
+    		spd.deptId
+    	) AS co ON sys_project_dept.deptId = co.deptId
+        <where>
+            <if test="query.deptName != null and query.deptName != ''">
+                AND sys_project_dept.deptName like concat('%', #{query.deptName},'%')
+            </if>
+            <if test="query.tenantId != null">
+                AND sys_project_dept.tenant_id = #{query.tenantId}
+            </if>
+            <if test="query.projectId != null">
+                AND sys_project_dept.projectId = #{query.projectId}
+            </if>
+
+        </where>
+    </select>
+</mapper>

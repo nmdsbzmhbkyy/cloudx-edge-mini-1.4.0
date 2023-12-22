@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectInspectDetailDeviceMapper">
+
+    <select id="listDetailDeviceByDetailId" resultType="com.aurine.cloudx.open.origin.vo.ProjectInspectDetailDeviceVo">
+        SELECT
+            inspect.*,device.sn,(IF(inspect.picUrl != '',1,0) + IF(inspect.picUrl2 != '',1,0) +IF(inspect.picUrl3 != '',1,0) +IF(inspect.picUrl4 != '',1,0)) 'picNum'
+        FROM
+            project_inspect_detail_device inspect LEFT JOIN project_device_info device ON inspect.deviceId = device.deviceId
+	    WHERE inspect.detailId = #{detailId}
+    </select>
+
+</mapper>

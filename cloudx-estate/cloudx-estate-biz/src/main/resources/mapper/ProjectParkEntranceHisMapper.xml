@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, lengleng All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: lengleng (wangiegie@gmail.com)
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectParkEntranceHisMapper">
+
+
+<!--    <select id="selectPage" resultType="com.aurine.cloudx.estate.vo.ProjectParkEntranceHisVo">-->
+<!--        SELECT-->
+<!--        p_entrance_his.*,-->
+<!--        praking_info.parkName,-->
+<!--        p_b_rule.ruleName,-->
+<!--        IF-->
+<!--        ( p_b_rule.ruleType IS NULL, rule_car.ruleType, p_b_rule.ruleType ) ruleType,-->
+<!--        p_b_rule.isDisable-->
+<!--        FROM-->
+<!--        project_park_entrance_his p_entrance_his-->
+<!--        LEFT JOIN-->
+<!--        project_par_car_register p_c_register ON p_entrance_his.parkId = p_c_register.parkId AND p_entrance_his.plateNumber = p_c_register.plateNumber-->
+<!--        LEFT JOIN-->
+<!--        project_parking_place p_place ON p_c_register.parkPlaceId = p_place.placeId-->
+<!--        LEFT JOIN-->
+<!--        project_park_billing_rule p_b_rule ON p_place.ruleId = p_b_rule.ruleId-->
+<!--        LEFT JOIN-->
+<!--        project_park_billing_rule rule_car ON  p_c_register.ruleId = rule_car.ruleId-->
+<!--        LEFT JOIN-->
+<!--        project_parking_info praking_info ON p_entrance_his.parkId = praking_info.parkId-->
+<!--        <where>-->
+<!--            AND p_entrance_his.projectId = #{param.projectId}-->
+<!--            and p_entrance_his.tenant_id=#{param.tenantId}-->
+<!--            <if test="param.parkId != null and param.parkId != ''">-->
+<!--                AND p_entrance_his.parkId = #{param.parkId}-->
+<!--            </if>-->
+<!--            <if test='param.plateNumber != null and param.plateNumber != ""'>-->
+<!--                AND p_entrance_his.plateNumber LIKE CONCAT('%', #{param.plateNumber}, '%')-->
+<!--            </if>-->
+<!--            <if test="param.enterTimeStart != null">-->
+<!--                AND p_entrance_his.enterTime <![CDATA[>=]]> #{param.enterTimeStart}-->
+<!--            </if>-->
+<!--            <if test="param.enterTimeEnd != null">-->
+<!--                AND p_entrance_his.enterTime <![CDATA[<=]]> #{param.enterTimeEnd}-->
+<!--            </if>-->
+<!--            <if test="param.outTimeStart != null">-->
+<!--                AND p_entrance_his.outTime <![CDATA[>=]]> #{param.outTimeStart}-->
+<!--            </if>-->
+<!--            <if test="param.outTimeEnd != null">-->
+<!--                AND p_entrance_his.outTime <![CDATA[<=]]> #{param.outTimeEnd}-->
+<!--            </if>-->
+<!--            <if test='param.status == "1"'>-->
+<!--                AND p_entrance_his.outTime IS NULL-->
+<!--            </if>-->
+<!--            <if test='param.status == "2"'>-->
+<!--                AND p_entrance_his.outTime IS NOT NULL-->
+<!--            </if>-->
+<!--        </where>-->
+
+<!--        order by p_entrance_his.updateTime desc-->
+
+<!--    </select>-->
+    <select id="selectPage" resultType="com.aurine.cloudx.estate.vo.ProjectParkEntranceHisVo">
+        SELECT
+        p_entrance_his.*
+        FROM
+        project_park_entrance_his p_entrance_his
+        <where>
+            AND p_entrance_his.projectId = #{param.projectId}
+            and p_entrance_his.tenant_id=#{param.tenantId}
+            <if test="param.parkId != null and param.parkId != ''">
+                AND p_entrance_his.parkId = #{param.parkId}
+            </if>
+            <if test='param.plateNumber != null and param.plateNumber != ""'>
+                AND p_entrance_his.plateNumber LIKE CONCAT('%', #{param.plateNumber}, '%')
+            </if>
+            <if test="param.enterTimeStart != null">
+                AND p_entrance_his.enterTime <![CDATA[>=]]> #{param.enterTimeStart}
+            </if>
+            <if test="param.enterTimeEnd != null">
+                AND p_entrance_his.enterTime <![CDATA[<=]]> #{param.enterTimeEnd}
+            </if>
+            <if test="param.outTimeStart != null">
+                AND p_entrance_his.outTime <![CDATA[>=]]> #{param.outTimeStart}
+            </if>
+            <if test="param.outTimeEnd != null">
+                AND p_entrance_his.outTime <![CDATA[<=]]> #{param.outTimeEnd}
+            </if>
+            <if test='param.status == "1"'>
+                AND p_entrance_his.outTime IS NULL
+            </if>
+            <if test='param.status == "2"'>
+                AND p_entrance_his.outTime IS NOT NULL
+            </if>
+        </where>
+
+        order by p_entrance_his.updateTime desc
+
+    </select>
+    <select id="countTempCar" resultType="java.lang.Integer" >
+       SELECT
+                count(*)
+            FROM
+                project_park_entrance_his his
+            LEFT JOIN project_par_car_register reg ON reg.plateNumber = his.plateNumber
+            WHERE
+                reg.seq is null
+                and his.outTime IS NULL
+                AND his.projectId = #{projectId}
+
+    </select>
+    <select id="selectById" resultType="com.aurine.cloudx.estate.vo.ProjectParkEntranceHisVo">
+        SELECT
+--         CONCAT(LEFT(p_entrance_his.plateNumber,2),' ',RIGHT(p_entrance_his.plateNumber,CHAR_LENGTH(p_entrance_his.plateNumber)-2)) AS plateNumber,
+        p_entrance_his.*,
+        praking_info.parkName
+        FROM
+        project_park_entrance_his AS p_entrance_his
+        LEFT JOIN
+        project_parking_info AS praking_info ON p_entrance_his.parkId = praking_info.parkId
+        <where>
+            <if test="param != null and param != ''">
+                AND p_entrance_his.parkOrderNo = #{param}
+            </if>
+        </where>
+    </select>
+    <!--    <select id="selectByBillingRule" resultType="java.lang.String">
+            SELECT
+            p_place.ruleId
+            FROM
+            project_park_entrance_his p_entrance_his
+            LEFT JOIN
+            project_par_car_register p_c_register ON p_entrance_his.parkId = p_c_register.parkId AND p_entrance_his.plateNumber = p_c_register.plateNumber
+            LEFT JOIN
+            project_parking_place p_place ON p_c_register.parkPlaceId = p_place.placeId
+            LEFT JOIN
+            project_park_billing_rule p_b_rule ON p_place.ruleId = p_b_rule.ruleId
+            LEFT JOIN
+            project_parking_info praking_info ON p_entrance_his.parkId = praking_info.parkId
+            <where>
+                <if test="parkId != null and parkId != ''">
+                    AND p_entrance_his.parkId = #{parkId}
+                </if>
+                <if test="plateNumber != null and plateNumber != ''">
+                    AND p_entrance_his.plateNumber = #{plateNumber}
+                </if>
+            </where>
+        </select>-->
+
+    <select id="enterVehiclePage" resultType="com.aurine.cloudx.estate.vo.ProjectParkEntranceHisVo">
+        SELECT
+        p_entrance_his.*,
+        person_info.personName
+        FROM
+        project_park_entrance_his p_entrance_his
+        LEFT JOIN project_car_pre_register AS p_register ON p_register.plateNumber = p_entrance_his.plateNumber
+        LEFT JOIN project_person_info AS person_info ON p_register.personId = person_info.personId
+        <where>
+            AND p_entrance_his.projectId = #{param.projectId}
+            and p_entrance_his.tenant_id=#{param.tenantId}
+            <if test="param.parkId != null and param.parkId != ''">
+                AND p_entrance_his.parkId = #{param.parkId}
+            </if>
+            <if test='param.plateNumber != null and param.plateNumber != ""'>
+                AND p_entrance_his.plateNumber LIKE CONCAT('%', #{param.plateNumber}, '%')
+            </if>
+            <if test='param.personName != null and param.personName != ""'>
+                AND person_info.personName LIKE CONCAT('%', #{param.personName}, '%')
+            </if>
+        </where>
+        order by p_entrance_his.updateTime desc
+
+    </select>
+</mapper>

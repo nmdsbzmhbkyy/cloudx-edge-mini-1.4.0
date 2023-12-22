@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, lengleng All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: lengleng (wangiegie@gmail.com)
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectParCarRegisterMapper">
+
+    <resultMap id="projectParCarRegisterMap" type="com.aurine.cloudx.open.origin.entity.ProjectParCarRegister">
+        <id property="registerId" column="registerId"/>
+        <result property="plateNumber" column="plateNumber"/>
+        <result property="parkId" column="parkId"/>
+        <result property="parkPlaceId" column="parkPlaceId"/>
+        <result property="parkPlaceName" column="parkPlaceName"/>
+        <result property="startTime" column="startTime"/>
+        <result property="endTime" column="endTime"/>
+        <result property="isCancelled" column="isCancelled"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <update id="updateByEntity">
+        update project_par_car_register
+        set carUid=#{query.carUid}
+          , ruleId=#{query.ruleId}
+          , parkId=#{query.parkId}
+          , parkPlaceId=#{query.parkPlaceId}
+          , parkPlaceName=#{query.parkPlaceName}
+          , startTime=#{query.startTime}
+          , endTime=#{query.endTime}
+          , isCancelled=#{query.isCancelled}
+          , laneList=#{query.laneList}
+          , createTime=#{query.createTime}
+          , updateTime=#{query.updateTime}
+        where registerId = #{query.registerId}
+    </update>
+
+    <!-- 分页查询-->
+    <select id="pageCarRegister" resultType="com.aurine.cloudx.open.origin.dto.ProjectParCarRegisterDto"
+            parameterType="com.aurine.cloudx.open.origin.dto.ProjectParCarRegisterDto">
+        SELECT
+        info.parkName,
+        place.placeName,
+        place.relType,
+        IF
+        ( rule_car.ruleType IS NULL, rule_place.ruleType, rule_car.ruleType ) ruleType,
+        IF
+        ( reg.ruleId IS NULL, place.ruleId, reg.ruleId ) ruleId,
+        person.personName,
+        reg.*,
+        reg.laneList checkedLanes
+        FROM
+        project_par_car_register reg
+        JOIN project_parking_info info ON reg.parkId = info.parkId
+        JOIN project_parking_place place ON reg.parkPlaceId = place.placeId
+        LEFT JOIN project_car_info car ON reg.carUid = car.carUid
+        LEFT JOIN aurine.project_person_info person ON person.personId = car.personId
+        LEFT JOIN project_park_billing_rule rule_place ON place.ruleId = rule_place.ruleId
+        LEFT JOIN project_park_billing_rule rule_car ON rule_car.ruleId = reg.ruleId
+
+        <where>
+            info.projectId = #{projectId}
+            <if test="query.parkId !=null and query.parkId != '' ">
+                AND reg.parkId = #{query.parkId}
+            </if>
+            <if test="query.plateNumber !=null and query.plateNumber != '' ">
+                AND reg.plateNumber like concat('%', #{query.plateNumber},'%')
+            </if>
+            <if test="query.personName !=null and query.personName != '' ">
+                AND person.personName like concat('%', #{query.personName},'%')
+            </if>
+            <if test="query.relType !=null and query.relType != '' ">
+                AND place.relType like concat('%', #{query.relType},'%')
+            </if>
+            AND reg.isCancelled = '0'
+        </where>
+        order by reg.createTime desc ,reg.parkPlaceName
+    </select>
+
+    <select id="getMultiCarNum" resultType="int">
+        SELECT count(*)
+        FROM (
+                 SELECT parkPlaceId,
+                        COUNT(*) carNum
+                 FROM project_par_car_register register
+                          LEFT JOIN project_parking_place place ON place.placeId = register.parkPlaceId
+                 WHERE place.placeName IS NOT NULL
+                   AND place.placeName != ''
+                   AND register.isCancelled = '0'
+                 GROUP BY
+                     parkPlaceId
+             ) tmp_place_car_num
+        WHERE carNum > 1
+    </select>
+<!--    <select id="pageCarRegisterExport" resultType="com.aurine.cloudx.open.origin.excel.parking.ParCarRegisterExportExcel"-->
+<!--            parameterType="com.aurine.cloudx.open.origin.vo.ProjectParCarRegisterSeachConditionVo">-->
+<!--        SELECT-->
+<!--        info.parkName,-->
+<!--        place.placeName,-->
+<!--        place.relType,-->
+<!--        rule_car.ruleName,-->
+<!--        IF-->
+<!--        ( rule_car.ruleType IS NULL, rule_place.ruleType, rule_car.ruleType ) ruleType,-->
+<!--        IF-->
+<!--        ( reg.ruleId IS NULL, place.ruleId, reg.ruleId ) ruleId,-->
+<!--        person.personName,-->
+<!--        reg.*-->
+<!--        FROM-->
+<!--        project_par_car_register reg-->
+<!--        JOIN project_parking_info info ON reg.parkId = info.parkId-->
+<!--        JOIN project_parking_place place ON reg.parkPlaceId = place.placeId-->
+<!--        LEFT JOIN project_car_info car ON reg.carUid = car.carUid-->
+<!--        LEFT JOIN aurine.project_person_info person ON person.personId = car.personId-->
+<!--        LEFT JOIN project_park_billing_rule rule_place ON place.ruleId = rule_place.ruleId-->
+<!--        LEFT JOIN project_park_billing_rule rule_car ON rule_car.ruleId = reg.ruleId-->
+
+<!--        <where>-->
+<!--            info.projectId = #{projectId}-->
+<!--            <if test="query.parkId !=null and query.parkId != '' ">-->
+<!--                AND reg.parkId = #{query.parkId}-->
+<!--            </if>-->
+<!--            <if test="query.plateNumber !=null and query.plateNumber != '' ">-->
+<!--                AND reg.plateNumber like concat('%', #{query.plateNumber},'%')-->
+<!--            </if>-->
+<!--            <if test="query.personName !=null and query.personName != '' ">-->
+<!--                AND person.personName like concat('%', #{query.personName},'%')-->
+<!--            </if>-->
+<!--            <if test="query.relType !=null and query.relType != '' ">-->
+<!--                AND place.relType like concat('%', #{query.relType},'%')-->
+<!--            </if>-->
+<!--            AND reg.isCancelled = '0'-->
+<!--        </where>-->
+<!--        order by reg.createTime desc ,reg.parkPlaceName-->
+<!--    </select>-->
+    <select id="getParkIssuePage" resultType="com.aurine.cloudx.open.origin.dto.ProjectParCarRegisterDto">
+        SELECT
+        DISTINCT
+        reg.registerId,
+        reg.plateNumber,
+        reg.startTime,
+        reg.endTime,
+        reg.parkPlaceName,
+        reg.isCancelled,
+        reg.createTime sendTime,
+        info.parkName,
+        person.telephone,
+        place.placeName,
+        place.relType,
+        device.success,
+        device.failed,
+        device.downloading,
+        device.deleting,
+        device.deletingFailed,
+        device.allCount,
+        IF
+        ( rule_car.ruleType IS NULL, rule_place.ruleType, rule_car.ruleType ) ruleType,
+        IF
+        ( reg.ruleId IS NULL, place.ruleId, reg.ruleId ) ruleId,
+        place.personName,
+        -- p_n_d.sendTime,
+        p_n_d.plateNumberStatus
+        FROM
+        project_par_car_register reg
+        LEFT JOIN (
+        SELECT
+        register.plateNumber,
+        count( device1.seq ) success,
+        count( device2.seq ) failed,
+        count( device3.seq ) downloading,
+        count( device4.seq ) deleting,
+        count( device5.seq ) deletingFailed,
+        count( device1.seq ) + count( device2.seq ) + count( device3.seq ) + count( device4.seq ) + count( device5.seq )
+        as allCount
+        FROM
+        project_par_car_register register
+        LEFT JOIN project_plate_number_device device1 ON ( register.plateNumber = device1.plateNumber AND
+        device1.dlstatus = '0' )
+        LEFT JOIN project_plate_number_device device2 ON ( register.plateNumber = device2.plateNumber AND
+        device2.dlstatus = '1' )
+        LEFT JOIN project_plate_number_device device3 ON ( register.plateNumber = device3.plateNumber AND
+        device3.dlstatus = '2' )
+        LEFT JOIN project_plate_number_device device4 ON ( register.plateNumber = device4.plateNumber AND
+        device4.dlstatus = '3' )
+        LEFT JOIN project_plate_number_device device5 ON ( register.plateNumber = device5.plateNumber AND
+        device5.dlstatus = '4' )
+        GROUP BY
+        register.registerId
+        ) device on device.plateNumber = reg.plateNumber
+        JOIN project_parking_info info ON reg.parkId = info.parkId
+        JOIN project_parking_place place ON reg.parkPlaceId = place.placeId
+        LEFT JOIN project_car_info car ON reg.carUid = car.carUid
+        LEFT JOIN aurine.project_person_info person ON person.personId = car.personId
+        LEFT JOIN project_park_billing_rule rule_place ON place.ruleId = rule_place.ruleId
+        LEFT JOIN project_park_billing_rule rule_car ON rule_car.ruleId = reg.ruleId
+        LEFT JOIN project_plate_number_device p_n_d ON p_n_d.plateNumber = reg.plateNumber
+        <where>
+            info.projectId = #{projectId}
+            <if test="query.parkId !=null and query.parkId != '' ">
+                AND reg.parkId = #{query.parkId}
+            </if>
+            <if test="query.plateNumber !=null and query.plateNumber != '' ">
+                AND reg.plateNumber like concat('%', #{query.plateNumber},'%')
+            </if>
+            <if test="query.ruleType !=null and query.ruleType != '' ">
+                AND rule_place.ruleType = #{query.ruleType}
+            </if>
+            <if test="query.enterTimeStart != null">
+                AND p_n_d.sendTime <![CDATA[>=]]> #{query.enterTimeStart}
+            </if>
+            <if test="query.enterTimeEnd != null">
+                AND p_n_d.sendTime <![CDATA[<=]]> #{query.enterTimeEnd}
+            </if>
+            <if test="query.isCancelled == '1'.toString()">
+                and reg.isCancelled = '1'
+                <if test="query.plateNumberStatus == '3'.toString()">
+                    AND device.allCount != 0
+                </if>
+                <if test="query.plateNumberStatus == '4'.toString()">
+                    AND device.allCount = 0
+                </if>
+            </if>
+            <if test="query.isCancelled == '0'.toString()">
+                and reg.isCancelled = '0'
+                <if test="query.plateNumberStatus == '0'.toString()">
+                    AND device.success = device.allCount AND device.success != 0  AND reg.endTime <![CDATA[>]]> #{query.endTime} AND device.failed = 0
+                </if>
+                <if test="query.plateNumberStatus == '1'.toString()">
+                    AND (device.success != device.allCount OR device.success = 0 ) AND reg.endTime <![CDATA[>]]> #{query.endTime} AND device.failed = 0
+                </if>
+                <if test="query.plateNumberStatus == '2'.toString()">
+                    AND reg.endTime <![CDATA[<=]]> #{query.endTime} AND device.failed = 0
+                </if>
+                <if test="query.plateNumberStatus == '5'.toString()">
+                    AND device.failed > 0
+                </if>
+            </if>
+        </where>
+        order by reg.createTime desc
+    </select>
+    <select id="getPlateNumberStatusPage" resultType="com.aurine.cloudx.open.origin.dto.ProjectParCarRegisterDto">
+        SELECT
+        person.personName,
+        person.telephone,
+        reg.registerId,
+        reg.plateNumber ,
+        p_status.abnormalStatusCount,
+        p_status.status
+        FROM
+        project_par_car_register reg
+        LEFT JOIN project_car_info car ON reg.carUid = car.carUid
+        LEFT JOIN aurine.project_person_info person ON person.personId = car.personId
+        LEFT JOIN (
+        SELECT
+        p_c_r.plateNumber ,
+        count(distinct p_n_d.uid) as 'abnormalStatusCount',
+        IF
+        ( count(distinct p_n_d.uid) > 0, '1', '0' ) as 'status'
+        FROM
+        project_par_car_register p_c_r
+        LEFT JOIN project_plate_number_device p_n_d ON ( p_c_r.plateNumber = p_n_d.plateNumber and p_n_d.dlStatus = '1')
+        WHERE p_c_r.isCancelled = '0'
+        group by p_c_r.registerId) p_status on p_status.plateNumber = reg.plateNumber
+        <where>
+            reg.projectId = #{projectId}
+            <if test="query.plateNumber !=null and query.plateNumber != '' ">
+                AND reg.plateNumber like concat('%', #{query.plateNumber},'%')
+            </if>
+            <if test="query.personName !=null and query.personName != '' ">
+                AND person.personName like concat('%', #{query.personName},'%')
+            </if>
+            <if test="query.status != null and query.status != '' ">
+                AND p_status.status = #{query.status}
+            </if>
+            AND reg.isCancelled = '0'
+        </where>
+        ORDER BY
+        reg.createTime DESC
+    </select>
+    <select id="getPlateNumberStatusCount" resultType="java.lang.Integer">
+        SELECT count(p_status.plateNumber)
+        FROM (
+                 SELECT p_c_r.plateNumber,
+                        IF
+                            (count(DISTINCT p_n_d.uid) > 0, '1', '0') AS 'status'
+                 FROM project_par_car_register p_c_r
+                          LEFT JOIN project_plate_number_device p_n_d
+                                    ON (p_c_r.plateNumber = p_n_d.plateNumber AND p_n_d.dlStatus = '1')
+                 WHERE p_c_r.isCancelled = '0'
+                 GROUP BY p_c_r.registerId
+             ) p_status
+        WHERE p_status.status = '1'
+    </select>
+    <select id="getPlateNumberStatusOnePage" resultType="com.aurine.cloudx.open.origin.dto.ProjectParCarRegisterDto">
+        SELECT
+        reg.plateNumber,
+        info.parkName,
+        p_n_d.dlStatus,
+        device_info.deviceName,
+        device_info.deviceId,
+        p_n_d.uid as 'plateNumberUid',
+        person.personName,
+        person.telephone
+        FROM
+        project_par_car_register reg
+        LEFT JOIN project_parking_info info ON reg.parkId = info.parkId
+        LEFT JOIN project_plate_number_device p_n_d ON reg.plateNumber = p_n_d.plateNumber
+        LEFT JOIN aurine.project_device_info device_info ON device_info.deviceId = p_n_d.deviceId
+        LEFT JOIN project_parking_place place ON place.placeId = reg.parkPlaceId
+        LEFT JOIN aurine.project_person_info person ON person.personId =  place.personId
+        <where>
+            reg.projectId = #{projectId}
+            AND reg.isCancelled = '0'
+            AND reg.plateNumber = #{query.plateNumber}
+            <if test="query.parkId !=null and query.parkId != '' ">
+                AND reg.parkId = #{query.parkId}
+            </if>
+            <if test="query.dlStatus != null and query.dlStatus != '' ">
+                AND p_n_d.dlStatus = #{query.dlStatus}
+            </if>
+        </where>
+        ORDER BY
+        reg.createTime DESC
+    </select>
+    <select id="getCarByPlateNumber" resultType="com.aurine.cloudx.open.origin.entity.ProjectParCarRegister">
+        select *
+        from project_par_car_register
+        where plateNumber = #{plateNumber}
+    </select>
+
+</mapper>

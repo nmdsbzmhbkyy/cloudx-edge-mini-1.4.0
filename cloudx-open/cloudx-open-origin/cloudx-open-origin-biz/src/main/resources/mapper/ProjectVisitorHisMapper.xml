@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectVisitorHisMapper">
+
+  <resultMap id="projectVisitorHisMap" type="com.aurine.cloudx.open.origin.entity.ProjectVisitorHis">
+                        <id property="visitId" column="visitId"/>
+                        <result property="visitorId" column="visitorId"/>
+                        <result property="visitHouseId" column="visitHouseId"/>
+                        <result property="visitPersonId" column="visitPersonId"/>
+                        <result property="personCount" column="personCount"/>
+                        <result property="plateNumber" column="plateNumber"/>
+                        <result property="visitorType" column="visitorType"/>
+                        <result property="registerType" column="registerType"/>
+                        <result property="reason" column="reason"/>
+                        <result property="visitTime" column="visitTime"/>
+                        <result property="leaveTime" column="leaveTime"/>
+                        <result property="isLeave" column="isLeave"/>
+                        <result property="auditStatus" column="auditStatus"/>
+                        <result property="operator" column="operator"/>
+                        <result property="createTime" column="createTime"/>
+                        <result property="updateTime" column="updateTime"/>
+            </resultMap>
+    <update id="updateAuditStatusTimeOut">
+        update project_visitor_his set auditStatus=9 , rejectReason='超时未审核' where auditStatus in (0,1) and passEndTime  &lt;=now()
+    </update>
+
+    <select id="countVisitor"  resultType="java.lang.Integer">
+        SELECT
+        count(*)
+        FROM
+        project_visitor_his AS visitor
+        WHERE
+        1=1
+        and visitor.passEndTime <![CDATA[>=]]> now()
+        and visitor.passBeginTime <![CDATA[<=]]> now()
+
+    </select>
+    <select id="countByOff"  resultType="java.lang.Integer">
+        SELECT
+        count(*)
+        FROM
+        project_visitor_his AS visitor
+        WHERE
+        1=1
+        and visitor.auditStatus='1'
+
+    </select>
+
+    <select id="count30DayVisitor"  resultType="java.util.Map">
+        SELECT
+            SUM(1) AS visitCount,
+            DATE_FORMAT(h.visitTime, '%Y-%m-%d') AS tday
+        FROM
+            project_visitor_his h
+        GROUP BY
+            tday
+        HAVING
+            tday > DATE_SUB(now(), INTERVAL 30 DAY)
+        ORDER BY
+            visitCount DESC
+        LIMIT 1
+
+    </select>
+
+    <select id="getCurrentUnSendCertList" resultType="java.lang.String">
+        SELECT visitId
+        FROM
+        	(
+        	SELECT his.visitId, ( COUNT( right_device1.seq ) + COUNT( right_device2.seq ) + COUNT( right_device3.seq ) ) 'num'
+        	FROM
+        		project_visitor_his his
+        		LEFT JOIN project_face_resources face ON face.personId = his.visitId
+        		LEFT JOIN project_passwd passwd ON passwd.personId = his.visitId
+        		LEFT JOIN project_card card ON card.personId = his.visitId
+        		LEFT JOIN project_right_device right_device1 ON right_device1.certMediaId = faceId
+        		LEFT JOIN project_right_device right_device2 ON right_device2.certMediaId = passId
+        		LEFT JOIN project_right_device right_device3 ON right_device3.certMediaId = cardId
+        	WHERE
+        		STR_TO_DATE(#{time}, '%Y-%m-%d %H:%i') &gt;= passBeginTime
+        		AND auditStatus = 2 AND isLeave = 0 GROUP BY his.visitId ) visitorCert
+        WHERE
+        	num = 0;
+    </select>
+    <select id="getTimeOutVisitor" resultType="com.aurine.cloudx.open.origin.vo.ProjectVisitorVo">
+        select   his.*,v.* from project_visitor_his  his
+        left join project_visitor v on his.visitorId=v.visitorId
+        where auditStatus in (0,1) and passEndTime  &lt;=now()
+    </select>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectVisitorHis"
+            resultType="com.aurine.cloudx.open.common.entity.vo.VisitorHisVo"
+    >
+        SELECT
+        *
+        FROM project_visitor_his pvh
+        <where>
+            <if test="query.projectId != null">
+                AND pvh.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND pvh.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.visitId != null and query.visitId != ''">
+                AND pvh.visitId = #{query.visitId}
+            </if>
+            <if test="query.visitorId != null and query.visitorId != ''">
+                AND pvh.visitorId = #{query.visitorId}
+            </if>
+            <if test="query.visitorName != null and query.visitorName != ''">
+                AND pvh.visitorName LIKE concat('%', #{query.visitorName}, '%')
+            </if>
+            <if test="query.visitCode != null and query.visitCode != ''">
+                AND pvh.visitCode = #{query.visitCode}
+            </if>
+            <if test="query.visitHouseId != null and query.visitHouseId != ''">
+                AND pvh.visitHouseId = #{query.visitHouseId}
+            </if>
+            <if test="query.visitPersonId != null and query.visitPersonId != ''">
+                AND pvh.visitPersonId = #{query.visitPersonId}
+            </if>
+            <if test="query.personCount != null">
+                AND pvh.personCount = #{query.personCount}
+            </if>
+            <if test="query.visitorType != null and query.visitorType != ''">
+                AND pvh.visitorType = #{query.visitorType}
+            </if>
+            <if test="query.registerType != null and query.registerType != ''">
+                AND pvh.registerType = #{query.registerType}
+            </if>
+            <if test="query.plateNumber != null and query.plateNumber != ''">
+                AND pvh.plateNumber LIKE concat('%', #{query.plateNumber}, '%')
+            </if>
+            <if test="query.reason != null and query.reason != ''">
+                AND pvh.reason LIKE concat('%', #{query.reason}, '%')
+            </if>
+            <if test="query.isLeave != null and query.isLeave != ''">
+                AND pvh.isLeave = #{query.isLeave}
+            </if>
+            <if test="query.isFace != null and query.isFace != ''">
+                AND pvh.isFace = #{query.isFace}
+            </if>
+            <if test="query.auditStatus != null and query.auditStatus != ''">
+                AND pvh.auditStatus = #{query.auditStatus}
+            </if>
+            <if test="query.origin != null and query.origin != ''">
+                AND pvh.origin = #{query.origin}
+            </if>
+            <if test="query.originEx != null and query.originEx != ''">
+                AND pvh.originEx = #{query.originEx}
+            </if>
+        </where>
+    </select>
+
+</mapper>

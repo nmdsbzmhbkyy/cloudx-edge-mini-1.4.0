@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectSnapRecordMapper">
+
+    <select id="pageRecord" resultType="com.aurine.cloudx.estate.vo.ProjectSnapRecordVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectSnapRecordVo">
+        SELECT record.*, info.deviceName FROM project_snap_record record INNER JOIN project_device_info info
+        ON record.deviceId = info.deviceId
+        <where>
+            <if test="query.deviceName != null and query.deviceName != ''">
+                AND info.deviceName LIKE concat('%',#{query.deviceName},'%')
+            </if>
+            <if test="query.source != null and query.source != ''">
+                AND record.source LIKE concat('%',#{query.source},'%')
+            </if>
+            <if test="query.eventType != null and query.eventType != ''">
+                AND record.eventType = #{query.eventType}
+            </if>
+            <if test="query.eventSubType != null and query.eventSubType != ''">
+                AND record.eventSubType = #{query.eventSubType}
+            </if>
+            <if test="query.eventTimeBegin != null and query.eventTimeEnd != null">
+                AND record.snapTime BETWEEN #{query.eventTimeBegin} AND #{query.eventTimeEnd}
+            </if>
+        </where>
+        ORDER BY record.snapTime DESC
+    </select>
+
+</mapper>

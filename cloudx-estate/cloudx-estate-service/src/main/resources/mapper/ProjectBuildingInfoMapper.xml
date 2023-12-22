@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectBuildingInfoMapper">
+
+    <resultMap id="buildingInfoMap" type="com.aurine.cloudx.estate.entity.ProjectBuildingInfo">
+        <id property="buildingId" column="buildingId"/>
+        <result property="buildingCode" column="buildingCode"/>
+        <result property="buildingName" column="buildingName"/>
+        <result property="floorTotal" column="floorTotal"/>
+        <result property="houseTotal" column="houseTotal"/>
+        <result property="unitTotal" column="unitTotal"/>
+        <result property="unitNameType" column="unitNameType"/>
+        <result property="buildingArea" column="buildingArea"/>
+        <result property="buildingEra" column="buildingEra"/>
+        <result property="lon" column="lon"/>
+        <result property="lat" column="lat"/>
+        <result property="alt" column="alt"/>
+        <result property="gisArea" column="gisArea"/>
+        <result property="gisType" column="gisType"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="listWithGroup" resultType="com.aurine.cloudx.estate.entity.ProjectBuildingInfo">
+        select build.* from (
+        select (with recursive r as
+        (
+        select *
+        from project_frame_info pfi
+        where pfi.entityId = building.buildingId
+        union all
+        select pfi.*
+        from project_frame_info pfi,
+        r
+        where pfi.entityId = r.puid
+        )
+        select group_concat(r.entityName order by level desc SEPARATOR '-')
+        from r
+        GROUP BY projectId
+        ) as buildingName,
+        building.seq,
+        building.buildingId,
+        building.buildingCode,
+        building.projectId,
+        building.floorTotal,
+        building.houseTotal,
+        building.unitTotal,
+        building.unitNameType,
+        building.buildingArea,
+        building.buildingEra,
+        building.buildingType,
+        building.group4,
+        building.group5,
+        building.group6,
+        building.group7,
+        building.provinceCode,
+        building.cityCode,
+        building.countyCode,
+        building.streetCode,
+        building.locationCode,
+        building.address
+        from project_building_info building
+        ) build
+        <where>
+            <if test="name">
+                build.buildingName like concat('%',#{name},'%')
+            </if>
+        </where>
+
+        order by regexp_replace(build.buildingName,'[^0-9]','') + 0, build.buildingName;
+    </select>
+
+    <select id="getByCode" resultType="com.aurine.cloudx.estate.vo.ProjectBuildingInfoVo">
+        SELECT seq,
+               buildingId,
+               buildingCode,
+               projectId,
+               buildingName,
+               floorTotal,
+               houseTotal,
+               unitTotal,
+               unitNameType,
+               buildingArea,
+               buildingEra,
+               buildingType,
+               group4,
+               group5,
+               group6,
+               group7,
+               provinceCode,
+               cityCode,
+               countyCode,
+               streetCode,
+               locationCode,
+               address,
+               floorGround,
+               floorUnderground,
+               liveUnderground,
+               picUrl1,
+               picUrl2,
+               picUrl3,
+               lon,
+               lat,
+               alt,
+               gisArea,
+               gisType,
+               regionId,
+               tenant_id,
+               operator,
+               createTime,
+               updateTime
+        FROM project_building_info
+        WHERE  buildingCode = #{buildingCode}
+          AND projectId = #{projectId}
+    </select>
+
+    <insert id="saveBuilding">
+
+        INSERT
+        INTO project_building_info
+        ( buildingId,
+          buildingCode,
+          projectId,
+          buildingName,
+          floorTotal,
+          houseTotal,
+          unitTotal,
+          unitNameType,
+          buildingArea,
+          buildingEra,
+          buildingType,
+          group4,
+          group5,
+          group6,
+          group7,
+          provinceCode,
+          cityCode,
+          countyCode,
+          streetCode,
+          locationCode,
+          address,
+          floorGround,
+          floorUnderground,
+          liveUnderground,
+          picUrl1,
+          picUrl2,
+          picUrl3,
+          lon,
+          lat,
+          alt,
+          gisArea,
+          gisType,
+          regionId,
+          tenant_id,
+          operator
+          )
+        VALUES (
+                   #{buildingInfo.buildingId},
+                   #{buildingInfo.buildingCode},
+                   #{buildingInfo.projectId},
+                   #{buildingInfo.buildingName},
+                   #{buildingInfo.floorTotal},
+                   #{buildingInfo.houseTotal},
+                   #{buildingInfo.unitTotal},
+                   #{buildingInfo.unitNameType},
+                   #{buildingInfo.buildingArea},
+                   #{buildingInfo.buildingEra},
+                   #{buildingInfo.buildingType},
+                   #{buildingInfo.group4},
+                   #{buildingInfo.group5},
+                   #{buildingInfo.group6},
+                   #{buildingInfo.group7},
+                   #{buildingInfo.provinceCode},
+                   #{buildingInfo.cityCode},
+                   #{buildingInfo.countyCode},
+                   #{buildingInfo.streetCode},
+                   #{buildingInfo.locationCode},
+                   #{buildingInfo.address},
+                   #{buildingInfo.floorGround},
+                   #{buildingInfo.floorUnderground},
+                   #{buildingInfo.liveUnderground},
+                   #{buildingInfo.picUrl1},
+                   #{buildingInfo.picUrl2},
+                   #{buildingInfo.picUrl3},
+                   #{buildingInfo.lon},
+                   #{buildingInfo.lat},
+                   #{buildingInfo.alt},
+                   #{buildingInfo.gisArea},
+                   #{buildingInfo.gisType},
+                   #{buildingInfo.regionId},
+                   #{buildingInfo.tenantId},
+                   #{buildingInfo.operator}
+                )
+
+    </insert>
+</mapper>

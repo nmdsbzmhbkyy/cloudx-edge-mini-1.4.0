@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectFaceResourcesMapper">
+
+    <resultMap id="projectFaceResourcesMap" type="com.aurine.cloudx.estate.entity.ProjectFaceResources">
+
+        <id property="faceId" column="faceId"/>
+        <result property="faceCode" column="faceCode"/>
+        <result property="personType" column="personType"/>
+        <result property="personId" column="personId"/>
+        <result property="picUrl" column="picUrl"/>
+        <result property="status" column="status"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="getByCode" resultType="com.aurine.cloudx.estate.entity.ProjectFaceResources">
+        SELECT face.seq,
+               face.faceId,
+               face.faceCode,
+               face.faceName,
+               face.projectId,
+               face.personType,
+               face.personId,
+               face.picUrl,
+               face.`status`,
+               face.tenant_id,
+               face.operator,
+               face.createTime,
+               face.updateTime
+        FROM project_face_resources AS face
+        WHERE face.faceCode = #{code}
+          AND face.projectId = #{projectId}
+    </select>
+    <select id="getByFaceId" resultType="com.aurine.cloudx.estate.entity.ProjectFaceResources">
+        SELECT face.seq,
+               face.faceId,
+               face.faceCode,
+               face.faceName,
+               face.projectId,
+               face.personType,
+               face.personId,
+               face.picUrl,
+               face.`status`,
+               face.tenant_id,
+               face.operator,
+               face.createTime,
+               face.updateTime
+        FROM project_face_resources AS face
+        WHERE face.faceId = #{faceId}
+          AND face.projectId = #{projectId}
+    </select>
+    <select id="pagePersonFace" resultType="com.aurine.cloudx.estate.vo.ProjectFaceResourceAppPageVo">
+    SELECT
+      t.houseName,
+      t.personId,
+      t.personName,
+      t.picUrl,
+      t.houseId,
+      t.relaId,
+      t.projectId,
+      t.householdType,
+      t.faceId,
+    case when ((sum(if((t.dlStatus = '1'),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) = 0)) then '0'
+    when ((sum(if((t.dlStatus not in ('1','3')),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) = 0)) then '1'
+    when (sum(if((t.dlStatus not in ('1','3')),1,0)) > 0) then '4'
+    when ((sum(if((t.dlStatus not in ('1','3')),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) > 0) and (min(t.createTime) >= ((now() - interval 1 hour)))) then '2'
+    else '3' end as dlStatus
+    FROM
+      (
+      SELECT
+       (
+        WITH RECURSIVE r AS (
+        SELECT
+         entityId,
+         puid,
+         entityName,
+        LEVEL
+        FROM
+         project_frame_info pfi
+        WHERE
+         pfi.entityId = hprel.houseId UNION ALL
+        SELECT
+         pfi.entityId,
+         pfi.puid,
+         pfi.entityName,
+         pfi.LEVEL
+        FROM
+         project_frame_info pfi
+         JOIN r ON r.puid = pfi.entityId
+        ) SELECT
+        GROUP_CONCAT( r.entityName ORDER BY r.LEVEL DESC SEPARATOR '-' )
+       FROM
+        r
+       ) AS houseName,
+       hprel.houseId,
+       hprel.personId,
+       person.personName,
+       rd.deviceId,
+       device.deviceName,
+       face.faceId,
+       face.picUrl,
+       rd.dlStatus,
+       face.createTime,
+       row_number ( ) OVER ( PARTITION BY hprel.houseId, hprel.personId, rd.deviceId ORDER BY face.createTime DESC ) AS rn,
+       hprel.relaId,
+       hprel.projectId,
+       hprel.householdType
+      FROM
+       project_house_person_rel hprel
+       JOIN project_face_resources face ON face.personId = hprel.personId
+       AND face.origin = '2'
+       AND hprel.projectId = face.projectId
+       JOIN project_right_device rd ON rd.certMedia = '2'
+       AND rd.certMediaId = face.faceId
+       AND rd.projectId = face.projectId
+       JOIN project_device_info device ON device.deviceId = rd.deviceId
+       AND device.projectId = rd.projectId
+       JOIN project_person_info person ON person.personId = face.personId
+       AND person.projectId = face.projectId
+      WHERE
+       hprel.projectId = #{projectId}
+       AND hprel.originEx = '1'
+      ORDER BY
+       hprel.createTime DESC
+      ) t
+     WHERE
+      t.rn = 1
+     GROUP BY
+      t.houseName,
+      t.personId,
+      t.personName,
+      t.picUrl,
+      t.houseId,
+      t.faceId,
+      t.relaId,
+      t.projectId,
+      t.householdType
+      <if test="dlStatus !=null and dlStatus!=''">
+          having
+          (case when ((sum(if((t.dlStatus = '1'),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) = 0)) then '0'
+          when ((sum(if((t.dlStatus not in ('1','3')),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) = 0)) then '1'
+          when (sum(if((t.dlStatus not in ('1','3')),1,0)) > 0) then '4'
+          when ((sum(if((t.dlStatus not in ('1','3')),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) > 0) and (min(t.createTime) >= ((now() - interval 1 hour)))) then '2'
+          else '3' end) in ('0','3','4');
+      </if>
+    </select>
+    <select id="getCurrentUserCreatePage"
+            resultType="com.aurine.cloudx.estate.vo.ProjectFaceResourceAppPageVo">
+        SELECT
+        t.houseName,
+        t.personId,
+        t.personName,
+        t.picUrl,
+        t.houseId,
+        t.relaId,
+        t.projectId,
+        t.householdType,
+        t.faceId,
+        case when (sum(if((t.dlStatus is null), 0, 1)) = 0)  then null
+        when ((sum(if((t.dlStatus = '1'),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) = 0)) then '0'
+        when ((sum(if((t.dlStatus not in ('1','3')),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) = 0)) then '1'
+        when (sum(if((t.dlStatus not in ('1','3')),1,0)) > 0) then '4'
+        when ((sum(if((t.dlStatus not in ('1','3')),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) > 0) and (min(t.createTime) >= ((now() - interval 1 hour)))) then '2'
+        else '3' end as dlStatus
+        FROM
+        (
+        SELECT
+        (
+        WITH RECURSIVE r AS (
+        SELECT
+        entityId,
+        puid,
+        entityName,
+        LEVEL
+        FROM
+        project_frame_info pfi
+        WHERE
+        pfi.entityId = hprel.houseId UNION ALL
+        SELECT
+        pfi.entityId,
+        pfi.puid,
+        pfi.entityName,
+        pfi.LEVEL
+        FROM
+        project_frame_info pfi
+        JOIN r ON r.puid = pfi.entityId
+        ) SELECT
+        GROUP_CONCAT( r.entityName ORDER BY r.LEVEL DESC SEPARATOR '-' )
+        FROM
+        r
+        ) AS houseName,
+        hprel.houseId,
+        hprel.personId,
+        person.personName,
+        face.faceId,
+        face.picUrl,
+        rd.dlStatus,
+        face.createTime,
+        row_number ( ) OVER ( PARTITION BY hprel.houseId, hprel.personId, rd.deviceId ORDER BY face.createTime DESC ) AS rn,
+        hprel.relaId,
+        hprel.projectId,
+        hprel.householdType
+        FROM
+        project_house_person_rel hprel
+        JOIN project_face_resources face ON face.personId = hprel.personId
+        AND (face.origin = '2' OR face.origin = '3')
+        AND hprel.projectId = face.projectId
+        LEFT JOIN project_right_device rd ON rd.certMedia = '2'
+        AND rd.certMediaId = face.faceId
+        AND rd.projectId = face.projectId
+        JOIN project_person_info person ON person.personId = face.personId
+        AND person.projectId = face.projectId
+        WHERE
+        hprel.projectId = #{projectId}
+        AND hprel.originEx = '1'
+        AND hprel.operator = #{userId}
+        ORDER BY
+        hprel.createTime DESC
+        ) t
+        WHERE
+        t.rn = 1
+        GROUP BY
+        t.houseName,
+        t.personId,
+        t.personName,
+        t.picUrl,
+        t.houseId,
+        t.faceId,
+        t.relaId,
+        t.projectId,
+        t.householdType
+        <if test="dlStatus !=null and dlStatus!=''">
+            having
+            (case when (sum(if((t.dlStatus is null), 0, 1)) = 0)  then null
+            when ((sum(if((t.dlStatus = '1'),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) = 0)) then '0'
+            when ((sum(if((t.dlStatus not in ('1','3')),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) = 0)) then '1'
+            when (sum(if((t.dlStatus not in ('1','3')),1,0)) > 0) then '4'
+            when ((sum(if((t.dlStatus not in ('1','3')),1,0)) = 0) and (sum(if((t.dlStatus = '3'),1,0)) > 0) and (min(t.createTime) >= ((now() - interval 1 hour)))) then '2'
+            else '3' end) in ('0','3','4');
+        </if>
+    </select>
+
+
+    <update id="updateFaceCodeBatch" parameterType="list" keyProperty="id" useGeneratedKeys="true">
+        <foreach collection="list" index="index" item="item" open="" separator=";" close="">
+            update project_face_resources
+            <set>
+                faceCode = #{item.faceCode,jdbcType=VARCHAR}
+            </set>
+            WHERE faceId = #{item.faceId,jdbcType=VARCHAR}
+        </foreach>
+    </update>
+</mapper>

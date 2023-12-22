@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectAttendanceMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectAttendance" id="ProjectAttendanceMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="attendanceId" column="attendanceId" jdbcType="VARCHAR"/>
+        <result property="staffId" column="staffId" jdbcType="VARCHAR"/>
+        <result property="staffName" column="staffName" jdbcType="VARCHAR"/>
+        <result property="deptId" column="deptId" jdbcType="INTEGER"/>
+        <result property="deptName" column="deptName" jdbcType="VARCHAR"/>
+        <result property="attenDate" column="attenDate" jdbcType="DATE"/>
+        <result property="workTime" column="workTime" jdbcType="TIME"/>
+        <result property="checkInTime" column="checkInTime" jdbcType="TIME"/>
+        <result property="offworkTime" column="offworkTime" jdbcType="TIME"/>
+        <result property="checkOutTime" column="checkOutTime" jdbcType="TIME"/>
+        <result property="result" column="result" jdbcType="VARCHAR"/>
+        <result property="checkInArea" column="checkInArea" jdbcType="VARCHAR"/>
+        <result property="checkOutArea" column="checkOutArea" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenantId" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        <!--@mbg.generated-->
+        seq, attendanceId, staffId, staffName, deptId, deptName, attenDate, workTime, checkInTime,
+        offworkTime, checkOutTime, `result`, `operator`, createTime,
+        updateTime
+    </sql>
+
+    <select id="page" resultType="com.aurine.cloudx.open.origin.vo.ProjectAttendanceQueryVo">
+        WITH recursive t_date AS (
+        SELECT
+        1 AS n,
+        str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ) AS attenDate UNION ALL
+        SELECT
+        n + 1,
+        date_add( str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ), INTERVAL n DAY )
+        FROM
+        t_date
+        WHERE
+        attenDate &lt;
+        str_to_date( '${query.dateRange[1]}', '%Y-%m-%d' )) SELECT
+        distinct ps1.*,
+        checkInTime,
+        checkOutTime,
+        pa.workTime,
+        pa.offworkTime,
+        ifnull( pa.result, '5' ) result,
+        dp.deptName,
+        1 as detailId
+        FROM
+        (
+        SELECT
+        ps.staffId,
+        ps.staffName,
+        ps.departmentId,
+        t_date.attenDate
+        FROM
+        project_staff ps,
+        t_date
+        WHERE
+        1 = 1
+        AND ps.projectId = #{query.projectId}
+
+        AND ps.tenant_id = #{query.tenantId} ) ps1
+        LEFT JOIN project_attendance pa ON pa.staffId = ps1.staffId
+        AND pa.attenDate = ps1.attenDate
+        LEFT JOIN sys_project_dept dp ON ps1.departmentId = dp.deptId
+        LEFT JOIN project_staff_shift_detail pssd on pssd.staffId=ps1.staffId and (pssd.planYear = #{query.year} and
+        pssd.planMonth=#{query.month} OR (pssd.planYear = #{query.Year2} and pssd.planMonth=#{query.Month2}))
+        <where>
+            <if test="query.staffName != null and query.staffName != ''">
+                AND ps1.staffName like concat('%', #{query.staffName},'%')
+            </if>
+            <if test="query.deptId != null and query.deptId!='' ">
+                AND ps1.departmentId =#{query.deptId}
+            </if>
+            <if test="query.staffId != null and query.staffId!='' ">
+                AND ps1.staffId =#{query.staffId}
+            </if>
+            <!--      <if test="query.dateRange!=null and query.dateRange.length > 0">
+                      AND STR_TO_DATE((DATE_FORMAT(attenDate,'%Y-%m-%d')),'%Y-%m-%d') BETWEEN #{query.dateRange[0]} AND
+                      #{query.dateRange[1]}
+                  </if>-->
+            <if test="query.result != null and query.result!='' ">
+                AND result =#{query.result}
+                <if test="query.result==5">
+                    or result is NULL
+                </if>
+
+            </if>
+            and  pssd.detailId is NOT NULL
+        </where>
+        order by ps1.attenDate desc ,ps1. staffId desc
+    </select>
+
+    <select id="list" resultType="com.aurine.cloudx.open.origin.vo.ProjectAttendanceQueryVo">
+        WITH recursive t_date AS (
+        SELECT
+        1 AS n,
+        str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ) AS attenDate UNION ALL
+        SELECT
+        n + 1,
+        date_add( str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ), INTERVAL n DAY )
+        FROM
+        t_date
+        WHERE
+        attenDate &lt;
+        str_to_date( '${query.dateRange[1]}', '%Y-%m-%d' )) SELECT
+        distinct ps1.*,
+        checkInTime,
+        checkOutTime,
+        pa.workTime,
+        pa.offworkTime,
+        ifnull( pa.result, '5' ) result,
+        dp.deptName,
+        1 as detailId
+        FROM
+        (
+        SELECT
+        ps.staffId,
+        ps.staffName,
+        ps.departmentId,
+        t_date.attenDate
+        FROM
+        project_staff ps,
+        t_date
+        WHERE
+        1 = 1
+        AND ps.projectId = #{query.projectId}
+
+        AND ps.tenant_id = #{query.tenantId} ) ps1
+        LEFT JOIN project_attendance pa ON pa.staffId = ps1.staffId
+        AND pa.attenDate = ps1.attenDate
+        LEFT JOIN sys_project_dept dp ON ps1.departmentId = dp.deptId
+        LEFT JOIN project_staff_shift_detail pssd on pssd.staffId=ps1.staffId and (pssd.planYear = #{query.year} and
+        pssd.planMonth=#{query.month} OR (pssd.planYear = #{query.Year2} and pssd.planMonth=#{query.Month2}))
+        <where>
+            <if test="query.staffName != null and query.staffName != ''">
+                AND ps1.staffName like concat('%', #{query.staffName},'%')
+            </if>
+            <if test="query.deptId != null and query.deptId!='' ">
+                AND ps1.departmentId =#{query.deptId}
+            </if>
+            <if test="query.staffId != null and query.staffId!='' ">
+                AND ps1.staffId =#{query.staffId}
+            </if>
+            <!--      <if test="query.dateRange!=null and query.dateRange.length > 0">
+                      AND STR_TO_DATE((DATE_FORMAT(attenDate,'%Y-%m-%d')),'%Y-%m-%d') BETWEEN #{query.dateRange[0]} AND
+                      #{query.dateRange[1]}
+                  </if>-->
+            <if test="query.result != null and query.result!='' ">
+                AND result =#{query.result}
+                <if test="query.result==5">
+                    or result is NULL
+                </if>
+
+            </if>
+            and  pssd.detailId is NOT NULL
+        </where>
+        order by ps1.attenDate desc ,ps1. staffId desc
+    </select>
+
+
+    <select id="attendanceSummaryPage" resultType="com.aurine.cloudx.open.origin.vo.ProjectAttdanceSummaryVo">
+        SELECT
+        a.staffId,
+        a.staffName,
+        a.deptName,
+        count( CASE WHEN ( result = '2' OR result = '4' OR result = '8') THEN 1 ELSE NULL END ) AS 'lateDay',
+        count( CASE WHEN ( result = '3' OR result = '4' OR result = '9') THEN 1 ELSE NULL END ) AS 'leaveEarlyDay',
+        count( CASE WHEN ( result = '1' ) THEN 1 ELSE NULL END ) AS 'normalWorkDay'
+        FROM
+        (
+        WITH recursive t_date AS (
+        SELECT
+        1 AS n,
+        str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ) AS attenDate UNION ALL
+        SELECT
+        n + 1,
+        date_add( str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ), INTERVAL n DAY )
+        FROM
+        t_date
+        WHERE
+        attenDate &lt; str_to_date( '${query.dateRange[1]}', '%Y-%m-%d' )) SELECT
+        ps1.*,
+        ifnull( pa.result, '5' ) result,
+        dp.deptName
+        FROM
+        (
+        SELECT
+        ps.staffId,
+        ps.staffName,
+        ps.departmentId,
+        t_date.attenDate
+        FROM
+        project_staff ps,
+        t_date
+        WHERE
+        1 = 1
+        AND ps.projectId = #{query.projectId}
+        AND ps.tenant_id = #{query.tenantId}
+        AND ps.expDate IS NULL
+        ) ps1
+        LEFT JOIN project_attendance pa ON pa.staffId = ps1.staffId
+        AND pa.attenDate = ps1.attenDate
+        LEFT JOIN sys_project_dept dp ON ps1.departmentId = dp.deptId
+        <where>
+            <if test="query.staffName != null and query.staffName != ''">
+                AND ps1.staffName like concat('%', #{query.staffName},'%')
+            </if>
+            <if test="query.deptId != null and query.deptId!='' ">
+                AND ps1.departmentId =#{query.deptId}
+            </if>
+        </where>
+
+        ORDER BY
+        ps1.attenDate DESC,
+        ps1.staffId DESC
+        ) a
+        GROUP BY
+        staffId
+        <if test="query.leaveStaff==true">
+            UNION ALL
+            SELECT
+            a.staffId,
+            a.staffName,
+            a.deptName,
+            count( CASE WHEN ( result = '2' OR result = '4' OR result = '8') THEN 1 ELSE NULL END ) AS 'lateDay',
+            count( CASE WHEN ( result = '3' OR result = '4' OR result = '9') THEN 1 ELSE NULL END ) AS 'leaveEarlyDay',
+            count( CASE WHEN ( result = '1' ) THEN 1 ELSE NULL END ) AS 'normalWorkDay'
+            FROM
+            (
+            WITH recursive t_date AS (
+            SELECT
+            1 AS n,
+            str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ) AS attenDate UNION ALL
+            SELECT
+            n + 1,
+            date_add( str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ), INTERVAL n DAY )
+            FROM
+            t_date
+            WHERE
+            attenDate &lt; str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' )) SELECT
+            ps1.*,
+            ifnull( pa.result, '5' ) result,
+            dp.deptName
+            FROM
+            (
+            SELECT
+            ps.staffId,
+            ps.staffName,
+            ps.departmentId,
+            t_date.attenDate
+            FROM
+            project_staff ps,
+            t_date
+            WHERE
+            1 = 1
+            AND ps.projectId = #{query.projectId}
+            AND ps.tenant_id = #{query.tenantId}
+            AND ps.expDate BETWEEN DATE_SUB( CURDATE(), INTERVAL 3 MONTH ) AND now()
+            ) ps1
+            LEFT JOIN project_attendance pa ON pa.staffId = ps1.staffId
+            AND pa.attenDate = ps1.attenDate
+            LEFT JOIN sys_project_dept dp ON ps1.departmentId = dp.deptId
+            <where>
+                <if test="query.staffName != null and query.staffName != ''">
+                    AND ps1.staffName like concat('%', #{query.staffName},'%')
+                </if>
+                <if test="query.deptId != null and query.deptId!='' ">
+                    AND ps1.departmentId =#{query.deptId}
+                </if>
+            </where>
+            ORDER BY
+            ps1.attenDate DESC,
+            ps1.staffId DESC
+            ) a
+            GROUP BY
+            staffId
+        </if>
+
+    </select>
+    <select id="attendanceSummaryList" resultType="com.aurine.cloudx.open.origin.vo.ProjectAttdanceSummaryVo">
+        SELECT
+        a.staffId,
+        a.staffName,
+        a.deptName,
+        count( CASE WHEN ( result = '2' OR result = '4' OR result = '8') THEN 1 ELSE NULL END ) AS 'lateDay',
+        count( CASE WHEN ( result = '3' OR result = '4' OR result = '9') THEN 1 ELSE NULL END ) AS 'leaveEarlyDay',
+        count( CASE WHEN ( result = '1' ) THEN 1 ELSE NULL END ) AS 'normalWorkDay'
+        FROM
+        (
+        WITH recursive t_date AS (
+        SELECT
+        1 AS n,
+        str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ) AS attenDate UNION ALL
+        SELECT
+        n + 1,
+        date_add( str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ), INTERVAL n DAY )
+        FROM
+        t_date
+        WHERE
+        attenDate &lt; str_to_date( '${query.dateRange[1]}', '%Y-%m-%d' )) SELECT
+        ps1.*,
+        ifnull( pa.result, '5' ) result,
+        dp.deptName
+        FROM
+        (
+        SELECT
+        ps.staffId,
+        ps.staffName,
+        ps.departmentId,
+        t_date.attenDate
+        FROM
+        project_staff ps,
+        t_date
+        WHERE
+        1 = 1
+        AND ps.projectId = #{query.projectId}
+        AND ps.tenant_id = #{query.tenantId}
+        AND ps.expDate IS NULL
+        ) ps1
+        LEFT JOIN project_attendance pa ON pa.staffId = ps1.staffId
+        AND pa.attenDate = ps1.attenDate
+        LEFT JOIN sys_project_dept dp ON ps1.departmentId = dp.deptId
+        <where>
+            <if test="query.staffName != null and query.staffName != ''">
+                AND ps1.staffName like concat('%', #{query.staffName},'%')
+            </if>
+            <if test="query.deptId != null and query.deptId!='' ">
+                AND ps1.departmentId =#{query.deptId}
+            </if>
+        </where>
+
+        ORDER BY
+        ps1.attenDate DESC,
+        ps1.staffId DESC
+        ) a
+        GROUP BY
+        staffId
+        <if test="query.leaveStaff==true">
+            UNION ALL
+            SELECT
+            a.staffId,
+            a.staffName,
+            a.deptName,
+            count( CASE WHEN ( result = '2' OR result = '4' OR result = '8') THEN 1 ELSE NULL END ) AS 'lateDay',
+            count( CASE WHEN ( result = '3' OR result = '4' OR result = '9') THEN 1 ELSE NULL END ) AS 'leaveEarlyDay',
+            count( CASE WHEN ( result = '1' ) THEN 1 ELSE NULL END ) AS 'normalWorkDay'
+            FROM
+            (
+            WITH recursive t_date AS (
+            SELECT
+            1 AS n,
+            str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ) AS attenDate UNION ALL
+            SELECT
+            n + 1,
+            date_add( str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' ), INTERVAL n DAY )
+            FROM
+            t_date
+            WHERE
+            attenDate &lt; str_to_date( '${query.dateRange[0]}', '%Y-%m-%d' )) SELECT
+            ps1.*,
+            ifnull( pa.result, '5' ) result,
+            dp.deptName
+            FROM
+            (
+            SELECT
+            ps.staffId,
+            ps.staffName,
+            ps.departmentId,
+            t_date.attenDate
+            FROM
+            project_staff ps,
+            t_date
+            WHERE
+            1 = 1
+            AND ps.projectId = #{query.projectId}
+            AND ps.tenant_id = #{query.tenantId}
+            AND ps.expDate BETWEEN DATE_SUB( CURDATE(), INTERVAL 3 MONTH ) AND now()
+            ) ps1
+            LEFT JOIN project_attendance pa ON pa.staffId = ps1.staffId
+            AND pa.attenDate = ps1.attenDate
+            LEFT JOIN sys_project_dept dp ON ps1.departmentId = dp.deptId
+            <where>
+                <if test="query.staffName != null and query.staffName != ''">
+                    AND ps1.staffName like concat('%', #{query.staffName},'%')
+                </if>
+                <if test="query.deptId != null and query.deptId!='' ">
+                    AND ps1.departmentId =#{query.deptId}
+                </if>
+            </where>
+            ORDER BY
+            ps1.attenDate DESC,
+            ps1.staffId DESC
+            ) a
+            GROUP BY
+            staffId
+        </if>
+    </select>
+</mapper>

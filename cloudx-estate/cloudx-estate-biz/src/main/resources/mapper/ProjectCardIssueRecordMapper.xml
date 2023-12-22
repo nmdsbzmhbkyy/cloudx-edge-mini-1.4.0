@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectCardIssueRecordMapper">
+
+
+    <resultMap id="projectCardIssueRecordMap" type="com.aurine.cloudx.estate.entity.ProjectCardIssueRecord">
+        <id property="seq" column="seq"/>
+        <result property="recordId" column="recordId"/>
+        <result property="cardNo" column="cardNo"/>
+        <result property="cardType" column="cardType"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="pageCardIssueRecord" resultMap="projectCardIssueRecordMap">
+        SELECT * from project_card_issue_record
+        <where>
+            <if test="query != null and query.cardNo != null and query.cardNo != ''">
+                and cardNo = #{query.cardNo}
+            </if>
+            <if test="query != null and query.cardType != null and query.cardType != ''">
+                and cardType = #{query.cardType}
+            </if>
+        </where>
+        ORDER BY seq desc
+    </select>
+</mapper>

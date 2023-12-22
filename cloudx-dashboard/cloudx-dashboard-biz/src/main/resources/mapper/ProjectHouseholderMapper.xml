@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectAttendanceMapper">
+
+    <resultMap type="com.aurine.cloudx.dashboard.entity.ProjectHouseholderMview" id="ProjectHouseholderMview">
+        <result property="projectId" column="PROJECTID" jdbcType="INTEGER"/>
+        <result property="projectName" column="PROJECTNAME" jdbcType="VARCHAR"/>
+        <result property="cntTotal" column="CNT_TOTAL" jdbcType="VARCHAR"/>
+        <result property="cntOwner" column="CNT_OWNER" jdbcType="VARCHAR"/>
+        <result property="cntFamily" column="CNT_FAMILY" jdbcType="INTEGER"/>
+        <result property="cntRent" column="CNT_RENT" jdbcType="VARCHAR"/>
+        <result property="updateTime" column="UPDATE_TIME" jdbcType="VARCHAR"/>
+    </resultMap>
+</mapper>

@@ -1,0 +1,39 @@
+server:
+  port: 4002
+feign:
+  okhttp:
+    enabled: true
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 100MB
+  application:
+    name: '@artifactId@'
+  cloud:
+    nacos:
+      discovery:
+#        server-addr: ${NACOS_HOST:10.110.18.201}:${NACOS_PORT:30848}
+        server-addr: ${NACOS_HOST:pigx-register}:${NACOS_PORT:8848}
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        file-extension: yml
+        shared-configs:
+          - application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+  autoconfigure:
+    exclude: org.springframework.cloud.gateway.config.GatewayAutoConfiguration,org.springframework.cloud.gateway.config.GatewayClassPathWarningAutoConfiguration
+  profiles:
+    active: '@profiles.active@'
+swagger:
+  exclude_path:
+    - '/api/**'
+    - '/actuator/**'
+    - '/error'
+logging:
+  config: classpath:logback-@profiles.active@.xml
+
+wxpay:
+  wyappId: wxaff76c96bb8b6887
+  wyappSecret: 0b9aa270f0da8422eb1164b9df94bdc4
+  yzappId: wxbb287801e93a2878
+  yzappSecret: d8c4934861cd33488e6af5f1d18ba88f

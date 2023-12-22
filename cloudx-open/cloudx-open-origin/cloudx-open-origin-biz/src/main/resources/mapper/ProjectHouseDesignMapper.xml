@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectHouseDesignMapper">
+
+    <resultMap id="projectHouseDesignMap" type="com.aurine.cloudx.open.origin.entity.ProjectHouseDesign">
+        <id property="seq" column="seq"/>
+        <result property="projectId" column="projectId"/>
+        <result property="designId" column="designId"/>
+        <result property="roomTotal" column="roomTotal"/>
+        <result property="hallTotal" column="hallTotal"/>
+        <result property="bathroomTotal" column="bathroomTotal"/>
+        <result property="kitchenTotal" column="kitchenTotal"/>
+        <result property="desginDesc" column="desginDesc"/>
+        <result property="area" column="area"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="getTopOne" resultType="com.aurine.cloudx.open.origin.entity.ProjectHouseDesign">
+        SELECT *
+        FROM project_house_design
+        WHERE projectId = #{projectId}
+        limit 1
+    </select>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectHouseDesign"
+            resultType="com.aurine.cloudx.open.common.entity.vo.HouseDesignVo"
+    >
+        SELECT
+            *
+        FROM project_house_design phd
+        <where>
+            <if test="query.projectId != null">
+                AND phd.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND phd.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.designId != null and query.designId != ''">
+                AND phd.designId = #{query.designId}
+            </if>
+            <if test="query.roomTotal != null">
+                AND phd.roomTotal = #{query.roomTotal}
+            </if>
+            <if test="query.hallTotal != null">
+                AND phd.hallTotal = #{query.hallTotal}
+            </if>
+            <if test="query.bathroomTotal != null">
+                AND phd.bathroomTotal = #{query.bathroomTotal}
+            </if>
+            <if test="query.kitchenTotal != null">
+                AND phd.kitchenTotal = #{query.kitchenTotal}
+            </if>
+            <if test="query.area != null">
+                AND phd.area = #{query.area}
+            </if>
+            <if test="query.desginDesc != null and query.desginDesc != ''">
+                AND phd.desginDesc LIKE concat('%', #{query.desginDesc}, '%')
+            </if>
+        </where>
+    </select>
+</mapper>

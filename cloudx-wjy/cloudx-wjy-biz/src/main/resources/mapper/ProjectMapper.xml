@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.wjy.mapper.ProjectMapper">
+
+    <resultMap id="projectMap" type="com.aurine.cloudx.wjy.entity.Project">
+        <id property="seq" column="seq"/>
+        <result property="projectId" column="projectId"/>
+        <result property="pid" column="pid"/>
+        <result property="wyAppkey" column="wyAppkey"/>
+        <result property="wyAppid" column="wyAppid"/>
+        <result property="wyAppsecret" column="wyAppsecret"/>
+        <result property="wjAppkey" column="wjAppkey"/>
+        <result property="wjAppid" column="wjAppid"/>
+        <result property="wjAppsecret" column="wjAppsecret"/>
+        <result property="gjAppkey" column="gjAppkey"/>
+        <result property="gjAppid" column="gjAppid"/>
+        <result property="gjAppsecret" column="gjAppsecret"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+        <result property="phone" column="phone"/>
+    </resultMap>
+    <sql id="selectSql">
+        i.seq,
+        i.projectId,
+        i.pid,
+        i.wyAppkey,
+        i.wyAppid,
+        i.wyAppsecret,
+        i.wjAppkey,
+        i.wjAppid,
+        i.wjAppsecret,
+        i.gjAppkey,
+        i.gjAppid,
+        i.gjAppsecret,
+        i.phone,
+        i.createTime,
+        i.updateTime
+    </sql>
+
+</mapper>

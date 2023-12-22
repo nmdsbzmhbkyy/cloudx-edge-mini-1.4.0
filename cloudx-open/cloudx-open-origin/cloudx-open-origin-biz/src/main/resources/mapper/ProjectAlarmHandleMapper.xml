@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectAlarmHandleMapper">
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectAlarmHandle"
+            resultType="com.aurine.cloudx.open.common.entity.vo.AlarmHandleVo"
+    >
+        SELECT
+        *
+        FROM project_alarm_handle pah
+        <where>
+            <if test="query.projectId != null">
+                AND pah.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND pah.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.eventId != null and query.eventId != ''">
+                AND pah.eventId = #{query.eventId}
+            </if>
+            <if test="query.result != null and query.result != ''">
+                AND pah.result LIKE concat('%', #{query.result}, '%')
+            </if>
+        </where>
+    </select>
+
+</mapper>

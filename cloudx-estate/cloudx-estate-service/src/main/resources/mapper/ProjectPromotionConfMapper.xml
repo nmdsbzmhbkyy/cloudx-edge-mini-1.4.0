@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPromotionConfMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectPromotionConf" id="ProjectPromotionConfMap">
+        <result property="promotionId" column="promotionId" jdbcType="VARCHAR"/>
+        <result property="promotionName" column="promotionName" jdbcType="VARCHAR"/>
+        <result property="effTime" column="effTime" jdbcType="TIMESTAMP"/>
+        <result property="expTime" column="expTime" jdbcType="TIMESTAMP"/>
+        <result property="promotionType" column="promotionType" jdbcType="VARCHAR"/>
+        <result property="claim" column="claim" jdbcType="VARCHAR"/>
+        <result property="preStoreMonth" column="preStoreMonth" jdbcType="INTEGER"/>
+        <result property="reduceMonth" column="reduceMonth" jdbcType="INTEGER"/>
+        <result property="discount" column="discount" jdbcType="NUMERIC"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <select id="pageByForm" resultType="com.aurine.cloudx.estate.vo.ProjectPromotionConfPageVo">
+        select conf.* , if(conf.effTime&lt;=now() and DATE_ADD(conf.expTime,INTERVAL 1 DAY) &gt;now(),'1','0') valid,
+
+        staff.staffName operatorName
+        from
+        aurine.project_promotion_conf conf
+        left join project_staff staff on staff.userId=conf.operator and staff.projectId=conf.projectId
+        <where>
+            <if test="query.beginTime != null">
+                AND date(conf.createTime) &gt;=
+                #{query.beginTime,jdbcType=DATE}
+            </if>
+            <if test="query.endTime != null">
+                AND date(conf.createTime) &lt;=
+                #{query.endTime,jdbcType=DATE}
+            </if>
+            <if test="query.promotionName !=null and query.promotionName != '' ">
+                and conf.promotionName like concat('%',#{query.promotionName},'%')
+            </if>
+
+            <if test='query.valid != null and query.valid=="1"'>
+                AND date(conf.effTime) &lt;= now() and DATE_ADD(conf.expTime,INTERVAL 1 DAY) &gt; now()
+            </if>
+            <if test='query.valid != null and query.valid=="0"'>
+                AND not( date(conf.effTime) &lt;= now() and DATE_ADD(conf.expTime,INTERVAL 1 DAY) &gt; now())
+            </if>
+        </where>
+    </select>
+    <select id="listConfByType" resultType="com.aurine.cloudx.estate.vo.ProjectPromotionConfOnFeeIdVo">
+        select conf.*, rel.feeId
+        from aurine.project_promotion_conf conf
+        left join aurine.project_promotion_fee_rel rel on conf.promotionId = rel.promotionId
+        <where>
+            and date(conf.effTime) &lt;= now()
+            and DATE_ADD(conf.expTime,INTERVAL 1 DAY) &gt; now()
+            <if test="types!=null and types.size>0">
+                and conf.promotionType in
+                <foreach collection="types" item="type" open="(" close=")" separator=",">
+                    #{type}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    <select id="selectPromotionNormalCount" resultType="java.lang.Integer">
+        select count(1)
+        from aurine.project_promotion_conf conf
+        where conf.promotionType = '2'
+        and (
+        (conf.effTime &gt;= #{effTime ,jdbcType=DATE} AND
+        conf.effTime &lt;= #{expTime ,jdbcType=DATE})
+        OR (conf.effTime &lt;= #{effTime ,jdbcType=DATE} AND
+        conf.expTime &gt;= #{expTime ,jdbcType=DATE})
+        OR (conf.expTime &gt;= #{effTime ,jdbcType=DATE} AND
+        conf.expTime &lt;= #{expTime ,jdbcType=DATE})
+        )
+        <if test="id!=null and id !=''">
+            and conf.promotionId != #{id}
+        </if>
+    </select>
+    <select id="listConfById" resultType="com.aurine.cloudx.estate.vo.ProjectPromotionConfOnFeeIdVo">
+        select conf.*, rel.feeId
+        from aurine.project_promotion_conf conf
+        left join aurine.project_promotion_fee_rel rel on conf.promotionId = rel.promotionId
+        <where>
+            and date(conf.effTime) &lt;= now()
+            and DATE_ADD(conf.expTime,INTERVAL 1 DAY) &gt; now()
+            <if test="types!=null and types.size>0">
+                and conf.promotionId in
+                <foreach collection="ids" item="id" open="(" close=")" separator=",">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+</mapper>

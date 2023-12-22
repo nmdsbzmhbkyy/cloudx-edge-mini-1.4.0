@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectRightDeviceMapper">
+    <update id="updateStateByIds">
+        UPDATE project_right_device
+        SET dlStatus = #{status}
+        WHERE deviceId = #{deviceId}
+        AND certMediaId IN
+        <foreach collection="certIdList" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="pageByDeviceId" resultType="com.aurine.cloudx.estate.vo.ProjectRightDeviceOptsAccessVo">
+        with tmp_right_device as (
+        -- 指纹
+        select rd.seq,rd.deviceId,rd.certMedia,rd.dlStatus,fp.personId,fp.personType,fp.fingerprintCode 'certData'
+        from project_right_device rd
+        join project_fingerprints fp
+        on fp.fingerprintId = rd.certMediaId
+        where rd.certMedia = '1'
+        and rd.deviceId = #{deviceId}
+        union all
+        -- 人脸
+        select rd.seq,rd.deviceId,rd.certMedia,rd.dlStatus,face.personId,face.personType,face.picUrl 'certData'
+        from project_right_device rd
+        join project_face_resources face
+        on face.faceId = rd.certMediaId
+        where rd.certMedia = '2'
+        and rd.deviceId = #{deviceId}
+        -- 卡
+        union all
+        select rd.seq,rd.deviceId,rd.certMedia,rd.dlStatus,card.personId,card.personType,card.cardNo 'certData'
+        from project_right_device rd
+        join project_card card
+        on card.cardId = rd.certMediaId
+        where rd.certMedia = '3'
+        and rd.deviceId = #{deviceId}
+        union all
+        -- 密码
+        select rd.seq,rd.deviceId,rd.certMedia,rd.dlStatus,pw.personId,pw.personType,pw.passwd 'certData'
+        from project_right_device rd
+        join project_passwd pw
+        on pw.passId = rd.certMediaId
+        where rd.certMedia = '4'
+        and rd.deviceId = #{deviceId}
+        )
+
+        SELECT * FROM (
+        -- 住户
+        select trd.seq , person.personName as `personName` , personType, trd.certMedia,person.telephone as
+        `telephone`,trd.dlStatus,trd.certData
+        from tmp_right_device trd
+        join project_person_info person
+        on person.personId = trd.personId
+        where trd.personType = '1'
+        <if test="query.personName != null and query.personName != ''">
+            and person.personName like concat('%',#{query.personName},'%')
+        </if>
+        <if test="query.certMedia != null and query.certMedia != ''">
+            and trd.certMedia = #{query.certMedia}
+        </if>
+        <if test="query.dlStatus != null and query.dlStatus != ''">
+            and trd.dlStatus = #{query.dlStatus}
+        </if>
+        union all
+        -- 员工
+        select trd.seq , staff.staffName as `personName` , personType, trd.certMedia,staff.mobile as
+        `telephone`,trd.dlStatus,trd.certData
+        from tmp_right_device trd
+        join project_staff staff
+        on staff.staffId = trd.personId
+        where trd.personType = '2'
+        <if test="query.personName != null and query.personName != ''">
+            and staff.staffName like concat('%',#{query.personName},'%')
+        </if>
+        <if test="query.certMedia != null and query.certMedia != ''">
+            and trd.certMedia = #{query.certMedia}
+        </if>
+        <if test="query.dlStatus != null and query.dlStatus != ''">
+            and trd.dlStatus = #{query.dlStatus}
+        </if>
+        union all
+        -- 访客
+        select trd.seq , visithis.visitorName as `personName` , personType, trd.certMedia,visitor.mobileNo as
+        `telephone`,trd.dlStatus,trd.certData
+        from tmp_right_device trd
+        join project_visitor_his visithis
+        on visithis.visitId = trd.personId
+        join project_visitor visitor
+        on visitor.visitorId = visithis.visitorId
+        where trd.personType = '3'
+        <if test="query.personName != null and query.personName != ''">
+            and visithis.visitorName like concat('%',#{query.personName},'%')
+        </if>
+        <if test="query.certMedia != null and query.certMedia != ''">
+            and trd.certMedia = #{query.certMedia}
+        </if>
+        <if test="query.dlStatus != null and query.dlStatus != ''">
+            and trd.dlStatus = #{query.dlStatus}
+        </if>
+        ) tmp_right_device_person ORDER BY personName
+    </select>
+
+
+    <select id="listByDeviceIdAndCertmediaId" resultType="com.aurine.cloudx.estate.entity.ProjectRightDevice">
+        SELECT
+        *
+        FROM
+        project_right_device
+        WHERE
+        certMediaId = #{certMediaId}
+        <if test="deviceId != null and deviceId != ''">
+            and deviceId = #{deviceId}
+        </if>
+
+    </select>
+
+</mapper>

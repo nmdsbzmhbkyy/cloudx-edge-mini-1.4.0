@@ -1,0 +1,596 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectHouseInfoMapper">
+    <resultMap id="projectHouseInfoMap" type="com.aurine.cloudx.estate.entity.ProjectHouseInfo">
+        <result property="houseId" column="houseId"/>
+        <result property="houseCode" column="houseCode"/>
+        <result property="buildingUnit" column="buildingUnit"/>
+        <result property="floor" column="floor"/>
+        <result property="houseDesginId" column="houseDesginId"/>
+        <result property="houseName" column="houseName"/>
+        <result property="houseLabelCode" column="houseLabelCode"/>
+        <result property="houseLabel" column="houseLabel"/>
+        <result property="housePurposeCode" column="housePurposeCode"/>
+        <result property="housePurpose" column="housePurpose"/>
+        <result property="houseArea" column="houseArea"/>
+        <result property="personNumber" column="personNumber"/>
+        <result property="note" column="note"/>
+        <result property="lon" column="lon"/>
+        <result property="lat" column="lat"/>
+        <result property="alt" column="alt"/>
+        <result property="gisArea" column="gisArea"/>
+        <result property="gisType" column="gisType"/>
+        <result property="usageType" column="usageType"/>
+        <result property="propertyType" column="propertyType"/>
+        <result property="locationCode" column="locationCode"/>
+        <result property="locationName" column="locationName"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="getHouseResidents" resultType="com.aurine.cloudx.estate.vo.ProjectHouseResidentVo">
+        select *
+        from project_house_person_rel rel
+                 join project_person_info info on rel.personId = info.personId
+        where rel.houseId = #{houseId}
+          and rel.auditStatus = '2'
+        order by rel.householdType, rel.createTime desc
+    </select>
+
+    <select id="getHouseRecord" resultType="com.aurine.cloudx.estate.vo.ProjectHouseHisRecordVo">
+        SELECT
+            *
+        FROM
+            project_house_person_change_his
+        WHERE
+            houseId =#{houseId}
+        ORDER BY
+            createTime DESC
+    </select>
+
+    <select id="select" resultType="com.aurine.cloudx.estate.vo.ProjectHouseInfoVo">
+        -- 框架树结构扁平化
+        select
+        case when hp.housePerson is NULL or hp.housePerson = '' then '空置'
+        when householdType like '%3%' then '已出租'
+        else '已入住' END isUseText,
+        case when hp.housePerson is NULL or hp.housePerson = '' then 0
+        when householdType like '%3%' then 2
+        else 1 END isUse,
+        frame.* from (
+        select
+        b1.entityId buildingId,b1.entityName buildingName,
+        b2.entityId unitId,b2.entityName unitName,
+        CONCAT(hd.desginDesc ,' / ',hd.area ,'㎡') houseDesginName,
+        h.*
+        from project_house_info h
+        join project_frame_info b2 on h.buildingUnit = b2.entityId
+        join project_frame_info b1 on b2.puid = b1.entityId
+        left join project_house_design hd on h.houseDesginId = hd.designId
+        where 1=1
+        order by b1.entityName,b2.entityName,h.houseName
+        ) as frame
+        -- 关联住户情况
+        left join
+        (
+        select houseId,count(1) housePerson,GROUP_CONCAT(householdType)householdType from project_house_person_rel rel
+        join project_person_info info on rel.personId = info.personId
+        where rel.auditStatus = '2'
+        group by houseId
+        )
+        as hp on frame.houseId =
+        hp.houseId
+
+        <where>
+            <if test="buildingName != null and buildingName != ''">
+                AND frame.buildingName like concat('%', #{buildingName},'%')
+            </if>
+            <if test="buildingId != null and buildingId != ''">
+                AND frame.buildingId = #{buildingId}
+            </if>
+
+            <if test="unitId != null and unitId != ''">
+                AND frame.unitId = #{unitId}
+            </if>
+            <if test="unitName != null and unitName != ''">
+                AND frame.unitName like concat('%', #{unitName},'%')
+            </if>
+            <if test="houseName != null and houseName != ''">
+                AND frame.houseName like concat('%', #{houseName},'%')
+            </if>
+            <if test="isUse == 0">
+                AND hp.houseId is null
+            </if>
+            <if test="isUse == 1 or isUse == 2 ">
+                AND hp.houseId is not null
+            </if>
+        </where>
+        order by frame.buildingName,frame.unitName,frame.houseName
+    </select>
+
+    <!-- 根据楼栋和单元查询房屋，以及房屋的入住状态-->
+    <select id="getHouseRecordWithPerson" resultType="com.aurine.cloudx.estate.dto.ProjectHouseDTO">
+
+        select * from (
+        SELECT
+        building.entityId buildingId,
+        building.entityName buildingName,
+        unit.entityId unitId,
+        unit.entityName unitName,
+        house.entityId houseId,
+        house.entityName houseName,
+        IFNULL(rel.num,0) personNum
+
+        FROM
+        project_frame_info building
+        JOIN project_frame_info unit ON building.entityId = unit.puid
+        JOIN project_frame_info house ON unit.entityId = house.puid
+        left join (select count(*) as num,houseId from project_house_person_rel group by houseId) rel on house.entityId
+        = rel.houseId
+        WHERE
+        1=1
+        <if test="buildingId != null and buildingId != ''">
+            and building.entityId = #{buildingId}
+        </if>
+
+        <if test="unitId != null and unitId != ''">
+            and unit.entityId = #{unitId}
+        </if>
+
+        order by building.entityName,unit.entityName,house.entityName
+        ) housePerson where 1=1
+        <if test="isUse == 1">
+            and personNum > 0
+        </if>
+        <if test="isUse == 0">
+            and personNum = 0
+        </if>
+    </select>
+
+    <select id="countHouseRecordWithPerson" resultType="java.lang.Integer">
+
+        select count(*) from (
+        SELECT
+        building.entityId buildingId,
+        building.entityName buildingName,
+        unit.entityId unitId,
+        unit.entityName unitName,
+        house.entityId houseId,
+        house.entityName houseName,
+        IFNULL(rel.num,0) personNum
+
+        FROM
+        project_frame_info building
+        JOIN project_frame_info unit ON building.entityId = unit.puid
+        JOIN project_frame_info house ON unit.entityId = house.puid
+        left join (select count(*) as num,houseId from project_house_person_rel group by houseId) rel on house.entityId
+        = rel.houseId
+        WHERE
+        1=1
+        <if test="buildingId != null and buildingId != ''">
+            and building.entityId = #{buildingId}
+        </if>
+
+        <if test="unitId != null and unitId != ''">
+            and unit.entityId = #{unitId}
+        </if>
+
+        order by building.entityName,unit.entityName,house.entityName
+        ) housePerson where 1=1
+        <if test="isUse == 1">
+            and personNum > 0
+        </if>
+        <if test="isUse == 0">
+            and personNum = 0
+        </if>
+    </select>
+
+    <select id="countLive" resultType="java.lang.Integer">
+        SELECT count(0)
+        FROM project_person_info
+        WHERE peopleTypeCode IN ('1', '2');
+    </select>
+
+    <select id="countSublet" resultType="java.lang.Integer">
+        SELECT count(0)
+        FROM project_person_info
+        WHERE peopleTypeCode = '3';
+    </select>
+
+    <select id="countCommercial" resultType="java.lang.Integer">
+        SELECT count(0)
+        FROM project_house_info
+        WHERE housePurposeCode != '1';
+    </select>
+
+    <update id="putBatch">
+        UPDATE project_house_info SET houseDesginId=#{houseDesginId}
+        WHERE houseId=#{houseId}
+    </update>
+
+    <select id="countFree" resultType="java.lang.Integer">
+        SELECT count(0)
+        FROM project_house_info
+        WHERE houseId NOT IN (SELECT houseId FROM project_house_person_rel);
+    </select>
+
+    <select id="getRemoveAbleHouseIdList" resultType="java.lang.String">
+        SELECT
+        houseId
+        FROM
+        (
+        SELECT
+        house_info.houseId,
+        COUNT( * ) 'num'
+        FROM
+        project_house_info house_info
+        LEFT JOIN project_house_person_rel house_person_rel ON house_info.houseId = house_person_rel.houseId
+        WHERE
+        house_info.houseId IN
+        <foreach collection="list" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        GROUP BY houseId ) housePersonRelNumTable
+        WHERE
+        num &lt;= 1
+    </select>
+    <select id="getHouseResidentsWithoutStatus"
+            resultType="com.aurine.cloudx.estate.vo.ProjectHouseResidentVo">
+        select *
+        from project_house_person_rel rel
+                 join project_person_info info on rel.personId = info.personId
+        where rel.houseId = #{houseId}
+        order by rel.householdType, rel.createTime desc
+    </select>
+    <select id="getHouseInfoVo" resultType="com.aurine.cloudx.estate.vo.ProjectHouseInfoVo">
+        select house.*,
+               building.entityId buildingId,
+               (
+                   with recursive r as
+                                      (
+                                          select *
+                                          from project_frame_info pfi
+                                          where pfi.entityId = building.entityId
+                                          union all
+                                          select pfi.*
+                                          from project_frame_info pfi,
+                                               r
+                                          where pfi.entityId = r.puid
+                                      )
+                   select group_concat(r.entityName order by level desc SEPARATOR '-')
+                   from r
+                   GROUP BY projectId
+                   ORDER BY level
+               )                 buildingName,
+               unit.entityName   unitName
+        from project_house_info house
+                 inner join project_frame_info unit on unit.entityId = house.buildingUnit
+                 inner join project_frame_info building on building.entityId = unit.puid
+
+        where house.houseId = #{id}
+
+    </select>
+
+    <select id="getByCode" resultType="com.aurine.cloudx.estate.vo.ProjectHouseInfoVo">
+        SELECT seq,
+               houseId,
+               houseCode,
+               projectId,
+               buildingUnit,
+               floor,
+               houseDesginId,
+               houseName,
+               houseLabelCode,
+               houseLabel,
+               housePurposeCode,
+               housePurpose,
+               houseArea,
+               orientation,
+               personNumber,
+               note,
+               lon,
+               lat,
+               alt,
+               gisArea,
+               gisType,
+               usageType,
+               propertyType,
+               locationCode,
+               locationName,
+               employerId,
+               tenant_id,
+               operator,
+               createTime,
+               updateTime
+        FROM project_house_info
+        WHERE houseCode = #{houseCode}
+          AND projectId = #{projectId}
+    </select>
+    <select id="findIndoorByName" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceSelectTreeVo">
+
+        select frame2.entityId   id,
+
+               (
+                   with recursive r as
+                                      (
+                                          select *
+                                          from project_frame_info pfi
+                                          where pfi.entityId = frame2.entityId
+                                          union all
+                                          select pfi.*
+                                          from project_frame_info pfi,
+                                               r
+                                          where pfi.entityId = r.puid
+                                      )
+                   select concat(group_concat(r.entityName order by level desc SEPARATOR '-'), '/@/' ,group_concat(r.entityId order by level desc SEPARATOR '-'))
+                   from r
+                   GROUP BY projectId
+                   ORDER BY level
+               ) name,
+               frame2.puid       parentId,
+               frame2.isHouse    type
+        from project_frame_info frame2
+        where frame2.isHouse = 1 and frame2.entityName like  concat('%',#{name},'%')
+          and exists(select 1 from project_house_person_rel rel where rel.houseId = frame2.entityId)
+    </select>
+
+    <insert id="saveHouse">
+        INSERT
+        INTO project_house_info
+        (houseId,
+         houseCode,
+         projectId,
+         buildingUnit,
+         floor,
+         houseDesginId,
+         houseName,
+         houseLabelCode,
+         houseLabel,
+         housePurposeCode,
+         housePurpose,
+         houseArea,
+         orientation,
+         personNumber,
+         note,
+         lon,
+         lat,
+         alt,
+         gisArea,
+         gisType,
+         usageType,
+         propertyType,
+         locationCode,
+         locationName,
+         employerId,
+         tenant_id,
+         operator)
+        VALUES (#{houseInfo.houseId},
+                #{houseInfo.houseCode},
+                #{houseInfo.projectId},
+                #{houseInfo.buildingUnit},
+                #{houseInfo.floor},
+                #{houseInfo.houseDesginId},
+                #{houseInfo.houseName},
+                #{houseInfo.houseLabelCode},
+                #{houseInfo.houseLabel},
+                #{houseInfo.housePurposeCode},
+                #{houseInfo.housePurpose},
+                #{houseInfo.houseArea},
+                #{houseInfo.orientation},
+                #{houseInfo.personNumber},
+                #{houseInfo.note},
+                #{houseInfo.lon},
+                #{houseInfo.lat},
+                #{houseInfo.alt},
+                #{houseInfo.gisArea},
+                #{houseInfo.gisType},
+                #{houseInfo.usageType},
+                #{houseInfo.propertyType},
+                #{houseInfo.locationCode},
+                #{houseInfo.locationName},
+                #{houseInfo.employerId},
+                #{houseInfo.tenantId},
+                #{houseInfo.operator})
+
+    </insert>
+    <select id="getByUnitId" resultType="com.aurine.cloudx.estate.vo.ProjectHouseInfoVo">
+        SELECT seq,
+               houseId,
+               houseCode,
+               projectId,
+               buildingUnit,
+               floor,
+               houseDesginId,
+               houseName,
+               houseLabelCode,
+               houseLabel,
+               housePurposeCode,
+               housePurpose,
+               houseArea,
+               orientation,
+               personNumber,
+               note,
+               lon,
+               lat,
+               alt,
+               gisArea,
+               gisType,
+               usageType,
+               propertyType,
+               locationCode,
+               locationName,
+               employerId,
+               tenant_id,
+               operator,
+               createTime,
+               updateTime
+        FROM project_house_info
+        WHERE buildingUnit = #{unitId}
+          AND projectId = #{projectId}
+    </select>
+
+    <select id="getByBuildingId" resultType="com.aurine.cloudx.estate.vo.ProjectHouseInfoVo">
+        SELECT seq,
+               houseId,
+               houseCode,
+               projectId,
+               buildingUnit,
+               floor,
+               houseDesginId,
+               houseName,
+               houseLabelCode,
+               houseLabel,
+               housePurposeCode,
+               housePurpose,
+               houseArea,
+               orientation,
+               personNumber,
+               note,
+               lon,
+               lat,
+               alt,
+               gisArea,
+               gisType,
+               usageType,
+               propertyType,
+               locationCode,
+               locationName,
+               employerId,
+               tenant_id,
+               operator,
+               createTime,
+               updateTime
+        FROM project_house_info
+        WHERE buildingUnit in (SELECT entityId FROM project_frame_info where puid = #{buildingId})
+        ORDER BY
+		    houseName ASC
+    </select>
+    <!-- 根据楼栋ID获取楼层列表 -->
+    <select id="getFloorByBuildingId" resultType="java.lang.Integer">
+        select
+            house.floor
+        from
+            project_house_info house
+        where
+            house.buildingUnit
+            in (SELECT entityId FROM project_frame_info where puid = #{buildingId})
+        GROUP BY
+		    house.floor
+        ORDER BY
+		    house.floor ASC
+    </select>
+
+    <!-- 根据项目ID获取楼层列表 -->
+    <select id="getFloorByProjectId" resultType="java.lang.Integer">
+        select
+            house.floor
+        from
+            project_house_info house
+        where
+            house.projectId = #{projectId}
+        GROUP BY
+		    house.floor
+        ORDER BY
+		    house.floor ASC
+    </select>
+
+    <select id="getCount" resultType="java.lang.Integer">
+        SELECT
+            count(*)
+        FROM
+            project_house_person_rel
+        WHERE
+            houseId = #{value}
+            LIMIT 0,1
+    </select>
+
+    <select id="getHouseInfo" resultType="com.aurine.cloudx.estate.vo.ProjectHouseInfoVo">
+        SELECT
+            unit.entityId unitId,
+            building.entityId buildingId,
+            house.*
+        FROM
+            project_person_info info
+                left join project_house_person_rel rel on info.personId = rel.personId
+                left join project_house_info house on rel.houseId = house.houseId
+                left join project_frame_info unit on house.buildingUnit = unit.entityId
+                left join project_frame_info building on unit.puid = building.entityId
+        WHERE
+            info.userId = #{id}
+          AND info.projectId = #{projectId}
+    </select>
+
+
+
+
+    <select id="getAddress" resultType="java.lang.String">
+        WITH RECURSIVE _parent AS
+                           (
+                            SELECT fun.* FROM project_frame_info fun WHERE fun.entityId= #{houseId}
+         UNION ALL
+         SELECT fun.* FROM _parent, project_frame_info fun WHERE fun.entityId=_parent.puid
+                               )
+                           SELECT entityName FROM _parent;
+    </select>
+
+    <select id="getHosueParam" resultType="java.lang.String">
+        SELECT
+            rel.houseId
+        FROM
+            project_person_info info
+                left join project_house_person_rel rel on info.personId = rel.personId
+        WHERE
+            info.personId = #{personId}
+    </select>
+
+    <select id="getHouseId" resultType="java.lang.String">
+        SELECT
+            m1.houseId
+        FROM
+            project_house_person_rel m1
+                left join  project_person_info m2 on m1.personId=m2.personId
+            WHERE
+            m2.telephone=#{phone}
+    </select>
+    <select id="getHouseInfoByPersonAndBuild" resultType="com.aurine.cloudx.estate.entity.ProjectHouseInfo">
+        select
+
+        houseinfo.seq,houseinfo.houseId,houseinfo.houseCode,houseinfo.projectId,houseinfo.buildingUnit,houseinfo.floor,houseinfo.houseDesginId,houseinfo.houseLabelCode,houseinfo.houseLabel,
+        (
+        with recursive r as
+        (
+        select pfi.entityName,pfi.puid,pfi.level,pfi.projectId from project_frame_info pfi where pfi.entityId =
+        house.entityId
+        union all
+        select pfi.entityName,pfi.puid,pfi.level,pfi.projectId from project_frame_info pfi, r where pfi.entityId =
+        r.puid
+        ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r GROUP BY projectId ORDER BY level
+        ) houseName
+        from project_person_info person
+
+        join project_house_person_rel houseperson on person.personId = houseperson .personId
+        join project_house_info houseinfo on houseperson.houseId = houseinfo.houseId
+        join project_frame_info house on houseperson.houseId = house.entityId
+        join project_frame_info unit on house.puid = unit.entityId
+        join project_frame_info building on unit .puid = building.entityId
+        <where>
+            <if test="buildingId != null and buildingId != ''">
+                AND building.entityId = #{buildingId}
+            </if>
+            <if test="unitId != null and unitId != ''">
+                AND unit.entityId = #{unitId}
+            </if>
+            <if test="personId != null and personId != ''">
+                AND person.personId = #{personId}
+            </if>
+            <if test="houseId != null and houseId != ''">
+                AND house.entityId = #{houseId}
+            </if>
+        </where>
+        order by houseperson.createTime
+    </select>
+</mapper>

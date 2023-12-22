@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectUnitInfoMapper">
+    <select id="getByCode" resultType="com.aurine.cloudx.estate.vo.ProjectUnitInfoVo">
+        SELECT seq,
+               unitId,
+               unitCode,
+               projectId,
+               unitName,
+               standardAddress,
+               addressName,
+               picUrl1,
+               picUrl2,
+               picUrl3,
+               remark,
+               tenant_id,
+               operator,
+               createTime,
+               updateTime
+        FROM project_unit_info
+        WHERE unitCode = #{unitCode}
+          AND projectId = #{projectId}
+    </select>
+
+    <insert id="saveUnit">
+        INSERT
+        INTO project_unit_info
+        (unitId,
+         unitCode,
+         projectId,
+         unitName,
+         standardAddress,
+         addressName,
+         picUrl1,
+         picUrl2,
+         picUrl3,
+         remark,
+         tenant_id,
+         operator)
+        VALUES (#{unitInfo.unitId},
+                #{unitInfo.unitCode},
+                #{unitInfo.projectId},
+                #{unitInfo.unitName},
+                #{unitInfo.standardAddress},
+                #{unitInfo.addressName},
+                #{unitInfo.picUrl1},
+                #{unitInfo.picUrl2},
+                #{unitInfo.picUrl3},
+                #{unitInfo.remark},
+                #{unitInfo.tenantId},
+                #{unitInfo.operator})
+
+    </insert>
+</mapper>

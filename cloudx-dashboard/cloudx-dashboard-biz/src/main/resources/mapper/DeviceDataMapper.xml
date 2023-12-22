@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.dashboard.mapper.DeviceDataMapper">
+
+    <select id="getDataByCode"  parameterType="String" resultType="java.util.LinkedHashMap">
+        SELECT
+        t1.*, ROWNUM
+        FROM(
+            SELECT t.*,d.DEVICENAME FROM ${tableName} t JOIN DW_DEVICE d ON t.DEVICECODE=d.DEVICECODE
+            <where>
+                t.DEVICECODE = #{deviceCode}
+            </where>
+            ORDER BY EVENTTIME DESC
+        ) t1
+        WHERE rownum <![CDATA[<=]]> #{count}
+    </select>
+
+    <select id="getDataCountOverview"  parameterType="String" resultType="java.util.LinkedHashMap">
+        SELECT COUNT(*) AS count,'TOTAL'AS state FROM DW_DEVICE WHERE PROJECTID =#{projectId}
+        UNION ALL
+        SELECT COUNT(*)AS count, 'ONLINE'AS state FROM DW_DEVICE WHERE PROJECTID =#{projectId} AND ISONLINE ='1'
+        UNION ALL
+        SELECT COUNT(*)AS count,'OFFLINE'AS state FROM DW_DEVICE WHERE PROJECTID =#{projectId} AND ISONLINE ='0'
+        UNION ALL
+        SELECT COUNT(*)AS count,'ALARM'AS state FROM DW_DEVICE WHERE PROJECTID = #{projectId} AND ISALARM <![CDATA[<>]]> '0'
+
+    </select>
+
+
+    <select id="getDataTypeOverview"  parameterType="String" resultType="java.util.LinkedHashMap">
+        SELECT count(*) AS count ,DEVICETYPE FROM DW_DEVICE WHERE PROJECTID = #{projectId} GROUP BY DEVICETYPE
+    </select>
+</mapper>

@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectDeviceRegionMapper">
+
+    <resultMap id="projectDeviceRegionMap" type="com.aurine.cloudx.estate.entity.ProjectDeviceRegion">
+        <id property="regionId" column="regionId"/>
+        <result property="regionCode" column="regionCode"/>
+        <result property="regionName" column="regionName"/>
+        <result property="parRegionId" column="parRegionId"/>
+        <result property="picName" column="picName"/>
+        <result property="picUrl" column="picUrl"/>
+        <result property="uploadTime" column="uploadTime"/>
+        <result property="uploadBy" column="uploadBy"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <select id="findByDeviceType" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceRegionVo">
+        select *,
+        (select count(1)
+        from project_device_info info
+        <where>
+            and info.deviceRegionId = region.regionId
+            <if test="type!=null and type!=''">
+                and info.deviceType=#{type}
+            </if>
+            and info.projectId = region.projectId
+        </where>
+        ) num
+        from project_device_region region order by region.isDefault desc
+
+    </select>
+
+    <select id="selectByDefault" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceRegionVo">
+        SELECT
+        *
+        FROM
+        project_device_region
+        <where>
+            projectId = #{projectId}
+            AND isDefault = 1
+        </where>
+    </select>
+
+    <select id="selectByTemplate" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceRegionVo">
+        SELECT
+        regionName,
+        regionLevel,
+        isDefault
+        FROM
+        project_device_region
+        <where>
+            projectId = 0
+        </where>
+    </select>
+
+    <insert id="initInsert">
+        INSERT
+        INTO project_device_region
+        (regionId, regionName, regionLevel, parRegionId, isDefault, projectId, tenant_id)
+        VALUES (#{param.regionId}, #{param.regionName}, #{param.regionLevel}, #{param.parRegionId}, #{param.isDefault},
+                #{projectId}, #{tenantId})
+    </insert>
+
+    <select id="pageBuildingRegionInfo" resultType="com.aurine.cloudx.estate.vo.ProjectBuildingRegionInfoVo">
+        SELECT
+        building_info.buildingId,
+        building_info.buildingName,
+        IF(regionName is null or regionName = '', '公共区域' , regionName) 'regionName',
+        region.regionId
+        FROM
+        project_building_info building_info
+        LEFT JOIN project_device_region region ON region.regionId = building_info.regionId
+        WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            and (
+            building_info.regionId = #{regionId}
+            <if test="regionName == '公共区域'">
+                or building_info.regionId IS NULL
+            </if>
+            )
+        </if>
+        <if test="buildingName != null and buildingName != ''">
+            and building_info.buildingName LIKE concat('%',#{buildingName},'%')
+        </if>
+    </select>
+
+    <select id="pageBuildingRegionInfoGroup" resultType="com.aurine.cloudx.estate.vo.ProjectBuildingRegionInfoVo">
+        SELECT * FROM (
+        SELECT
+        building_info.buildingId,
+        (
+        WITH recursive r AS (
+        SELECT
+        *
+        FROM
+        project_frame_info pfi
+        WHERE
+        pfi.entityId = building_info.buildingId UNION ALL
+        SELECT
+        pfi.*
+        FROM
+        project_frame_info pfi,
+        r
+        WHERE
+        pfi.entityId = r.puid
+        ) SELECT
+        group_concat( r.entityName ORDER BY LEVEL DESC SEPARATOR '-' )
+        FROM
+        r
+        GROUP BY
+        projectId
+        ORDER BY
+        LEVEL
+        ) buildingName,
+        IF
+        ( regionName IS NULL OR regionName = '', '公共区域', regionName ) 'regionName',
+        region.regionId
+        FROM
+        project_building_info building_info
+        LEFT JOIN project_device_region region ON region.regionId = building_info.regionId
+        ) buildingInfo
+        Where 1=1
+        <if test="regionId != null and regionId != ''">
+            and (
+              regionId = #{regionId}
+              <if test="regionName == '公共区域'">
+                  or regionId IS NULL
+              </if>
+            )
+        </if>
+        <if test="buildingName != null and buildingName != ''">
+            and buildingName LIKE concat('%',#{buildingName},'%')
+        </if>
+
+    </select>
+
+    <select id="pageRegionManager" resultType="com.aurine.cloudx.estate.vo.ProjectRegionManagerVo">
+
+        SELECT *
+        FROM (
+                 SELECT region.seq,
+                        regionName,
+                        region.regionId,
+                        COUNT(device.deviceId)                 deviceNum,
+                        GROUP_CONCAT(distinct staff.staffName) managerName
+                 FROM project_device_region region
+                          LEFT JOIN project_device_info device ON device.deviceRegionId = region.regionId
+                          LEFT JOIN project_staff_region staff_region ON staff_region.regionId = region.regionId
+                          LEFT JOIN project_staff staff ON staff.staffId = staff_region.staffId
+                 WHERE device.deviceType IN ('1', '2', '3')
+                 GROUP BY region.regionId
+             ) region_device_num
+        WHERE deviceNum != 0
+
+
+    </select>
+
+    <select id="listBuildingByRegionId" resultType="com.aurine.cloudx.estate.vo.ProjectBuildingInfoVo">
+        SELECT buildingName,buildingId FROM (
+        SELECT
+        device_region.regionId,
+        building.buildingId,
+        <if test="isGroup">
+            (
+            WITH recursive r AS (
+            SELECT
+            *
+            FROM
+            project_frame_info pfi
+            WHERE
+            pfi.entityId = building.buildingId UNION ALL
+            SELECT
+            pfi.*
+            FROM
+            project_frame_info pfi,
+            r
+            WHERE
+            pfi.entityId = r.puid
+            ) SELECT
+            group_concat( r.entityName ORDER BY LEVEL DESC SEPARATOR '-' )
+            FROM
+            r
+            GROUP BY
+            projectId
+            ORDER BY
+            LEVEL
+            ) buildingName
+        </if>
+        <if test="!isGroup">
+            building.buildingName
+        </if>
+        FROM
+        project_device_region device_region
+        LEFT JOIN project_building_info building ON ( building.regionId = device_region.regionId
+        <if test="isPublicRegion">
+            OR building.regionId = '' OR building.regionId IS NULL
+        </if>
+        )
+        WHERE building.buildingId IS NOT NULL
+        AND
+        (device_region.regionId = #{regionId}
+        <if test="isPublicRegion">
+            OR device_region.regionId = ''
+        </if>
+        )
+        ) region_building
+    </select>
+
+    <select id="listRegionDeviceByRegionId" resultType="java.lang.String">
+        SELECT
+        deviceName
+        FROM
+        project_device_region region
+        LEFT JOIN project_device_info device ON (region.regionId = device.deviceRegionId
+        <if test="isPublicRegion">
+            OR device.deviceRegionId = '' OR device.deviceRegionId IS NULL
+        </if>
+        )
+        WHERE
+        deviceType = 3
+        AND
+        (region.regionId = #{regionId}
+        <if test="isPublicRegion">
+            OR region.regionId = ''
+        </if>
+        )
+    </select>
+
+    <select id="listAllRegionInfo" resultType="com.aurine.cloudx.estate.vo.DeviceRegionInfoVo">
+        SELECT (
+                   WITH recursive r AS (
+                       SELECT *
+                       FROM project_device_region pdr1
+                       WHERE pdr1.regionId = region.regionId
+                       UNION ALL
+                       SELECT pdr2.*
+                       FROM project_device_region pdr2,
+                            r
+                       WHERE pdr2.regionId = r.parRegionId
+                   )
+                   SELECT group_concat(r.regionName ORDER BY regionLevel ASC SEPARATOR ',')
+                   FROM r
+                   GROUP BY projectId
+                   LIMIT 1 ) regionName, regionId
+        FROM
+            project_device_region region
+    </select>
+
+    <select id="getChildRegionIdList" resultType="java.lang.String">
+        SELECT (
+                   with recursive r as
+                                      (
+                                          select *
+                                          from project_device_region dr1
+                                          where dr1.regionId = project_device_region.regionId
+                                          union all
+                                          select dr2.*
+                                          from project_device_region dr2,
+                                               r
+                                          where dr2.parRegionId = r.regionId
+                                      )
+                   select GROUP_CONCAT(regionId)
+                   from r
+               ) regionIds,
+               project_device_region.*
+        FROM project_device_region
+        WHERE regionId = #{regionId}
+
+    </select>
+
+</mapper>

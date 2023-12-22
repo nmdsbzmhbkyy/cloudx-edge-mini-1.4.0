@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectBuildingBatchAddTemplateMapper">
+
+    <resultMap id="projectBuildingBatchAddTemplateMap" type="com.aurine.cloudx.open.origin.entity.ProjectBuildingBatchAddTemplate">
+        <id property="buildingTemplateId" column="buildingTemplateId"/>
+        <result property="templateName" column="templateName"/>
+        <result property="floorCount" column="floorCount"/>
+        <result property="startFloor" column="startFloor"/>
+        <result property="endFloor" column="endFloor"/>
+        <result property="exceptFloor" column="exceptFloor"/>
+        <result property="unitCount" column="unitCount"/>
+        <result property="provinceCode" column="provinceCode"/>
+        <result property="cityCode" column="cityCode"/>
+        <result property="countyCode" column="countyCode"/>
+        <result property="streetCode" column="streetCode"/>
+        <result property="address" column="address"/>
+        <result property="buildingArea" column="buildingArea"/>
+        <result property="buildingEra" column="buildingEra"/>
+        <result property="buildingType" column="buildingType"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="selectPage" resultType="com.aurine.cloudx.open.origin.vo.ProjectBuildingBatchAddTemplateRecordVo" parameterType="com.aurine.cloudx.open.origin.vo.ProjectBuildingBatchAddTemplateSearchCondition">
+        SELECT
+        GROUP_CONCAT(
+        DISTINCT unitNo,
+        '单元',
+        houseCount,
+        '间房'
+        ) AS info,
+        template.buildingTemplateId,
+        template.unitCount,
+        any_value(template.createTime) 'createTime',
+        any_value(template.templateName) 'templateName'
+        FROM
+        (
+        SELECT
+        unit.unitNo,
+        unit.houseCount,
+        building.*
+        FROM
+        project_building_batch_add_template building
+        JOIN project_unit_batch_add_template unit ON building.buildingTemplateId = unit.buildingTemplateId
+        where 1=1
+        <if test="searchCondition.templateName!=null and searchCondition.templateName != ''">
+            and building.templateName like concat('%',#{searchCondition.templateName},'%')
+        </if>
+        ) template
+        GROUP BY
+        template.buildingTemplateId,template.templateName, template.unitCount
+        order by createTime
+    </select>
+
+</mapper>

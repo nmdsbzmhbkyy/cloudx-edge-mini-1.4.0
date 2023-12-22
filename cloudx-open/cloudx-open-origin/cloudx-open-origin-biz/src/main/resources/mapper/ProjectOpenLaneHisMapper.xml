@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectOpenLaneHisMapper">
+
+    <select id="fetchList" resultType="com.aurine.cloudx.open.origin.vo.ProjectOpenLaneHisVo">
+        SELECT
+            his.*
+        FROM
+            project_open_lane_his his
+        <where>
+            <if test="query.parkId != null and query.parkId != ''">
+                AND his.parkId = #{query.parkId}
+            </if>
+            <if test="query.laneName != null and query.laneName != ''">
+                AND his.laneName LIKE CONCAT('%', #{query.laneName}, '%')
+            </if>
+            <if test="query.direction != null and query.direction != ''">
+                AND his.direction = #{query.direction}
+            </if>
+            <if test="query.openTimeRange != null and query.openTimeRange.length >= 2">
+                AND his.openTime IS NOT NULL
+                AND his.openTime BETWEEN #{query.openTimeRange[0]} AND #{query.openTimeRange[1]}
+            </if>
+            <if test="query.closeTimeRange != null and query.closeTimeRange.length >= 2">
+                AND his.closeTime IS NOT NULL
+                AND his.closeTime BETWEEN #{query.closeTimeRange[0]} AND #{query.closeTimeRange[1]}
+            </if>
+        </where>
+        ORDER BY his.seq DESC
+    </select>
+</mapper>

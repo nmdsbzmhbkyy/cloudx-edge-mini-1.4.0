@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectParkingInfoMapper">
+
+    <resultMap id="parkingInfoMap" type="com.aurine.cloudx.open.origin.entity.ProjectParkingInfo">
+<!--        <id property="seq" column="seq"/>-->
+        <id property="parkId" column="parkId"/>
+        <result property="parkCode" column="parkCode"/>
+<!--        <result property="projectId" column="projectId"/>-->
+        <result property="parkName" column="parkName"/>
+        <result property="parkNum" column="parkNum"/>
+        <result property="note" column="note"/>
+        <result property="lon" column="lon"/>
+        <result property="lat" column="lat"/>
+        <result property="alt" column="alt"/>
+        <result property="gisArea" column="gisArea"/>
+        <result property="gisType" column="gisType"/>
+        <!--                        <result property="tenantId" column="tenant_id"/>-->
+<!--        <result property="tenantid" column="tenant_id"/>-->
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+<!--    <select id="select" parameterType="String" resultType="ProjectParkingInfoVo">-->
+<!--        &lt;!&ndash; 查询所有停车场信息包括停车场已用车位数&ndash;&gt;-->
+<!--        SELECT pk_info.parkId,pk_info.parkCode,pk_info.parkName,COUNT(pk_place.parkId) 'parkNum'-->
+<!--        FROM project_parking_info pk_info-->
+<!--        LEFT JOIN project_parking_place pk_place-->
+<!--        ON pk_info.parkId = pk_place.parkId-->
+<!--        <where>-->
+<!--            AND pk_info.projectId =  #{projectId}-->
+<!--            <if test="parkName != null and parkName != ''">-->
+<!--                AND pk_info.parkName like concat('%', #{parkName},'%')-->
+<!--            </if>-->
+<!--        </where>-->
+<!--        GROUP BY pk_info.parkId-->
+<!--        ORDER BY pk_info.seq asc-->
+<!--    </select>   -->
+
+    <select id="select" resultType="com.aurine.cloudx.open.origin.dto.ProjectParkingInfoDto">
+        SELECT *,
+        IF(regionNum > 0,'1','0') status
+        FROM (
+        SELECT
+        area.parkId,
+        area.parkCode,
+        area.parkName,
+        IFNULL( have.parkNum, 0 ) parkNum,
+        IFNULL( used.usedPark, 0 ) usedPark,
+        IFNULL( car_info.carNum, 0 ) carNum,
+        area.company,
+        (SELECT COUNT(*) FROM project_park_region region WHERE region.parkId = area.parkId AND region.projectId = area.projectId) regionNum,
+        area.projectId
+        FROM
+        project_parking_info AS area
+        LEFT JOIN ( SELECT parkId, count( 1 ) parkNum FROM project_parking_place GROUP BY parkId ) AS have ON area.parkId = have.parkId
+        LEFT JOIN ( SELECT parkId, count( 1 ) usedPark FROM project_parking_place WHERE relType > 0 GROUP BY parkId ) AS used ON have.parkId = used.parkId
+        LEFT JOIN ( select parkId, count( 1 ) carNum FROM project_par_car_register where isCancelled = '0' GROUP BY parkId) AS car_info ON car_info.parkId = area.parkId
+        <where>
+            and area.projectId=#{projectId}
+            <if test="query.parkName != null and query.parkName != ''">
+                AND area.parkName like concat('%', #{query.parkName},'%')
+            </if>
+        </where>
+        ) AS parking_info_table
+        ORDER BY parkName
+
+    </select>
+    <select id="getAllParks" resultType="com.aurine.cloudx.open.origin.dto.ProjectParkingInfoDto">
+        select t.parkName,t.parkNum,t.parkId,count(t2.parkId) > 0 hasPublic
+        from project_parking_info t
+                 left join (SELECT parkId FROM project_parking_place
+                            WHERE
+                                (placeName = '' OR placeName IS NULL )
+                              AND (personId IS NULL OR personId = '')) t2 on t.parkId = t2.parkId
+        where t.projectId = #{projectId}
+        group by t.parkId
+    </select>
+
+    <select id="list" resultType="com.aurine.cloudx.open.origin.dto.ProjectParkingInfoDto">
+        select * from project_parking_info where projectId = #{projectId}
+                     <if test="query.parkId !=null and query.parkId != ''">
+                         and parkId = #{query.parkId}
+                     </if>
+    </select>
+
+    <select id="getByParkId" resultType="com.aurine.cloudx.open.origin.dto.ProjectParkingInfoDto">
+        select * from project_parking_info where parkId = #{parkId}
+    </select>
+
+    <update id="setParkNum">
+        update project_parking_info set parkNum=#{parkNum} where parkId = #{parkId}
+    </update>
+
+    <update id="parkGlobalSetting">
+      update project_parking_info set isMultiCar=#{item.isMultiCar},multiCarRule=#{item.multiCarRule},rentCarExpHanMethod=#{item.rentCarExpHanMethod},fullLot=#{item.fullLot}
+      where projectId = #{projectId}
+    </update>
+
+</mapper>

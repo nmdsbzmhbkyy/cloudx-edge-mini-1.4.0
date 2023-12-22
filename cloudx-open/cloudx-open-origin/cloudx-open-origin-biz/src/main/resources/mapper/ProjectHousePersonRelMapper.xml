@@ -1,0 +1,673 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectHousePersonRelMapper">
+
+    <resultMap id="projectHousePersonRelMap" type="com.aurine.cloudx.open.origin.entity.ProjectHousePersonRel">
+        <id property="relaId" column="relaId"/>
+        <result property="relaCode" column="relaCode"/>
+        <result property="houseId" column="houseId"/>
+        <result property="personId" column="personId"/>
+        <result property="housePeopleRel" column="housePeopleRel"/>
+        <result property="isOwner" column="isOwner"/>
+        <result property="status" column="status"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="select" resultType="com.aurine.cloudx.open.origin.vo.ProjectHousePersonRelRecordVo">
+        SELECT
+        building_info.buildingName,
+        unit.entityName 'unitName',
+        unit.entityId 'unitId',
+        house.entityName 'houseName',
+        house.entityId 'houseId',
+        building.entityId 'buildingId',
+        person.personId,
+        person.personName,
+        person.gender,
+        person.telephone,
+        house_person.relaId,
+        house_person.householdType,
+        house_person.memberType,
+        house_person.checkInTime,
+        house_person.rentStartTime,
+        house_person.rentStopTime,
+        house_person.housePeopleRel,
+        house_person.auditStatus,
+        house_person.auditReason,
+        house_person.credentialPicBack,
+        house_person.credentialPicFront,
+        house_person.createTime
+        FROM project_house_person_rel house_person
+        LEFT JOIN project_person_info person ON person.personId = house_person.personId
+        LEFT JOIN project_frame_info house ON house.entityId = house_person.houseId
+        LEFT JOIN project_frame_info unit ON unit.entityId = house.puid
+        LEFT JOIN project_frame_info building ON building.entityId = unit.puid
+        LEFT JOIN (
+        SELECT
+        (
+        with recursive r as
+        (
+        select * from project_frame_info pfi where pfi.entityId = building.entityId
+        union all
+        select pfi.* from project_frame_info pfi, r where pfi.entityId = r.puid
+        ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r GROUP BY projectId
+        ) buildingName,
+        entityId buildingId
+        FROM project_frame_info building WHERE LEVEL = 3
+        ) building_info ON building_info.buildingId = building.entityId
+        where 1=1
+        and house_person.auditStatus=2
+        and house_person.projectId = #{projectId}
+        and person.personId IS NOT NULL
+        <if test="houseName != null and houseName != ''">
+            AND house.entityName like concat('%', #{houseName},'%')
+        </if>
+        <if test="personId != null and personId != ''">
+            AND person.personId =#{personId}
+        </if>
+        <if test="unitName != null and unitName != ''">
+            AND unit.entityName like concat('%', #{unitName},'%')
+        </if>
+        <if test="buildingId != null and buildingId != ''">
+            AND building.entityId = #{buildingId}
+        </if>
+        <if test="unitId != null and unitId != ''">
+            AND unit.entityId = #{unitId}
+        </if>
+        <if test="houseId != null and houseId != ''">
+            AND house.entityId = #{houseId}
+        </if>
+        <if test="personName != null and personName != ''">
+            AND person.personName like concat('%', #{personName},'%')
+        </if>
+        <if test="housePeopleRel != null and housePeopleRel != ''">
+            AND house_person.householdType = #{housePeopleRel}
+        </if>
+        <if test="buildingName != null and buildingName != ''">
+            AND building_info.buildingName like concat('%', #{buildingName},'%')
+        </if>
+        <if test="auditStatus != null and auditStatus.length >0 ">
+            AND project_house_person_rel.auditStatus in
+            <foreach collection="auditStatus" item="status" open="(" close=")" separator=",">
+                #{status}
+            </foreach>
+        </if>
+
+        <!-- order by houseName -->
+        ORDER BY house_person.createTime desc
+        /*ORDER BY house_person.householdType, house_person.createTime*/
+    </select>
+
+    <select id="selectAll" resultType="com.aurine.cloudx.open.origin.vo.ProjectHousePersonRelRecordVo">
+        SELECT
+        building_info.buildingName,
+        unit.entityName 'unitName',
+        unit.entityId 'unitId',
+        house.entityName 'houseName',
+        house.entityId 'houseId',
+        building.entityId 'buildingId',
+        person.personId,
+        person.personName,
+        person.gender,
+        person.telephone,
+        house_person.relaId,
+        house_person.householdType,
+        house_person.memberType,
+        house_person.checkInTime,
+        house_person.rentStartTime,
+        house_person.rentStopTime,
+        house_person.housePeopleRel,
+        house_person.auditStatus,
+        house_person.auditReason,
+        house_person.credentialPicBack,
+        house_person.credentialPicFront,
+        house_person.createTime
+        FROM project_house_person_rel house_person
+        LEFT JOIN project_person_info person ON person.personId = house_person.personId
+        LEFT JOIN project_frame_info house ON house.entityId = house_person.houseId
+        LEFT JOIN project_frame_info unit ON unit.entityId = house.puid
+        LEFT JOIN project_frame_info building ON building.entityId = unit.puid
+        LEFT JOIN (
+        SELECT
+        (
+        with recursive r as
+        (
+        select * from project_frame_info pfi where pfi.entityId = building.entityId
+        union all
+        select pfi.* from project_frame_info pfi, r where pfi.entityId = r.puid
+        ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r GROUP BY projectId
+        ) buildingName,
+        entityId buildingId
+        FROM project_frame_info building WHERE LEVEL = 3
+        ) building_info ON building_info.buildingId = building.entityId
+        where 1=1
+        and (house_person.auditStatus= 2 or house_person.auditStatus = 8 )
+        and house_person.projectId = #{projectId}
+        and person.personId IS NOT NULL
+        <if test="houseName != null and houseName != ''">
+            AND house.entityName like concat('%', #{houseName},'%')
+        </if>
+        <if test="personId != null and personId != ''">
+            AND person.personId =#{personId}
+        </if>
+        <if test="unitName != null and unitName != ''">
+            AND unit.entityName like concat('%', #{unitName},'%')
+        </if>
+        <if test="buildingId != null and buildingId != ''">
+            AND building.entityId = #{buildingId}
+        </if>
+        <if test="unitId != null and unitId != ''">
+            AND unit.entityId = #{unitId}
+        </if>
+        <if test="houseId != null and houseId != ''">
+            AND house.entityId = #{houseId}
+        </if>
+        <if test="personName != null and personName != ''">
+            AND person.personName like concat('%', #{personName},'%')
+        </if>
+        <if test="housePeopleRel != null and housePeopleRel != ''">
+            AND house_person.householdType = #{housePeopleRel}
+        </if>
+        <if test="buildingName != null and buildingName != ''">
+            AND building_info.buildingName like concat('%', #{buildingName},'%')
+        </if>
+        <if test="auditStatus != null and auditStatus.length >0 ">
+            AND project_house_person_rel.auditStatus in
+            <foreach collection="auditStatus" item="status" open="(" close=")" separator=",">
+                #{status}
+            </foreach>
+        </if>
+
+        <!-- order by houseName -->
+        ORDER BY house_person.createTime desc
+        /*ORDER BY house_person.householdType, house_person.createTime*/
+    </select>
+
+
+    <!--分页身份认证-->
+    <select id="pageIdentity" resultType="com.aurine.cloudx.open.origin.vo.ProjectHousePersonRelRecordVo">
+        SELECT
+        building_info.buildingName,
+        unit.entityName 'unitName',
+        house.entityName 'houseName',
+        building.entityId 'buildingId',
+        person.personId,
+        person.personName,
+        person.gender,
+        person.telephone,
+        house_person.relaId,
+        house_person.householdType,
+        house_person.memberType,
+        house_person.checkInTime,
+        house_person.rentStartTime,
+        house_person.rentStopTime,
+        house_person.housePeopleRel,
+        house_person.auditStatus,
+        house_person.auditReason,
+        house_person.credentialPicBack,
+        house_person.credentialPicFront,
+        house_person.createTime,
+        house_person.updateTime
+        FROM project_house_person_rel house_person
+        LEFT JOIN project_person_info person ON person.personId = house_person.personId
+        LEFT JOIN project_frame_info house ON house.entityId = house_person.houseId
+        LEFT JOIN project_frame_info unit ON unit.entityId = house.puid
+        LEFT JOIN project_frame_info building ON building.entityId = unit.puid
+        LEFT JOIN (
+        SELECT
+        (
+        with recursive r as
+        (
+        select * from project_frame_info pfi where pfi.entityId = building.entityId
+        union all
+        select pfi.* from project_frame_info pfi, r where pfi.entityId = r.puid
+        ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r GROUP BY projectId
+        ) buildingName,
+        entityId buildingId
+        FROM project_frame_info building WHERE LEVEL = 3
+        ) building_info ON building_info.buildingId = building.entityId
+        <where>
+            and house_person.origin = '2'
+            and house_person.projectId = #{projectId}
+            <if test="houseName != null and houseName != ''">
+                AND house.entityName like concat('%', #{houseName},'%')
+            </if>
+            <if test="unitName != null and unitName != ''">
+                AND unit.entityName like concat('%', #{unitName},'%')
+            </if>
+            <if test="personName != null and personName != ''">
+                AND person.personName like concat('%', #{personName},'%')
+            </if>
+            <if test="houseId != null and houseId != ''">
+                AND project_house_person_rel.houseId = #{houseId}
+            </if>
+            <if test="phone != null and phone != ''">
+                AND project_person_info.telephone = #{phone}
+            </if>
+            <if test="auditStatus != null and auditStatus.length >0 ">
+                AND house_person.auditStatus in
+                <foreach collection="auditStatus" item="status" open="(" close=")" separator=",">
+                    #{status}
+                </foreach>
+            </if>
+            <if test="buildingName != null and buildingName != ''">
+                AND building_info.buildingName like concat('%', #{buildingName},'%')
+            </if>
+        </where>
+        order by house_person.createTime desc
+        /*order by house_person.householdType, house_person.createTime*/
+    </select>
+    <select id="findPageByHouseId" resultType="com.aurine.cloudx.open.origin.vo.ProjectHousePersonRelRecordVo">
+        SELECT unit.entityName 'unitName', house.entityName 'houseName', house.entityId 'houseId', building.entityId 'buildingId', info.personName,
+               info.gender,
+               info.credentialPicBack,
+               info.credentialPicFront,
+               rel.relaId,
+               rel.houseId,
+               rel.personId,
+               rel.housePeopleRel,
+               rel.householdType,
+               rel.memberType,
+               rel.checkInTime,
+               rel.rentStartTime,
+               rel.rentStopTime,
+               rel.isOwner,
+               rel.status,
+               rel.auditStatus,
+               rel.auditReason,
+               (
+                   with recursive r as
+                                      (
+                                          select *
+                                          from project_frame_info pfi
+                                          where pfi.entityId = building.entityId
+                                          union all
+                                          select pfi.*
+                                          from project_frame_info pfi,
+                                               r
+                                          where pfi.entityId = r.puid
+                                      )
+                   select group_concat(r.entityName order by level desc SEPARATOR '-')
+                   from r
+                   GROUP BY projectId
+                   ORDER BY level
+               ) buildingName
+        FROM project_frame_info AS house
+                 INNER JOIN project_frame_info AS unit ON unit.entityId = house.puid and unit.isUnit = 1
+                 INNER JOIN project_frame_info AS building ON building.entityId = unit.puid and building.isBuilding = 1
+                 INNER JOIN project_house_person_rel rel ON house.entityId = rel.houseId
+                 INNER JOIN project_person_info info ON info.personId = rel.personId
+        where rel.houseId = #{houseId}
+          and rel.projectId = #{projectId}
+        order by rel.householdType, rel.createTime
+    </select>
+    <select id="findPageById" resultType="com.aurine.cloudx.open.origin.vo.ProjectHousePersonRelRecordVo">
+        SELECT unit.entityName 'unitName', house.entityName 'houseName', house.entityId 'houseId', building.entityId 'buildingId', info.personName,
+               info.gender,
+               rel.relaId,
+               rel.houseId,
+               rel.personId,
+               rel.housePeopleRel,
+               rel.householdType,
+               rel.memberType,
+               rel.checkInTime,
+               rel.rentStartTime,
+               rel.rentStopTime,
+               rel.isOwner,
+               rel.status,
+               rel.auditStatus,
+               rel.auditReason,
+               (
+                   with recursive r as
+                                      (
+                                          select *
+                                          from project_frame_info pfi
+                                          where pfi.entityId = building.entityId
+                                          union all
+                                          select pfi.*
+                                          from project_frame_info pfi,
+                                               r
+                                          where pfi.entityId = r.puid
+                                      )
+                   select group_concat(r.entityName order by level desc SEPARATOR '-')
+                   from r
+                   GROUP BY projectId
+                   ORDER BY level
+               ) buildingName
+        FROM project_frame_info AS house
+                 INNER JOIN project_frame_info AS unit ON unit.entityId = house.puid
+                 INNER JOIN project_frame_info AS building ON building.entityId = unit.puid
+                 INNER JOIN project_house_person_rel rel ON house.entityId = rel.houseId
+                 INNER JOIN project_person_info info ON info.personId = rel.personId
+        where rel.personId = #{personId}
+          and rel.projectId = #{projectId}
+        order by rel.householdType, rel.createTime
+    </select>
+    <select id="findByName" resultType="com.aurine.cloudx.open.origin.vo.ProjectHouseHisRecordVo">
+        select rel.relaId,
+               rel.houseId,
+               rel.projectId,
+               rel.personId,
+               rel.housePeopleRel,
+               rel.householdType,
+               rel.memberType,
+               rel.checkInTime,
+               rel.rentStartTime,
+               rel.rentStopTime,
+               rel.status,
+               rel.tenant_id,
+               rel.operator,
+               rel.createTime,
+               rel.updateTime,
+               rel.auditStatus,
+               house.entityName houseName,
+               unit.entityName  unitName,
+               (
+                   with recursive r as
+                                      (
+                                          select *
+                                          from project_frame_info pfi
+                                          where pfi.entityId = building.entityId
+                                          union all
+                                          select pfi.*
+                                          from project_frame_info pfi,
+                                               r
+                                          where pfi.entityId = r.puid
+                                      )
+                   select group_concat(r.entityName order by level desc SEPARATOR '-')
+                   from r
+                   GROUP BY projectId
+                   ORDER BY level
+               )
+                                buildingName,
+               info.personName
+        from project_house_person_rel rel
+                 inner join project_frame_info AS house ON house.entityId = rel.houseId
+                 INNER JOIN project_frame_info AS unit ON unit.entityId = house.puid
+                 INNER JOIN project_frame_info AS building ON building.entityId = unit.puid
+                 INNER JOIN project_person_info info ON info.personId = rel.personId
+        where info.personName = #{name}
+          and rel.projectId = #{projectId}
+          and rel.status = '1'
+          and rel.auditStatus = '2'
+          and (
+                (rel.householdType = '3'
+                    and rel.rentStopTime <![CDATA[>=]]> now())
+                or rel.householdType
+            != '3')
+        order by rel.householdType, rel.createTime
+    </select>
+    <select id="listHouseByPersonId" resultType="com.aurine.cloudx.open.origin.dto.ProjectHouseDTO">
+        select rel.houseId,
+               house.entityName  houseName,
+               house.entityId    houseId,
+               unit.entityName   unitName,
+               unit.entityId     unitId,
+               (
+                   with recursive r as
+                                      (
+                                          select *
+                                          from project_frame_info pfi
+                                          where pfi.entityId = building.entityId
+                                          union all
+                                          select pfi.*
+                                          from project_frame_info pfi,
+                                               r
+                                          where pfi.entityId = r.puid
+                                      )
+                   select group_concat(r.entityName order by level desc SEPARATOR '-')
+                   from r
+                   GROUP BY projectId
+                   ORDER BY level
+               )
+                                 buildingName,
+               building.entityId buildingId,
+               rel.auditStatus,
+               phi.houseCode
+        from project_house_person_rel rel
+                 inner join project_frame_info AS house ON house.entityId = rel.houseId and house.isHouse = 1
+                 INNER JOIN project_frame_info AS unit ON unit.entityId = house.puid and unit.isUnit = 1
+                 INNER JOIN project_frame_info AS building ON building.entityId = unit.puid and building.isBuilding = 1
+                 inner join project_house_info phi on rel.houseId = phi.houseId
+        where rel.personId = #{personId}
+          and rel.auditStatus = 2
+          and rel.projectId = #{projectId}
+        order by rel.householdType, rel.createTime
+    </select>
+    <select id="filterPageById" resultType="com.aurine.cloudx.open.origin.vo.ProjectHousePersonRelRecordVo">
+        SELECT unit.entityName 'unitName',
+        house.entityName 'houseName',
+        house.entityId 'houseId',
+        building.entityId 'buildingId',
+        info.personName,
+        info.gender,
+        rel.relaId,
+        rel.houseId,
+        rel.personId,
+        rel.housePeopleRel,
+        rel.householdType,
+        rel.memberType,
+        rel.checkInTime,
+        rel.rentStartTime,
+        rel.rentStopTime,
+        rel.isOwner,
+        rel.status,
+        rel.auditStatus,
+        rel.auditReason,
+        (
+        with recursive r as
+        (
+        select *
+        from project_frame_info pfi
+        where pfi.entityId = building.entityId
+        union all
+        select pfi.*
+        from project_frame_info pfi,
+        r
+        where pfi.entityId = r.puid
+        )
+        select group_concat(r.entityName order by level desc SEPARATOR '-')
+        from r
+        GROUP BY projectId
+        ORDER BY level
+        ) buildingName
+        FROM project_frame_info AS house
+        INNER JOIN project_frame_info AS unit ON unit.entityId = house.puid
+        INNER JOIN project_frame_info AS building ON building.entityId = unit.puid
+        INNER JOIN project_house_person_rel rel ON house.entityId = rel.houseId
+        INNER JOIN project_person_info info ON info.personId = rel.personId
+        where rel.personId = #{personId}
+        and rel.projectId = #{projectId}
+        <if test="status!=null and status!=''">
+            and rel.auditStatus = #{status}
+        </if>
+        order by rel.householdType ,rel.createTime
+    </select>
+
+    <select id="countByHouseHoldType" resultType="java.lang.Integer">
+        SELECT count(info.personId)
+        FROM project_house_person_rel rel
+                 left JOIN project_person_info info ON rel.personId = info.personId
+        where rel.auditStatus = '2'
+          and rel.householdType = #{houseHoldType}
+          and info.personId IS NOT NULL
+          and rel.projectId = #{projectId}
+
+
+    </select>
+
+    <select id="getHousePersonNumMapping" resultType="com.aurine.cloudx.open.origin.vo.ProjectHousePersonNumVo">
+        SELECT DISTINCTROW CONCAT(houseId,personId) housePersonId, 1 num
+        FROM project_house_person_rel rel
+        WHERE houseId IS NOT NULL
+          AND personId IS NOT NULL
+          AND rel.projectId = #{projectId}
+          AND rel.tenant_id = #{tenantId}
+    </select>
+    <select id="getHousePersonRel" resultType="com.aurine.cloudx.open.origin.vo.ProjectHousePersonRelVo">
+        select phpr.relaId, phpr.personId, phpr.householdType, ppi.personName, ppi.telephone
+        from project_house_person_rel phpr
+                 left join project_person_info ppi
+                           on phpr.personId = ppi.personId
+        where phpr.houseId = #{houseId}
+          and phpr.auditStatus = 2
+    </select>
+
+    <select id="getProjectStaff" resultType="java.lang.String">
+        SELECT staff.staffId
+        FROM pigxx.sys_menu menu
+                 LEFT JOIN pigxx.sys_role_menu role_menu ON role_menu.menu_id = menu.menu_id
+                 LEFT JOIN project_staff staff ON staff.roleId = role_menu.role_id
+        WHERE menu.menu_id = #{menuId}
+          AND staffId IS NOT NULL
+          AND staff.projectId = #{projectId}
+    </select>
+
+    <select id="getAddress" resultType="com.aurine.cloudx.open.origin.vo.ProjectHouseAddressVo">
+        SELECT DISTINCT *
+        FROM (
+                 SELECT house.entityId houseId,
+                        (
+                            WITH recursive r AS (
+                                SELECT *
+                                FROM project_frame_info pfi
+                                WHERE pfi.entityId = house.entityId
+                                UNION ALL
+                                SELECT pfi.*
+                                FROM project_frame_info pfi,
+                                     r
+                                WHERE pfi.entityId = r.puid
+                            )
+                            SELECT group_concat(r.entityName ORDER BY LEVEL DESC SEPARATOR '-')
+                            FROM r
+                            GROUP BY projectId
+                            ORDER BY LEVEL
+                        )              address
+                 FROM project_frame_info AS house
+                          LEFT JOIN project_frame_info AS unit ON unit.entityId = house.puid
+                          LEFT JOIN project_frame_info AS building ON building.entityId = unit.puid
+                          LEFT JOIN project_house_person_rel ON house.entityId = project_house_person_rel.houseId
+                          LEFT JOIN project_person_info
+                                    ON project_person_info.personId = project_house_person_rel.personId
+                 WHERE house.entityId = #{houseId}
+             ) houseAddressTable
+    </select>
+
+    <select id="getProjectName" resultType="java.lang.String">
+        select name
+        from pigxx.sys_dept
+        where dept_id = #{projectId}
+    </select>
+    <select id="countByOff" resultType="int">
+        select count(*)
+        from project_house_person_rel
+        where auditStatus='1'
+    </select>
+
+    <select id="getReplaceUser" resultType="com.aurine.cloudx.open.origin.vo.ProjectHousePersonRelVo">
+        SELECT
+        his.*,
+        info.*
+        FROM
+        project_house_person_change_his his
+        LEFT JOIN project_person_info info ON his.personId = info.personId
+        <where>
+            his.houseId = #{houserId}
+            <if test="houseHoldType == 1">
+                AND his.householdType = '1'
+            </if>
+            <if test="houseHoldType != 1">
+                AND his.householdType != '1'
+                AND info.personName = #{personName}
+            </if>
+            AND ( his.action = 1 OR his.action = 3 )
+
+            AND his.personId != #{personId}
+        </where>
+        ORDER BY
+        his.checkInTime DESC
+        LIMIT 1
+    </select>
+
+    <select id="getToReplace" resultType="com.aurine.cloudx.open.origin.entity.ProjectHousePersonChangeHis">
+        SELECT *
+        FROM project_house_person_change_his
+        WHERE houseId = #{houserId}
+          AND personId != #{personId}
+          AND createTime = (
+            SELECT
+            createTime
+            FROM
+            project_house_person_change_his
+            WHERE
+            houseId = #{houserId}
+          AND personId = #{personId}
+            ORDER BY
+            createTime desc
+            LIMIT 1)
+    </select>
+    <select id="findSaveFace" resultType="string">
+
+        select relaCode from project_house_person_rel where relaId =#{relaId}
+
+
+    </select>
+
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectHousePersonRel"
+            resultType="com.aurine.cloudx.open.common.entity.vo.HousePersonInfoVo"
+    >
+        SELECT
+        *
+        FROM project_house_person_rel phpr
+        <where>
+            <if test="query.projectId != null">
+                AND phpr.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND phpr.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.relaId != null and query.relaId != ''">
+                AND phpr.relaId = #{query.relaId}
+            </if>
+            <if test="query.houseId != null and query.houseId != ''">
+                AND phpr.houseId = #{query.houseId}
+            </if>
+            <if test="query.personId != null and query.personId != ''">
+                AND phpr.personId = #{query.personId}
+            </if>
+            <if test="query.housePeopleRel != null and query.housePeopleRel != ''">
+                AND phpr.housePeopleRel = #{query.housePeopleRel}
+            </if>
+            <if test="query.householdType != null and query.householdType != ''">
+                AND phpr.householdType = #{query.householdType}
+            </if>
+            <if test="query.memberType != null and query.memberType != ''">
+                AND phpr.memberType = #{query.memberType}
+            </if>
+            <if test="query.isOwner != null and query.isOwner != ''">
+                AND phpr.isOwner = #{query.isOwner}
+            </if>
+            <if test="query.status != null and query.status != ''">
+                AND phpr.status = #{query.status}
+            </if>
+            <if test="query.origin != null and query.origin != ''">
+                AND phpr.origin = #{query.origin}
+            </if>
+            <if test="query.originEx != null and query.originEx != ''">
+                AND phpr.originEx = #{query.originEx}
+            </if>
+            <if test="query.auditStatus != null and query.auditStatus != ''">
+                AND phpr.auditStatus = #{query.auditStatus}
+            </if>
+        </where>
+    </select>
+
+</mapper>

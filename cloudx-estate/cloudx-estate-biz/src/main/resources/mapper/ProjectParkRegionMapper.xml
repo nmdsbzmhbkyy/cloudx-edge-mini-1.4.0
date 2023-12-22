@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, lengleng All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: lengleng (wangiegie@gmail.com)
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectParkRegionMapper">
+
+    <!--
+        IFNULL( have.parkNum, 0 ) parkNum,
+    -->
+    <select id="selectPage" resultType="com.aurine.cloudx.estate.vo.ProjectParkRegionVo" parameterType="com.aurine.cloudx.estate.vo.ProjectParkRegionVo">
+        SELECT
+        region.parkRegionId,
+	    region.parkId,
+        region.parkRegionName,
+        region.isPublic,
+        IFNULL(IF(region.isPublic = 1,region.parkNum,have.parkNum), 0) parkNum,
+        IFNULL( used.usedPark, 0 ) usedPark
+        FROM project_park_region AS region
+        LEFT JOIN (
+            SELECT parkRegionId, count( 1 ) parkNum FROM project_parking_place GROUP BY parkRegionId
+        ) AS have ON region.parkRegionId = have.parkRegionId
+        LEFT JOIN (
+            SELECT parkRegionId, count( 1 ) usedPark FROM project_parking_place WHERE personId != '' GROUP BY parkRegionId
+        ) AS used ON have.parkRegionId = used.parkRegionId
+        <where>
+            <if test="query.parkRegionName != null and query.parkRegionName != ''">
+                AND region.parkRegionName like concat('%', #{query.parkRegionName},'%')
+            </if>
+            <if test="query.parkId != null and query.parkId != ''">
+                AND region.parkId = #{query.parkId}
+            </if>
+        </where>
+        ORDER BY region.createTime
+    </select>
+    <select id="listByParkId" resultType="com.aurine.cloudx.estate.entity.ProjectParkRegion">
+        SELECT
+        	*
+        FROM
+        	project_park_region
+        WHERE
+        	isPublic = 0
+        	AND parkId = #{parkId}
+        ORDER BY
+        	regexp_replace (parkRegionName, '[^0-9]', '' ) + 0,
+        	parkRegionName
+    </select>
+</mapper>

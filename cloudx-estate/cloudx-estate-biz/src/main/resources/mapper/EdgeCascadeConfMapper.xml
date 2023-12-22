@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.EdgeCascadeConfMapper">
+
+    <select id="getConfVo" resultType="com.aurine.cloudx.estate.vo.EdgeCascadeConfVo">
+        SELECT
+        cascade_conf.confId,
+        cascade_conf.isCascade,
+        cascade_conf.isSyncCloud,
+        cascade_conf.connectCode,
+        cloud_request.requestId cloudRequestId,
+        cascade_request.requestId cascadeRequestId,
+        cascade_request.parentEdgeIp,
+        cascade_request.connectionCode parentConnectCode ,
+        cloud_request.syncType ,
+        cloud_request.connectionCode,
+        cloud_request.cloudSyncProcess,
+        cloud_request.delStatus,
+        IFNULL(cascade_request.cascadeSyncProcess, '0.00') slaveSyncProcess,
+        IFNULL(cascade_process_master.cascadeSyncProcess, '0.00') masterSyncProcess,
+        IFNULL( cloud_request.cloudStatus, '0' ) cloudStatus ,
+        IFNULL( cascade_request.cascadeStatus, IFNULL(cascade_request_master.cascadeStatus, '0') ) cascadeStatus
+        FROM
+        edge_cascade_conf cascade_conf
+        LEFT JOIN project_info ON project_info.projectId = cascade_conf.projectId
+        LEFT JOIN edge_cloud_request cloud_request ON cloud_request.projectCode = project_info.projectUUID
+        LEFT JOIN edge_cascade_request_slave cascade_request ON cascade_request.projectId = project_info.projectId
+        LEFT JOIN edge_cascade_request_master cascade_request_master ON cascade_request_master.projectCode = project_info.projectCode
+        LEFT JOIN (
+        select projectId, sum(if(status!='0',1,0))/count(1) as cascadeSyncProcess from edge_cascade_process_master
+        group by projectId
+        ) cascade_process_master ON cascade_process_master.projectId = project_info.projectId
+        <where>
+            cascade_conf.projectId = #{projectId}
+        </where>
+    </select>
+
+</mapper>

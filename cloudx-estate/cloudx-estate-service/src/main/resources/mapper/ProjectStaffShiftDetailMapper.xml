@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectStaffShiftDetailMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectStaffShiftDetail" id="ProjectStaffShiftDetailMap">
+        <id property="detailId" column="detailId" jdbcType="VARCHAR"/>
+        <result property="planId" column="planId" jdbcType="VARCHAR"/>
+        <result property="staffId" column="staffId" jdbcType="VARCHAR"/>
+        <result property="planYear" column="planYear" jdbcType="VARCHAR"/>
+        <result property="planMonth" column="planMonth" jdbcType="VARCHAR"/>
+        <result property="day1" column="day1" jdbcType="VARCHAR"/>
+        <result property="day2" column="day2" jdbcType="VARCHAR"/>
+        <result property="day3" column="day3" jdbcType="VARCHAR"/>
+        <result property="day4" column="day4" jdbcType="VARCHAR"/>
+        <result property="day5" column="day5" jdbcType="VARCHAR"/>
+        <result property="day6" column="day6" jdbcType="VARCHAR"/>
+        <result property="day7" column="day7" jdbcType="VARCHAR"/>
+        <result property="day8" column="day8" jdbcType="VARCHAR"/>
+        <result property="day9" column="day9" jdbcType="VARCHAR"/>
+        <result property="day10" column="day10" jdbcType="VARCHAR"/>
+        <result property="day11" column="day11" jdbcType="VARCHAR"/>
+        <result property="day12" column="day12" jdbcType="VARCHAR"/>
+        <result property="day13" column="day13" jdbcType="VARCHAR"/>
+        <result property="day14" column="day14" jdbcType="VARCHAR"/>
+        <result property="day15" column="day15" jdbcType="VARCHAR"/>
+        <result property="day16" column="day16" jdbcType="VARCHAR"/>
+        <result property="day17" column="day17" jdbcType="VARCHAR"/>
+        <result property="day18" column="day18" jdbcType="VARCHAR"/>
+        <result property="day19" column="day19" jdbcType="VARCHAR"/>
+        <result property="day20" column="day20" jdbcType="VARCHAR"/>
+        <result property="day21" column="day21" jdbcType="VARCHAR"/>
+        <result property="day22" column="day22" jdbcType="VARCHAR"/>
+        <result property="day23" column="day23" jdbcType="VARCHAR"/>
+        <result property="day24" column="day24" jdbcType="VARCHAR"/>
+        <result property="day25" column="day25" jdbcType="VARCHAR"/>
+        <result property="day26" column="day26" jdbcType="VARCHAR"/>
+        <result property="day27" column="day27" jdbcType="VARCHAR"/>
+        <result property="day28" column="day28" jdbcType="VARCHAR"/>
+        <result property="day29" column="day29" jdbcType="VARCHAR"/>
+        <result property="day30" column="day30" jdbcType="VARCHAR"/>
+        <result property="day31" column="day31" jdbcType="VARCHAR"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+</mapper>

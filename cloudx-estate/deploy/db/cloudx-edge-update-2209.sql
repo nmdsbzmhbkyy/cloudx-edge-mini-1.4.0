@@ -1,0 +1,2 @@
+-- BUG #8977 基础服务-设备管理-设备管理-乘梯识别终端，新增页面缺少【硬件版本】和【厂商信用代码】字段 杨仁洁
+INSERT INTO `aurine`.`project_device_attr_conf`( `deviceTypeId`, `attrId`, `attrCode`, `attrName`, `remark`, `projectId`, `valueType`, `valueMin`, `valueMax`, `valuePrecision`, `valueDesc`, `unit`, `tenant_id`, `operator`, `createTime`, `updateTime`) VALUES ( '18', '4de61807d34d45ed8b0cee5e2f41a482', 'companyCode', '厂商信用代码', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, 1, '2022-09-02 16:58:38', '2022-09-02 16:59:12');

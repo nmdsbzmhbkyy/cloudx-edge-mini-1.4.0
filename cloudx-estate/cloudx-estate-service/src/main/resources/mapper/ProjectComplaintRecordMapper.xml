@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectComplaintRecordMapper">
+
+    <resultMap id="projectComplaintRecordMap" type="com.aurine.cloudx.estate.entity.ProjectComplaintRecord">
+        <id property="complaintId" column="complaintId"/>
+        <result property="personName" column="personName"/>
+        <result property="phoneNumber" column="phoneNumber"/>
+        <result property="houseId" column="houseId"/>
+        <result property="complaintType" column="complaintType"/>
+        <result property="content" column="content"/>
+        <result property="picPath1" column="picPath1"/>
+        <result property="picPath2" column="picPath2"/>
+        <result property="picPath3" column="picPath3"/>
+        <result property="picPath4" column="picPath4"/>
+        <result property="picPath5" column="picPath5"/>
+        <result property="picPath6" column="picPath6"/>
+        <result property="status" column="status"/>
+        <result property="orderTime" column="orderTime"/>
+        <result property="doneTime" column="doneTime"/>
+        <result property="replyContent" column="replyContent"/>
+        <result property="donePicPath" column="donePicPath"/>
+        <result property="complaintCloseReason" column="complaintCloseReason"/>
+        <result property="closereMark" column="closeRemark"/>
+        <result property="handler" column="handler"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <!-- 投诉服务分页查询-->
+    <select id="pageComplaintRecord" resultType="com.aurine.cloudx.estate.vo.ProjectComplaintRecordPageVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectComplaintRecordPageVo">
+        select pcr.*, pfi.entityName as houseName,pfi_Unit.entityName as unitName, ps.staffName as staffName,
+        (
+        with recursive r as
+        (
+        select * from project_frame_info pfi where pfi.entityId = pfi_building.entityId
+        union all
+        select pfi.* from project_frame_info pfi, r where pfi.entityId = r.puid
+        ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r GROUP BY projectId ORDER BY level
+        ) buildingName
+        from project_complaint_record pcr
+        left join project_frame_info pfi on pfi.entityId = houseId
+        left join project_frame_info pfi_Unit on pfi_Unit.entityId = pfi.puid
+        left join project_frame_info pfi_building on pfi_Unit.puid = pfi_building.entityId
+        left join project_staff ps on ps.staffId = pcr.handler
+        <where>
+            <if test="query.status != null and query.status != ''">
+                and pcr.status = #{query.status}
+            </if>
+            <if test="query.content != null and query.content != ''">
+                and pcr.content like concat('%', #{query.content}, '%')
+            </if>
+            <if test="query.complaintType != null and query.complaintType != ''">
+                and pcr.complaintType = #{query.complaintType}
+            </if>
+            <if test="query.staffName != null and query.staffName != ''">
+                and ps.staffName like concat('%', #{query.staffName},'%')
+            </if>
+            <if test="query.startTime != null">
+                AND date(pcr.createTime) <![CDATA[>=]]>
+                #{query.startTime,jdbcType=DATE}
+            </if>
+            <if test="query.endTime != null">
+                AND date(pcr.createTime) <![CDATA[<=]]>
+                #{query.endTime,jdbcType=DATE}
+            </if>
+        </where>
+        order by pcr.status,pcr.createTime desc
+    </select>
+    <select id="pageByType" resultType="com.aurine.cloudx.estate.vo.ProjectComplaintRecordVo">
+        select pcr.complaintId,
+        pcr.personName,
+        pcr.phoneNumber,
+        pcr.houseId,
+        pcr.complaintType,
+        pcr.content,
+        pcr.status,
+        pcr.replyContent,
+        pcr.handler,
+        pcr.score,
+        pcr.operator,
+        pcr.createTime,
+        pcr.updateTime,
+        pcr.doneTime,
+        (
+        with recursive r as
+        (
+        select * from project_frame_info pfi where pfi.entityId = pbi.buildingId
+        union all
+        select pfi.* from project_frame_info pfi, r where pfi.entityId = r.puid
+        ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r GROUP BY projectId ORDER BY level
+        ) buildingName,
+        pfi.entityName as houseName,
+        pfi_Unit.entityName as unitName,
+        pbi.address as buildingAddress,
+        ps.staffName
+        from project_complaint_record pcr
+        left join project_frame_info pfi on pfi.entityId = houseId
+        left join project_frame_info pfi_Unit on pfi_Unit.entityId = pfi.puid
+        left join project_building_info pbi on pfi_Unit.puid = pbi.buildingId
+        left join project_staff ps on pcr.handler = ps.staffId
+        <where>
+            <if test="type!=null and type!=''">
+                and pcr.complaintType = #{type}
+            </if>
+            <if test="status!=null and status!=''">
+                and pcr.status = #{status}
+            </if>
+            <if test="status == ''">
+                and pcr.status in (0, 1, 2)
+            </if>
+            <if test="handler!=null and handler!=''">
+                and pcr.handler=#{handler}
+            </if>
+            <if test="phone!=null and phone!=''">
+                and pcr.phoneNumber = #{phone}
+            </if>
+            <if test="date!=null and date!=''">
+                and date_format(pcr.doneTime, '%Y-%m') = #{date}
+            </if>
+        </where>
+        <if test="status!=2 and status!=3">
+            order by pcr.status asc,
+            pcr.createTime desc
+        </if>
+        <if test="status==2">
+            order by pcr.doneTime desc
+        </if>
+
+    </select>
+
+    <select id="countByOff" resultType="java.lang.Integer">
+        SELECT count(0)
+        FROM project_complaint_record
+        WHERE status = '0'
+    </select>
+
+    <select id="countByMonth" resultType="java.lang.Integer">
+        SELECT count(0)
+        FROM project_complaint_record
+        WHERE date_format(orderTime, '%Y-%m') = #{date}
+    </select>
+
+    <select id="countStatusByStaffId" resultType="java.lang.Integer">
+        SELECT
+        count(*) num
+        FROM
+        project_complaint_record
+        WHERE handler = #{staffId}
+        AND `status` IN
+        <foreach collection="status" item="item" index="index" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        <if test="date != null">
+            AND DATE_FORMAT(orderTime, '%Y-%m') = DATE_FORMAT(#{date}, '%Y-%m')
+        </if>
+    </select>
+    <select id="getCount" resultType="java.lang.Integer">
+        SELECT
+        count(status) num
+        FROM
+        project_complaint_record
+        WHERE handler = #{staffId}
+        AND status = #{status}
+        <if test="date != null">
+            AND DATE_FORMAT(orderTime, '%Y-%m') = #{date}
+        </if>
+    </select>
+</mapper>

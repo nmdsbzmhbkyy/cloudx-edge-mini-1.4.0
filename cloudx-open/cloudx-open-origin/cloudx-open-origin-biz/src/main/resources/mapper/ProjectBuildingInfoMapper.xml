@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectBuildingInfoMapper">
+
+    <resultMap id="buildingInfoMap" type="com.aurine.cloudx.open.origin.entity.ProjectBuildingInfo">
+        <id property="buildingId" column="buildingId"/>
+        <result property="buildingCode" column="buildingCode"/>
+        <result property="buildingName" column="buildingName"/>
+        <result property="floorTotal" column="floorTotal"/>
+        <result property="houseTotal" column="houseTotal"/>
+        <result property="unitTotal" column="unitTotal"/>
+        <result property="unitNameType" column="unitNameType"/>
+        <result property="buildingArea" column="buildingArea"/>
+        <result property="buildingEra" column="buildingEra"/>
+        <result property="lon" column="lon"/>
+        <result property="lat" column="lat"/>
+        <result property="alt" column="alt"/>
+        <result property="gisArea" column="gisArea"/>
+        <result property="gisType" column="gisType"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <update id="updateFloorTotal">
+        update project_building_info
+        set floorTotal = null
+        where buildingId = #{value}
+    </update>
+
+    <select id="listWithGroup" resultType="com.aurine.cloudx.open.origin.entity.ProjectBuildingInfo">
+        select build.* from (
+        select (with recursive r as
+        (
+        select *
+        from project_frame_info pfi
+        where pfi.entityId = building.buildingId
+        union all
+        select pfi.*
+        from project_frame_info pfi,
+        r
+        where pfi.entityId = r.puid
+        )
+        select group_concat(r.entityName order by level desc SEPARATOR '-')
+        from r
+        GROUP BY projectId
+        ) as buildingName,
+        building.seq,
+        building.buildingId,
+        building.buildingCode,
+        building.projectId,
+        building.floorTotal,
+        building.houseTotal,
+        building.unitTotal,
+        building.unitNameType,
+        building.buildingArea,
+        building.buildingEra,
+        building.buildingType,
+        building.group4,
+        building.group5,
+        building.group6,
+        building.group7,
+        building.provinceCode,
+        building.cityCode,
+        building.countyCode,
+        building.streetCode,
+        building.locationCode,
+        building.address
+        from project_building_info building
+        ) build
+        <where>
+            <if test="name">
+                build.buildingName like concat('%',#{name},'%')
+            </if>
+        </where>
+
+        order by regexp_replace(build.buildingName,'[^0-9]','') + 0, build.buildingName;
+    </select>
+
+    <select id="getByCode" resultType="com.aurine.cloudx.open.origin.vo.ProjectBuildingInfoVo">
+        SELECT seq,
+               buildingId,
+               buildingCode,
+               projectId,
+               buildingName,
+               floorTotal,
+               houseTotal,
+               unitTotal,
+               unitNameType,
+               buildingArea,
+               buildingEra,
+               buildingType,
+               group4,
+               group5,
+               group6,
+               group7,
+               provinceCode,
+               cityCode,
+               countyCode,
+               streetCode,
+               locationCode,
+               address,
+               floorGround,
+               floorUnderground,
+               liveUnderground,
+               picUrl1,
+               picUrl2,
+               picUrl3,
+               lon,
+               lat,
+               alt,
+               gisArea,
+               gisType,
+               regionId,
+               tenant_id,
+               operator,
+               createTime,
+               updateTime
+        FROM project_building_info
+        WHERE buildingCode = #{buildingCode}
+          AND projectId = #{projectId}
+    </select>
+
+    <insert id="saveBuilding">
+
+        INSERT
+        INTO project_building_info
+        (buildingId,
+         buildingCode,
+         frameNo,
+         projectId,
+         buildingName,
+         floorTotal,
+         houseTotal,
+         unitTotal,
+         unitNameType,
+         buildingArea,
+         buildingEra,
+         buildingType,
+         group4,
+         group5,
+         group6,
+         group7,
+         provinceCode,
+         cityCode,
+         countyCode,
+         streetCode,
+         locationCode,
+         address,
+         floorGround,
+         floorUnderground,
+         liveUnderground,
+         picUrl1,
+         picUrl2,
+         picUrl3,
+         lon,
+         lat,
+         alt,
+         gisArea,
+         gisType,
+         regionId,
+         tenant_id,
+         operator)
+        VALUES (#{buildingInfo.buildingId},
+                #{buildingInfo.buildingCode},
+                #{buildingInfo.frameNo},
+                #{buildingInfo.projectId},
+                #{buildingInfo.buildingName},
+                #{buildingInfo.floorTotal},
+                #{buildingInfo.houseTotal},
+                #{buildingInfo.unitTotal},
+                #{buildingInfo.unitNameType},
+                #{buildingInfo.buildingArea},
+                #{buildingInfo.buildingEra},
+                #{buildingInfo.buildingType},
+                #{buildingInfo.group4},
+                #{buildingInfo.group5},
+                #{buildingInfo.group6},
+                #{buildingInfo.group7},
+                #{buildingInfo.provinceCode},
+                #{buildingInfo.cityCode},
+                #{buildingInfo.countyCode},
+                #{buildingInfo.streetCode},
+                #{buildingInfo.locationCode},
+                #{buildingInfo.address},
+                #{buildingInfo.floorGround},
+                #{buildingInfo.floorUnderground},
+                #{buildingInfo.liveUnderground},
+                #{buildingInfo.picUrl1},
+                #{buildingInfo.picUrl2},
+                #{buildingInfo.picUrl3},
+                #{buildingInfo.lon},
+                #{buildingInfo.lat},
+                #{buildingInfo.alt},
+                #{buildingInfo.gisArea},
+                #{buildingInfo.gisType},
+                #{buildingInfo.regionId},
+                #{buildingInfo.tenantId},
+                #{buildingInfo.operator})
+
+    </insert>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectBuildingInfo"
+            resultType="com.aurine.cloudx.open.common.entity.vo.BuildingInfoVo"
+    >
+        SELECT
+        *
+        FROM project_building_info pbi
+        <where>
+            <if test="query.projectId != null">
+                AND pbi.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND pbi.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.buildingId != null and query.buildingId != ''">
+                AND pbi.buildingId = #{query.buildingId}
+            </if>
+            <if test="query.buildingCode != null and query.buildingCode != ''">
+                AND pbi.buildingCode = #{query.buildingCode}
+            </if>
+            <if test="query.frameNo != null and query.frameNo != ''">
+                AND pbi.frameNo = #{query.frameNo}
+            </if>
+            <if test="query.buildingName != null and query.buildingName != ''">
+                AND pbi.buildingName LIKE concat('%', #{query.buildingName}, '%')
+            </if>
+            <if test="query.floorTotal != null">
+                AND pbi.floorTotal = #{query.floorTotal}
+            </if>
+            <if test="query.houseTotal != null">
+                AND pbi.houseTotal = #{query.houseTotal}
+            </if>
+            <if test="query.unitTotal != null">
+                AND pbi.unitTotal = #{query.unitTotal}
+            </if>
+            <if test="query.lon != null">
+                AND pbi.lon = #{query.lon}
+            </if>
+            <if test="query.lat != null">
+                AND pbi.lat = #{query.lat}
+            </if>
+            <if test="query.alt != null">
+                AND pbi.alt = #{query.alt}
+            </if>
+            <if test="query.gisArea != null and query.gisArea != ''">
+                AND pbi.gisArea = #{query.gisArea}
+            </if>
+            <if test="query.regionId != null and query.regionId != ''">
+                AND pbi.regionId = #{query.regionId}
+            </if>
+            <if test="query.staffId != null and query.staffId != ''">
+                AND pbi.staffId = #{query.staffId}
+            </if>
+            <if test="query.provinceCode != null and query.provinceCode != ''">
+                AND pbi.provinceCode = #{query.provinceCode}
+            </if>
+            <if test="query.cityCode != null and query.cityCode != ''">
+                AND pbi.cityCode = #{query.cityCode}
+            </if>
+            <if test="query.countyCode != null and query.countyCode != ''">
+                AND pbi.countyCode = #{query.countyCode}
+            </if>
+            <if test="query.streetCode != null and query.streetCode != ''">
+                AND pbi.streetCode = #{query.streetCode}
+            </if>
+            <if test="query.locationCode != null and query.locationCode != ''">
+                AND pbi.locationCode = #{query.locationCode}
+            </if>
+            <if test="query.address != null and query.address != ''">
+                AND pbi.address LIKE concat('%', #{query.address}, '%')
+            </if>
+        </where>
+    </select>
+</mapper>

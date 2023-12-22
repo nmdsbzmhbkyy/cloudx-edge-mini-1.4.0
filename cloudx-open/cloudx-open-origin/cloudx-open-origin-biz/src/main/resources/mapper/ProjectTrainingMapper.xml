@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectTrainingMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectTraining" id="ProjectTrainingMap">
+        <result property="trainingId" column="trainingId" jdbcType="VARCHAR"/>
+        <result property="title" column="title" jdbcType="VARCHAR"/>
+        <result property="beginTime" column="beginTime" jdbcType="TIMESTAMP"/>
+        <result property="endTime" column="endTime" jdbcType="TIMESTAMP"/>
+        <result property="remark" column="remark" jdbcType="VARCHAR"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="pageTrain" resultType="com.aurine.cloudx.open.origin.vo.ProjectTrainingPageVo"
+            parameterType="com.aurine.cloudx.open.origin.vo.ProjectTrainingPageVo">
+        select pt.*, case when pts.staffCount is null
+        then 0 else pts.staffCount end staffCount from project_training pt
+        left join (select count(1) staffCount, trainingId from project_training_staff group by trainingId) pts
+        on pt.trainingId = pts.trainingId
+        <where>
+            <if test="query.title !=null and query.title != '' ">
+                and pt.title like concat('%', #{query.title}, '%')
+            </if>
+            <if test="query.beginTime != null and query.endTime != null">
+                AND (
+                (DATE_FORMAT(pt.beginTime, '%Y-%m-%d %H:%i:%s') <![CDATA[>=]]> DATE_FORMAT(#{query.beginTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s') and DATE_FORMAT(pt.beginTime, '%Y-%m-%d %H:%i:%s') <![CDATA[<=]]>
+                DATE_FORMAT(#{query.endTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s')
+                )
+                OR (DATE_FORMAT(pt.endTime, '%Y-%m-%d %H:%i:%s') <![CDATA[>=]]> DATE_FORMAT(#{query.beginTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s') and DATE_FORMAT(pt.endTime, '%Y-%m-%d %H:%i:%s') <![CDATA[<=]]>
+                DATE_FORMAT(#{query.endTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s'))
+                )
+            </if>
+            <if test="query.status == 0">
+                AND (
+                DATE_FORMAT(pt.beginTime, '%Y-%m-%d %H:%i:%s') <![CDATA[>]]> DATE_FORMAT(#{query.nowTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s')
+                )
+            </if>
+            <if test="query.status == 2">
+                AND (
+                DATE_FORMAT(pt.endTime, '%Y-%m-%d %H:%i:%s') <![CDATA[<]]> DATE_FORMAT(#{query.nowTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s')
+                )
+            </if>
+            <if test="query.status == 1">
+                AND (
+                (
+                DATE_FORMAT(pt.beginTime, '%Y-%m-%d %H:%i:%s') <![CDATA[<=]]>
+                DATE_FORMAT(#{query.nowTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s')
+                and DATE_FORMAT(pt.endTime, '%Y-%m-%d %H:%i:%s') <![CDATA[>=]]>
+                DATE_FORMAT(#{query.nowTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s')
+                )
+                )
+            </if>
+        </where>
+        order by pt.createTime desc
+    </select>
+
+    <select id="listTrainByStaff" resultType="com.aurine.cloudx.open.origin.vo.TrainingStaffDetailVo"
+            parameterType="com.aurine.cloudx.open.origin.vo.TrainingStaffDetailVo">
+        SELECT pt.*, isAllDone_tab.total, IFNULL(isAllDone_tab.doneCount,0) doneCount from project_training pt
+        INNER JOIN project_training_staff pts on pts.trainingId = pt.trainingId
+        INNER JOIN
+        (
+            SELECT
+            pts.trainingId,
+            pts.staffId,
+            total_table.total,
+            detail.doneCount,
+            IF
+            ( total_table.total = IFNULL( detail.doneCount, 0 ), 1, 0 ) isAllDone
+            FROM
+            project_training_staff pts
+            LEFT JOIN ( SELECT count( 1 ) doneCount, staffId, trainingId FROM project_training_staff_detail WHERE progress = '1' GROUP BY staffId, trainingId ) detail ON pts.staffId = detail.staffId
+            AND pts.trainingId = detail.trainingId
+            LEFT JOIN ( SELECT count( 1 ) total, staffId, trainingId FROM project_training_staff_detail GROUP BY staffId, trainingId ) total_table ON total_table.staffId = pts.staffId
+            AND total_table.trainingId = pts.trainingId
+        )isAllDone_tab on pts.staffId = isAllDone_tab.staffId and pt.trainingId = isAllDone_tab.trainingId
+        <where>
+        and pts.staffId = #{query.staffId}
+            <if test="query.title !=null and query.title != '' ">
+                and pt.title like concat('%', #{query.title}, '%')
+            </if>
+        </where>
+        <if test="query.timeOrderBy == 1">
+            order by pt.createTime desc
+        </if>
+        <if test="query.timeOrderBy == 0">
+            order by pt.createTime asc
+        </if>
+    </select>
+    <select id="pageTrainDetail" resultType="com.aurine.cloudx.open.origin.vo.ProjectTrainingPageVo"
+            parameterType="com.aurine.cloudx.open.origin.vo.ProjectTrainingPageVo">
+        SELECT
+        pt.*,
+        pts.staffCount,
+        IFNULL( tab.doneCount, 0 ) doneCount
+        FROM
+        project_training pt
+        LEFT JOIN ( SELECT count( 1 ) staffCount, trainingId FROM project_training_staff GROUP BY trainingId ) pts ON pt.trainingId = pts.trainingId
+        LEFT JOIN (
+            SELECT
+            COUNT( 1 ) doneCount, --完成的员工数
+            trainingId
+            FROM
+            (
+                SELECT
+                pts.trainingId,
+                pts.staffId,
+                total_table.total, --一个员工需要阅读的资料
+                detail.doneCount, --一个员工完成的资料
+                IF
+                ( total_table.total = IFNULL( detail.doneCount, 0 ), 1, 0 ) isAllDone --如果完成的资料数=需要阅读的资料数 说明该员工已经完成了培训
+                FROM
+                project_training_staff pts
+                LEFT JOIN ( SELECT count( 1 ) doneCount, staffId, trainingId FROM project_training_staff_detail WHERE progress = '1' GROUP BY staffId, trainingId ) detail ON pts.staffId = detail.staffId
+                AND pts.trainingId = detail.trainingId
+                LEFT JOIN ( SELECT count( 1 ) total, staffId, trainingId FROM project_training_staff_detail GROUP BY staffId, trainingId ) total_table ON total_table.staffId = pts.staffId
+                AND total_table.trainingId = pts.trainingId
+            ) isAllDone_table
+            WHERE
+            isAllDone_table.isAllDone = 1
+            GROUP BY
+            isAllDone_table.trainingId
+        ) tab ON tab.trainingId = pt.trainingId
+        <where>
+            <if test="query.title !=null and query.title != '' ">
+                and pt.title like concat('%', #{query.title}, '%')
+            </if>
+            <if test="query.beginTime != null and query.endTime != null">
+                AND (
+                (date(pt.beginTime) &gt;= #{query.beginTime,jdbcType=DATE} and date(pt.beginTime) &lt;=
+                #{query.endTime,jdbcType=DATE})
+                OR (date(pt.endTime) &gt;= #{query.beginTime,jdbcType=DATE} and date(pt.endTime) &lt;=
+                #{query.endTime,jdbcType=DATE})
+                )
+            </if>
+            <if test="query.status == 0">
+                AND (
+                DATE_FORMAT(pt.beginTime, '%Y-%m-%d %H:%i:%s') <![CDATA[>]]> DATE_FORMAT(#{query.nowTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s')
+                )
+            </if>
+            <if test="query.status == 2">
+                AND (
+                DATE_FORMAT(pt.endTime, '%Y-%m-%d %H:%i:%s') <![CDATA[<]]> DATE_FORMAT(#{query.nowTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s')
+                )
+            </if>
+            <if test="query.status == 1">
+                AND (
+                (
+                DATE_FORMAT(pt.beginTime, '%Y-%m-%d %H:%i:%s') <![CDATA[<=]]>
+                DATE_FORMAT(#{query.nowTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s')
+                and DATE_FORMAT(pt.endTime, '%Y-%m-%d %H:%i:%s') <![CDATA[>=]]>
+                DATE_FORMAT(#{query.nowTime,jdbcType=DATE}, '%Y-%m-%d %H:%i:%s')
+                )
+                )
+            </if>
+        </where>
+        order by pt.createTime desc
+    </select>
+
+    <select id="pageTrainStaffDetail" resultType="com.aurine.cloudx.open.origin.vo.ProjectTrainingStaffDetailPageVo"
+            parameterType="java.lang.String">
+       SELECT
+        pts.staffId,
+        ps.staffName,
+        total_table.total,
+        detail.completeTime,
+        CASE
+		WHEN detail.doneCount IS NULL THEN
+		0 ELSE detail.doneCount
+	    END doneCount
+        FROM
+        project_training_staff pts
+        LEFT JOIN ( SELECT count( 1 ) doneCount, staffId, GROUP_CONCAT(completeTime ORDER BY completeTime desc) completeTime FROM project_training_staff_detail
+        WHERE progress = '1' and trainingId = #{trainingId} GROUP BY staffId ) detail ON pts.staffId = detail.staffId
+        LEFT JOIN ( SELECT count( 1 ) total, staffId FROM project_training_staff_detail WHERE trainingId = #{trainingId} GROUP BY staffId ) total_table ON total_table.staffId = pts.staffId
+        LEFT JOIN project_staff ps ON ps.staffId = pts.staffId
+        WHERE
+	    pts.trainingId = #{trainingId}
+    </select>
+
+    <select id="pageDetailProgress" resultType="com.aurine.cloudx.open.origin.vo.ProjectTrainingFileDbVo"
+            parameterType="java.lang.String">
+       SELECT
+       ptsd.progress,
+       ptfd.fileName,
+       ptfd.fileType
+       FROM
+       project_training_staff_detail ptsd
+       left join project_training_file_db ptfd on ptfd.fileId = ptsd.fileId
+       WHERE
+       staffId = #{staffId} AND trainingId = #{trainingId}
+    </select>
+    <select id="pageTrainByStaff" resultType="com.aurine.cloudx.open.origin.vo.TrainingStaffDetailVo">
+        SELECT DISTINCT pt.*, isAllDone_tab.total, IFNULL(isAllDone_tab.doneCount,0) doneCount,
+        (
+        CASE
+        WHEN pt.beginTime <![CDATA[>=]]> NOW() THEN '0'
+        WHEN pt.endTime <![CDATA[<=]]> NOW() THEN '2'
+        ELSE '1' END
+        ) status
+        from project_training pt
+        INNER JOIN project_training_staff pts on pts.trainingId = pt.trainingId
+        INNER JOIN
+        (
+        SELECT
+        pts.trainingId,
+        pts.staffId,
+        total_table.total,
+        detail.doneCount,
+        IF
+        ( total_table.total = IFNULL( detail.doneCount, 0 ), 1, 0 ) isAllDone
+        FROM
+        project_training_staff pts
+        LEFT JOIN ( SELECT count( 1 ) doneCount, staffId, trainingId FROM project_training_staff_detail WHERE progress = '1' GROUP BY staffId, trainingId ) detail ON pts.staffId = detail.staffId
+        AND pts.trainingId = detail.trainingId
+        LEFT JOIN ( SELECT count( 1 ) total, staffId, trainingId FROM project_training_staff_detail GROUP BY staffId, trainingId ) total_table ON total_table.staffId = pts.staffId
+        AND total_table.trainingId = pts.trainingId
+        )isAllDone_tab on pts.staffId = isAllDone_tab.staffId and pt.trainingId = isAllDone_tab.trainingId
+        <where>
+            and pts.staffId = #{query.staffId}
+            <if test="query.title !=null and query.title != '' ">
+                and pt.title like concat('%', #{query.title}, '%')
+            </if>
+            <if test="query.status !=null and query.status != '' ">
+                and (
+                CASE
+                WHEN pt.beginTime <![CDATA[>=]]> NOW() THEN '0'
+                WHEN pt.endTime <![CDATA[<=]]> NOW() THEN '2'
+                ELSE '1' END
+                ) = #{query.status}
+            </if>
+        </where>
+        <if test="query.timeOrderBy=='' or query.timeOrderBy==null">
+            order by status, pt.beginTime desc
+        </if>
+        <if test="query.timeOrderBy == 1">
+            order by pt.beginTime desc
+        </if>
+        <if test="query.timeOrderBy!=null and query.timeOrderBy!='' and query.timeOrderBy == 0">
+            order by pt.beginTime asc
+        </if>
+    </select>
+</mapper>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectPasswdMapper">
+
+    <select id="getByCode" resultType="com.aurine.cloudx.open.origin.entity.ProjectPasswd">
+          SELECT
+            passwd.seq,
+            passwd.passId,
+            passwd.passCode,
+            passwd.passwd,
+            passwd.projectId,
+            passwd.personType,
+            passwd.personId,
+            passwd.`status`,
+            passwd.tenant_id,
+            passwd.operator,
+            passwd.createTime,
+            passwd.updateTime
+            FROM
+            project_passwd AS passwd
+            WHERE
+            passwd.passCode = #{code} AND
+            passwd.projectId = #{projectId}
+    </select>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectPasswd"
+            resultType="com.aurine.cloudx.open.common.entity.vo.PasswordInfoVo"
+    >
+        SELECT
+        *
+        FROM project_passwd pp
+        <where>
+            <if test="query.projectId != null">
+                AND pp.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND pp.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.passId != null and query.passId != ''">
+                AND pp.passId = #{query.passId}
+            </if>
+            <if test="query.passCode != null and query.passCode != ''">
+                AND pp.passCode = #{query.passCode}
+            </if>
+            <if test="query.personType != null and query.personType != ''">
+                AND pp.personType = #{query.personType}
+            </if>
+            <if test="query.personId != null and query.personId != ''">
+                AND pp.personId = #{query.personId}
+            </if>
+            <if test="query.status != null and query.status != ''">
+                AND pp.status = #{query.status}
+            </if>
+        </where>
+    </select>
+
+</mapper>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.wjy.mapper.CustomerMapper">
+
+    <resultMap id="projectMap" type="com.aurine.cloudx.wjy.entity.Customer">
+        <id property="seq" column="seq"/>
+        <result property="projectId" column="projectId"/>
+        <result property="cusId" column="cusId"/>
+        <result property="wjyCusId" column="wjyCusId"/>
+        <result property="phone" column="phone"/>
+        <result property="name" column="name"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <sql id="selectSql">
+        i.seq,
+        i.projectId,
+        i.cusId,
+        i.wjyCusId,
+        i.phone,
+        i.name,
+        i.createTime,
+        i.updateTime
+    </sql>
+
+</mapper>

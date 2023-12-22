@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectDeviceSubsystemMapper">
+
+    <resultMap id="projectDeviceSubsystemMap" type="com.aurine.cloudx.open.origin.entity.ProjectDeviceSubsystem">
+
+        <id property="subsystemId" column="subsystemId"/>
+        <result property="projectId" column="projectId"/>
+        <result property="subsystemCode" column="subsystemCode"/>
+        <result property="subsystemName" column="subsystemName"/>
+        <result property="pid" column="pid"/>
+        <result property="level" column="rLevel"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="selectByTemplate" resultType="com.aurine.cloudx.open.origin.entity.ProjectDeviceSubsystem">
+        SELECT
+        subsystemId,
+        subsystemName,
+        subsystemCode,
+        pid,
+        rLevel AS level
+        FROM
+        project_device_subsystem
+        <where>
+            projectId = 0
+        </where>
+    </select>
+    <insert id="initInsert">
+        INSERT
+        INTO
+        project_device_subsystem
+        (subsystemId, subsystemName, subsystemCode, pid, rLevel, projectId, tenant_id)
+        VALUES
+        (#{param.subsystemId}, #{param.subsystemName}, #{param.subsystemCode}, #{param.pid}, #{param.level}, #{param.projectId}, #{tenantId})
+    </insert>
+    <select id="defaultSubsystem" resultType="com.aurine.cloudx.open.origin.entity.ProjectDeviceSubsystem">
+        SELECT
+        *
+        FROM
+        project_device_subsystem
+        <where>
+            projectId = #{projectId}
+            AND subsystemName = #{subsystemName}
+        </where>
+    </select>
+</mapper>

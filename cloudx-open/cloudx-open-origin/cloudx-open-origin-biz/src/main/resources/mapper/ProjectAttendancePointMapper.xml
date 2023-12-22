@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectAttendancePointMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectAttendancePoint" id="ProjectAttendancePointMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="pointId" column="pointId" jdbcType="VARCHAR"/>
+        <result property="pointAddress" column="pointAddress" jdbcType="VARCHAR"/>
+        <result property="lon" column="lon" jdbcType="NUMERIC"/>
+        <result property="lat" column="lat" jdbcType="NUMERIC"/>
+        <result property="alt" column="alt" jdbcType="NUMERIC"/>
+        <result property="gisArea" column="gisArea" jdbcType="VARCHAR"/>
+        <result property="gisType" column="gisType" jdbcType="VARCHAR"/>
+        <result property="pointPrecision" column="pointPrecision" jdbcType="INTEGER"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+</mapper>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectDeviceMonitorRelMapper">
+
+    <delete id="deleteDefenseArea" parameterType="java.lang.String">
+        DELETE
+        FROM project_device_monitor_rel
+        WHERE deviceId IN (
+            SELECT a.deviceId
+            FROM (
+                     SELECT DISTINCT deviceId
+                     FROM project_device_monitor_rel
+                     WHERE deviceId IN (SELECT infoUid
+                                        FROM project_perimeter_alarm_area
+                                        WHERE deviceId = #{deviceId})) a
+        )
+    </delete>
+
+</mapper>

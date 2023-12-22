@@ -1,0 +1,6 @@
+!!com.aurine.driver.config.MqttParamObj {ai: 3E99VS001.VS00AIGL0, appId: '0000', cascade: 0,
+  communityId: '', driverSwitch: 0, driverType: other, driverUrl: 'http://127.0.0.1:7878/msg',
+  gwPerimeterAlarm: 3E99GWZJ01.3Z99GW01, ha80: 3G99GW01HA.3T00FFHA.3M9810HA.3S00FFHA.3M11WM27HA.EL00WD24HA.EL00M81SHA,
+  m121: 3E99EN01M121.3M99M121HD, mqttBrokerIp: 10.110.20.199, mqttBrokerPort: 1883,
+  mqttClientId: edge_sync_cloud485, mqttClientSwitch: 1, other: '', password: 4e8c96bab07de65325537ffa9f087c70,
+  perimeterAlarm: 3E99ZJ01.3Z99JHL01, qos: 1, userName: edge_sync_cloud, ver: '1.0',threadNum: 100, delay: 0}

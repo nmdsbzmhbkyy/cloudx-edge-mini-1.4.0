@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectTrainingStaffMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectTrainingStaff" id="ProjectTrainingStaffMap">
+        <result property="id" column="id" jdbcType="VARCHAR"/>
+        <result property="trainingId" column="trainingId" jdbcType="VARCHAR"/>
+        <result property="staffId" column="staffId" jdbcType="VARCHAR"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="staffTotalCount" resultType="java.lang.Integer"
+            parameterType="com.aurine.cloudx.open.origin.vo.ProjectTrainingPageVo">
+        select count(1)
+        from
+        project_training_staff
+        where trainingId in
+        <foreach collection="trainingIds" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        group by projectId
+    </select>
+</mapper>

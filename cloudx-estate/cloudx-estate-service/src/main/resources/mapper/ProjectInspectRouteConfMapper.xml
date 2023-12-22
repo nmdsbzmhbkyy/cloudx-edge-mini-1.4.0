@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectInspectRouteConfMapper">
+
+    <select id="fetchList" resultType="com.aurine.cloudx.estate.vo.ProjectInspectRouteConfVo">
+        SELECT
+            route_conf.inspectRouteId,
+            route_conf.inspectRouteName,
+            route_conf.isSort,
+            route_conf.remark,
+            route_conf.status,
+            route_conf.createTime,
+            sys_user.true_name 'operatorName',
+            (
+            SELECT COUNT(poin_conf.pointId) FROM
+            project_inspect_route_point_conf route_point_conf
+            LEFT JOIN project_inspect_point_conf poin_conf ON poin_conf.pointId =  route_point_conf.inspectPointId
+            WHERE  route_point_conf.inspectRouteId = route_conf.inspectRouteId AND route_point_conf.projectId = route_conf.projectId
+            ) 'pointNum'
+        FROM
+        project_inspect_route_conf route_conf
+        LEFT JOIN pigxx.sys_user sys_user ON route_conf.operator = sys_user.user_id
+        <where>
+            <if test="query.dateRange!=null and query.dateRange.length > 0">
+                AND STR_TO_DATE((DATE_FORMAT(route_conf.createTime,'%Y-%m-%d')),'%Y-%m-%d') BETWEEN #{query.dateRange[0]} AND
+                #{query.dateRange[1]}
+            </if>
+            <if test="query.inspectRouteName!=null and query.inspectRouteName != ''">
+                AND route_conf.inspectRouteName like concat('%', #{query.inspectRouteName},'%')
+            </if>
+            <if test="query.isSort!=null and query.isSort != ''">
+                AND route_conf.isSort = #{query.isSort}
+            </if>
+        </where>
+        ORDER BY createTime;
+    </select>
+
+</mapper>

@@ -1,0 +1,446 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectRightDeviceMapper">
+    <update id="updateStateByIds">
+        UPDATE project_right_device
+        SET dlStatus = #{status}
+        WHERE deviceId = #{deviceId}
+        AND certMediaId IN
+        <foreach collection="certIdList" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="pageByDeviceId" resultType="com.aurine.cloudx.open.origin.vo.ProjectRightDeviceOptsAccessVo">
+        with tmp_right_device as (
+        -- 指纹
+        select rd.seq,rd.deviceId,rd.certMedia,rd.dlStatus,fp.personId,fp.personType,fp.fingerprintCode 'certData'
+        from project_right_device rd
+        join project_fingerprints fp
+        on fp.fingerprintId = rd.certMediaId
+        where rd.certMedia = '1'
+        and rd.deviceId = #{deviceId}
+        union all
+        -- 人脸
+        select rd.seq,rd.deviceId,rd.certMedia,rd.dlStatus,face.personId,face.personType,face.picUrl 'certData'
+        from project_right_device rd
+        join project_face_resources face
+        on face.faceId = rd.certMediaId
+        where rd.certMedia = '2'
+        and rd.deviceId = #{deviceId}
+        -- 卡
+        union all
+        select rd.seq,rd.deviceId,rd.certMedia,rd.dlStatus,card.personId,card.personType,card.cardNo 'certData'
+        from project_right_device rd
+        join project_card card
+        on card.cardId = rd.certMediaId
+        where rd.certMedia = '3'
+        and rd.deviceId = #{deviceId}
+        union all
+        -- 密码
+        select rd.seq,rd.deviceId,rd.certMedia,rd.dlStatus,pw.personId,pw.personType,pw.passwd 'certData'
+        from project_right_device rd
+        join project_passwd pw
+        on pw.passId = rd.certMediaId
+        where rd.certMedia = '4'
+        and rd.deviceId = #{deviceId}
+        )
+
+        SELECT * FROM (
+        -- 住户
+        select trd.seq , person.personName as `personName` , personType, trd.certMedia,person.telephone as
+        `telephone`,trd.dlStatus,trd.certData
+        from tmp_right_device trd
+        join project_person_info person
+        on person.personId = trd.personId
+        where trd.personType = '1'
+        <if test="query.personName != null and query.personName != ''">
+            and person.personName like concat('%',#{query.personName},'%')
+        </if>
+        <if test="query.certMedia != null and query.certMedia != ''">
+            and trd.certMedia = #{query.certMedia}
+        </if>
+        <if test="query.dlStatus != null and query.dlStatus != ''">
+            and trd.dlStatus = #{query.dlStatus}
+        </if>
+        union all
+        -- 员工
+        select trd.seq , staff.staffName as `personName` , personType, trd.certMedia,staff.mobile as
+        `telephone`,trd.dlStatus,trd.certData
+        from tmp_right_device trd
+        join project_staff staff
+        on staff.staffId = trd.personId
+        where trd.personType = '2'
+        <if test="query.personName != null and query.personName != ''">
+            and staff.staffName like concat('%',#{query.personName},'%')
+        </if>
+        <if test="query.certMedia != null and query.certMedia != ''">
+            and trd.certMedia = #{query.certMedia}
+        </if>
+        <if test="query.dlStatus != null and query.dlStatus != ''">
+            and trd.dlStatus = #{query.dlStatus}
+        </if>
+        union all
+        -- 访客
+        select trd.seq , visithis.visitorName as `personName` , personType, trd.certMedia,visitor.mobileNo as
+        `telephone`,trd.dlStatus,trd.certData
+        from tmp_right_device trd
+        join project_visitor_his visithis
+        on visithis.visitId = trd.personId
+        join project_visitor visitor
+        on visitor.visitorId = visithis.visitorId
+        where trd.personType = '3'
+        <if test="query.personName != null and query.personName != ''">
+            and visithis.visitorName like concat('%',#{query.personName},'%')
+        </if>
+        <if test="query.certMedia != null and query.certMedia != ''">
+            and trd.certMedia = #{query.certMedia}
+        </if>
+        <if test="query.dlStatus != null and query.dlStatus != ''">
+            and trd.dlStatus = #{query.dlStatus}
+        </if>
+        ) tmp_right_device_person ORDER BY personName
+    </select>
+    <select id="listCertByPersonId" resultType="com.aurine.cloudx.open.origin.entity.ProjectRightDevice">
+        WITH person_cert_info AS (
+            SELECT
+                *
+            FROM
+                (
+                    SELECT
+                        personId 'certPersonId',
+                        card.cardId 'certmediaId',
+                        card.cardNo 'certMediaInfo',
+                        card.cardCode 'certMediaCode',
+                        '3' AS 'certMedia'
+                    FROM
+                        project_card card
+                    WHERE
+                        personId = #{personId} UNION ALL
+                    SELECT
+                        personId 'certPersonId',
+                        passwd.passId 'certmediaId',
+                        passwd.passwd 'certMediaInfo',
+                        passwd.passCode 'certMediaCode',
+                        '4' AS 'certMedia'
+                    FROM
+                        project_passwd passwd
+                    WHERE
+                        personId = #{personId} UNION ALL
+                    SELECT
+                        personId 'certPersonId',
+                        face.faceId 'certmediaId',
+                        face.picUrl 'certMediaInfo',
+                        face.faceCode 'certMediaCode',
+                        '2' AS 'certMedia'
+                    FROM
+                        project_face_resources face
+                    WHERE
+                        personId = #{personId} UNION ALL
+                    SELECT
+                        personId 'certPersonId',
+                        fingerprints.fingerprintId 'certmediaId',
+                        fingerprints.fpUrl 'certMediaInfo',
+                        fingerprints.fingerprintCode 'certMediaCode',
+                        '1' AS 'certMedia'
+                    FROM
+                        project_fingerprints fingerprints
+                    WHERE
+                        personId = #{personId}
+                ) tmp_cert LEFT JOIN
+                (
+                    SELECT
+                        personId,
+                        personName,
+                        telephone 'mobileNo',
+                        '1' AS 'personType'
+                    FROM
+                        project_person_info
+                    WHERE
+                        personId = #{personId} UNION ALL
+                    SELECT
+                        staffId 'personId',
+                        staffName 'personName',
+                        mobile 'mobileNo',
+                        '2' AS 'personType'
+                    FROM
+                        project_staff
+                    WHERE
+                        staffId = #{personId} UNION ALL
+                    SELECT
+                        visitId 'personId',
+                        visitorName 'personName',
+                        mobileNo 'mobileNo',
+                        '3' AS 'personType'
+                    FROM
+                        project_visitor_his
+                            LEFT JOIN project_visitor ON project_visitor.visitorId = project_visitor_his.visitorId
+                    WHERE
+                        project_visitor_his.visitId = #{personId}
+                ) tmp_person ON tmp_person.personId = tmp_cert.certPersonId
+        )
+        SELECT * FROM person_cert_info
+    </select>
+    <select id="listCertByPersonIdList" resultType="com.aurine.cloudx.open.origin.entity.ProjectRightDevice">
+        WITH person_cert_info AS (
+        SELECT
+        *
+        FROM
+        (
+        SELECT
+        personId 'certPersonId',
+        card.cardId 'certmediaId',
+        card.cardNo 'certMediaInfo',
+        card.cardCode 'certMediaCode',
+        '3' AS 'certMedia'
+        FROM
+        project_card card
+        WHERE
+        personId IN
+        <foreach collection="personIdList" item="personId" index="index" open="(" close=")" separator=",">
+            #{personId}
+        </foreach> UNION ALL
+        SELECT
+        personId 'certPersonId',
+        passwd.passId 'certmediaId',
+        passwd.passwd 'certMediaInfo',
+        passwd.passCode 'certMediaCode',
+        '4' AS 'certMedia'
+        FROM
+        project_passwd passwd
+        WHERE
+        personId IN
+        <foreach collection="personIdList" item="personId" index="index" open="(" close=")" separator=",">
+            #{personId}
+        </foreach> UNION ALL
+        SELECT
+        personId 'certPersonId',
+        face.faceId 'certmediaId',
+        face.picUrl 'certMediaInfo',
+        face.faceCode 'certMediaCode',
+        '2' AS 'certMedia'
+        FROM
+        project_face_resources face
+        WHERE
+        personId IN
+        <foreach collection="personIdList" item="personId" index="index" open="(" close=")" separator=",">
+            #{personId}
+        </foreach> UNION ALL
+        SELECT
+        personId 'certPersonId',
+        fingerprints.fingerprintId 'certmediaId',
+        fingerprints.fpUrl 'certMediaInfo',
+        fingerprints.fingerprintCode 'certMediaCode',
+        '1' AS 'certMedia'
+        FROM
+        project_fingerprints fingerprints
+        WHERE
+        personId IN
+        <foreach collection="personIdList" item="personId" index="index" open="(" close=")" separator=",">
+            #{personId}
+        </foreach>
+        ) tmp_cert LEFT JOIN
+        (
+        SELECT
+        personId,
+        personName,
+        telephone 'mobileNo',
+        '1' AS 'personType'
+        FROM
+        project_person_info
+        WHERE
+        personId IN
+        <foreach collection="personIdList" item="personId" index="index" open="(" close=")" separator=",">
+            #{personId}
+        </foreach> UNION ALL
+        SELECT
+        staffId 'personId',
+        staffName 'personName',
+        mobile 'mobileNo',
+        '2' AS 'personType'
+        FROM
+        project_staff
+        WHERE
+        staffId IN
+        <foreach collection="personIdList" item="personId" index="index" open="(" close=")" separator=",">
+            #{personId}
+        </foreach> UNION ALL
+        SELECT
+        visitId 'personId',
+        visitorName 'personName',
+        mobileNo 'mobileNo',
+        '3' AS 'personType'
+        FROM
+        project_visitor_his
+        LEFT JOIN project_visitor ON project_visitor.visitorId = project_visitor_his.visitorId
+        WHERE
+        project_visitor_his.visitId IN
+        <foreach collection="personIdList" item="personId" index="index" open="(" close=")" separator=",">
+            #{personId}
+        </foreach>
+        ) tmp_person ON tmp_person.personId = tmp_cert.certPersonId
+        )
+        SELECT
+        *
+        FROM
+        person_cert_info
+    </select>
+
+
+    <select id="listByDeviceIdAndCertmediaId" resultType="com.aurine.cloudx.open.origin.entity.ProjectRightDevice">
+        SELECT
+        *
+        FROM
+        project_right_device
+        WHERE
+        certMediaId = #{certMediaId}
+        <if test="deviceId != null and deviceId != ''">
+            and deviceId = #{deviceId}
+        </if>
+
+    </select>
+
+
+    <select id="getHouseCodeByCertId" resultType="String">
+        SELECT
+            IF( houseCode IS NOT NULL AND houseCode != '', houseCode , '0') houseCode
+        FROM
+            project_right_device right_device
+            LEFT JOIN project_face_resources face ON face.faceId = right_device.certMediaId
+            LEFT JOIN project_house_person_rel house_person ON house_person.personId = face.personId
+            LEFT JOIN project_house_info house ON house.houseId = house_person.houseId
+        WHERE certMediaId = #{certId}
+        order by house.createTime
+    </select>
+
+    <select id="countByDeviceId" resultType="java.lang.Integer">
+        with device as (SELECT DISTINCT project_right_device.*
+                    FROM project_device_info
+                            JOIN project_right_device  ON project_device_info.deviceId = project_right_device.deviceId
+						WHERE
+							project_right_device.dlStatus=#{dlStatus}
+                and project_right_device.projectId = #{projectId}
+                and project_right_device.deviceId= #{deviceId}
+        )
+        select count(*)
+        from device
+    </select>
+
+    <select id="countFailByDeviceId" resultType="java.lang.Integer">
+        with device as(SELECT DISTINCT project_right_device.*
+                    FROM project_right_device
+                    WHERE
+                        project_right_device.dlStatus in ('2','4')
+                        and project_right_device.projectId = #{projectId}
+        <if test="deviceIdList != null and deviceIdList.size>0">
+                        and deviceId IN
+                        <foreach collection="deviceIdList" item="id" index="index" open="(" close=")" separator=",">
+                            #{id}
+                        </foreach>
+        </if>
+        )
+        select count(*)
+        from device
+    </select>
+
+    <select id="pagePersonRightStatus" resultType="com.aurine.cloudx.open.origin.vo.ProjectPersonRightStatusVo">
+        SELECT * FROM (
+            SELECT
+                personId,
+                personName,
+                personType,
+                mobileNo,
+                SUM( (dlStatus IN ( 2, 4 ))) failedNum,
+                projectId,
+                tenant_id
+            FROM
+                project_right_device
+            WHERE
+                personId IS NOT NULL AND projectId = #{projectId}
+            <if test="query.personName != null and query.personName != ''">
+                AND personName like concat('%',#{query.personName},'%')
+            </if>
+            <if test="query.personType != null and query.personType != ''">
+                AND personType = #{query.personType}
+            </if>
+            GROUP BY
+                personId,
+                personName,
+                personType,
+                mobileNo,
+                projectId,
+                tenant_id
+        ) right_status
+        <where>
+            <if test="query.isException != null">
+                <if test="query.isException == 1">
+                    failedNum &gt; 0
+                </if>
+                <if test="query.isException == 0">
+                    AND (failedNum = 0 OR failedNum IS NULL)
+                </if>
+            </if>
+        </where>
+    </select>
+
+    <select id="pageRightStatus" resultType="com.aurine.cloudx.open.origin.vo.ProjectRightStatusVo">
+        SELECT right_device.seq,
+               right_device.certMedia,
+               right_device.certMediaInfo,
+               IF(device.deviceName IS NOT NULL, device.deviceName, device.deviceDesc) AS deviceName, right_device.dlStatus
+        FROM project_right_device right_device
+        LEFT JOIN project_device_info device ON right_device.deviceId = device.deviceId
+        <where>
+            personId = #{query.personId}
+            <if test="query.certMedia != null and query.certMedia != ''">
+                and certMedia = #{query.certMedia}
+            </if>
+            <if test="query.dlStatus != null and query.dlStatus != ''">
+                and dlStatus = #{query.dlStatus}
+            </if>
+        </where>
+    </select>
+
+    <select id="getExceptionPersonIdList" resultType="String">
+        SELECT
+            personId
+        FROM
+            project_right_device
+        WHERE
+            personId IS NOT NULL
+          AND dlStatus IN ( 2, 4 )
+          AND projectId = #{projectId}
+        GROUP BY
+            project_right_device.personId
+    </select>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectRightDevice"
+            resultType="com.aurine.cloudx.open.common.entity.vo.RightDeviceRelVo"
+    >
+        SELECT
+        *
+        FROM project_right_device prd
+        <where>
+            <if test="query.projectId != null">
+                AND prd.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND prd.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.uid != null and query.uid != ''">
+                AND prd.uid = #{query.uid}
+            </if>
+            <if test="query.certMedia != null and query.certMedia != ''">
+                AND prd.certMedia = #{query.certMedia}
+            </if>
+            <if test="query.reqStatus != null and query.reqStatus != ''">
+                AND prd.reqStatus = #{query.reqStatus}
+            </if>
+        </where>
+    </select>
+</mapper>

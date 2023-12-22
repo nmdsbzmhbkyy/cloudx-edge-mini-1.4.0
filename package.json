@@ -1,0 +1,25 @@
+{
+  "name": "cloudx",
+  "version": "1.0.0",
+  "description": "冠林云平台",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://10.110.114.16:40000/center/platform/aurine-cloud/sources/cloudx.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "husky": "^4.3.0"
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -e $GIT_PARAMS"
+    }
+  },
+  "devDependencies": {}
+}

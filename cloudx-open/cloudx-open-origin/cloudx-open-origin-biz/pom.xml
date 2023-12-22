@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>cloudx-open-origin</artifactId>
+        <groupId>com.aurine</groupId>
+        <version>2107.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>cloudx-open-origin-biz</artifactId>
+    <packaging>jar</packaging>
+
+    <description>冠林云-开放接口-源业务模块</description>
+
+    <dependencies>
+        <!--open common 公共模块-->
+        <dependency>
+            <groupId>com.aurine</groupId>
+            <artifactId>cloudx-open-common-core</artifactId>
+        </dependency>
+        <!--open common data-->
+        <dependency>
+            <groupId>com.aurine</groupId>
+            <artifactId>cloudx-open-common-data</artifactId>
+        </dependency>
+        <!--origin common-->
+        <dependency>
+            <groupId>com.aurine</groupId>
+            <artifactId>cloudx-open-origin-common</artifactId>
+        </dependency>
+        <!--origin api-->
+        <dependency>
+            <groupId>com.aurine</groupId>
+            <artifactId>cloudx-open-origin-api</artifactId>
+        </dependency>
+        <!--<dependency>
+            <groupId>com.pig4cloud</groupId>
+            <artifactId>pigx-common-transaction</artifactId>
+        </dependency>-->
+        <dependency>
+            <groupId>io.seata</groupId>
+            <artifactId>seata-spring-boot-starter</artifactId>
+            <version>1.7.1</version>
+        </dependency>
+    </dependencies>
+
+</project>

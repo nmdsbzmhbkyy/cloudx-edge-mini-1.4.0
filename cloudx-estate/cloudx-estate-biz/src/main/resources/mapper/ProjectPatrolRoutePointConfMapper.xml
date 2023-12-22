@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPatrolRoutePointConfMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectPatrolRoutePointConf" id="ProjectPatrolRoutePointConfMap">
+        <result property="seq" column="seq" jdbcType="OTHER"/>
+        <result property="recordid" column="recordId" jdbcType="VARCHAR"/>
+        <result property="patrolrouteid" column="patrolRouteId" jdbcType="VARCHAR"/>
+        <result property="patrolpointid" column="patrolPointId" jdbcType="VARCHAR"/>
+        <result property="gaptime" column="gapTime" jdbcType="INTEGER"/>
+        <result property="sort" column="sort" jdbcType="INTEGER"/>
+        <result property="projectid" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenantId" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createtime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updatetime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+
+</mapper>

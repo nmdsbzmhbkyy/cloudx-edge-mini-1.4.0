@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.aurine</groupId>
+        <artifactId>cloudx-estate</artifactId>
+        <version>2107.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>cloudx-estate-open</artifactId>
+    <packaging>pom</packaging>
+
+    <description>冠林云-开放平台API</description>
+
+    <modules>
+        <module>cloudx-estate-open-core</module>
+        <module>cloudx-estate-open-house</module>
+        <module>cloudx-estate-open-person</module>
+        <module>cloudx-estate-open-device</module>
+        <module>cloudx-estate-open-parking</module>
+        <module>cloudx-estate-open-staff</module>
+        <module>cloudx-estate-open-vistor</module>
+        <module>cloudx-estate-open-event</module>
+        <module>cloudx-estate-open-project</module>
+        <module>cloudx-estate-open-szzt</module>
+    </modules>
+</project>

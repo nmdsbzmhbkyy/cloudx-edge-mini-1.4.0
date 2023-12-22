@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPassPlanPolicyRelMapper">
+
+    <resultMap id="projectPassPlanPolicyRelMap" type="com.aurine.cloudx.estate.entity.ProjectPassPlanPolicyRel">
+        <id property="planId" column="planId"/>
+        <result property="policyId" column="policyId"/>
+        <result property="policyType" column="policyType"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+
+    <select id="listMacroByPerson" resultType="java.lang.String">
+
+    select logic.macroId from project_logic_pass_policy logic
+    join project_pass_plan_policy_rel policyRel  on policyRel.policyId = logic.policyId
+    join project_person_plan_rel planRel on planRel.planId = policyRel.planId
+    where planRel.personId = #{personId}
+    </select>
+
+    <select id="listMacroByPlan" resultType="java.lang.String">
+
+        select logic.macroId from project_logic_pass_policy logic
+        join project_pass_plan_policy_rel policyRel  on policyRel.policyId = logic.policyId
+        where policyRel.planId = #{planId}
+    </select>
+
+</mapper>

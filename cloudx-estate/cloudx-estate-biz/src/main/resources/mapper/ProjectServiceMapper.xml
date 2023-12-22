@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectServiceMapper">
+    <resultMap id="ProjectServiceMap" type="com.aurine.cloudx.estate.entity.ProjectService">
+        <id property="serviceId" column="serviceId"/>
+        <result property="projectId" column="projectId"/>
+        <result property="effTime" column="effTime"/>
+        <result property="expTime" column="expTime"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <!--    查询当前项目所有增值服务-->
+    <!--<select id="listByProjectId" resultType="com.aurine.cloudx.estate.vo.ProjectServiceVo"
+            parameterType="java.lang.Integer">
+        select ssc.serviceName,ps.* from aurine.project_service ps left join sys_service_cfg ssc on ps.serviceId=ssc.serviceId
+        <where>
+            and ps.projectId=#{query}
+        </where>
+    </select>-->
+
+</mapper>

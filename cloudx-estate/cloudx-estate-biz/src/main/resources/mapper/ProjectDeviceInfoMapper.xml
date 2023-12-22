@@ -1,0 +1,1284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectDeviceInfoMapper">
+
+    <resultMap id="projectDeviceInfoMap" type="com.aurine.cloudx.estate.entity.ProjectDeviceInfo">
+        <id property="deviceId" column="deviceId"/>
+        <result property="deviceCode" column="deviceCode"/>
+        <result property="deviceName" column="deviceName"/>
+        <result property="deviceType" column="deviceType"/>
+        <result property="deviceAlias" column="deviceAlias"/>
+        <result property="status" column="dStatus"/>
+        <result property="active" column="isActive"/>
+        <result property="buildingId" column="buildingId"/>
+        <result property="unitId" column="unitId"/>
+        <result property="houseId" column="houseId"/>
+        <result property="deviceFeature" column="deviceFeature"/>
+        <result property="passType" column="passType"/>
+        <result property="deviceRegionId" column="deviceRegionId"/>
+        <result property="sn" column="sn"/>
+        <result property="mac" column="mac"/>
+        <result property="ipv4" column="ipv4"/>
+        <result property="ipv6" column="ipv6"/>
+        <result property="port" column="dPort"/>
+        <result property="picUrl" column="picUrl"/>
+        <result property="qrCode" column="qrCode"/>
+        <result property="address" column="dAddress"/>
+        <result property="cloudCtl" column="isCloudCtl"/>
+        <result property="channel" column="channel"/>
+        <result property="channelDesc" column="channelDesc"/>
+        <result property="company" column="dCompany"/>
+        <result property="companyAccount" column="companyAccount"/>
+        <result property="companyPasswd" column="companyPasswd"/>
+        <result property="hardVersion" column="hardVersion"/>
+        <result property="softVersion" column="softVersion"/>
+        <result property="originSystem" column="originSystem"/>
+        <result property="lon" column="lon"/>
+        <result property="lat" column="lat"/>
+        <result property="alt" column="alt"/>
+        <result property="gisArea" column="gisArea"/>
+        <result property="gisType" column="gisType"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+
+    <select id="pageVo" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoPageVo">
+        SELECT * FROM (
+        SELECT
+        device.deviceId,
+        device.deviceName,
+        device.deviceCode,
+        device.deviceType,
+        device.accessMethod,
+        device.deviceEntityId,
+        device.deviceAlias,
+        device.ipv4,
+        ( SELECT COUNT( * ) FROM project_device_monitor_conf WHERE project_device_monitor_conf.deviceTypeId =
+        device.deviceType AND project_device_monitor_conf.projectId = device.projectId ) 'checkItemNum',
+        (
+        WITH recursive r AS (
+        SELECT * FROM project_frame_info s1 WHERE s1.entityId = device.deviceEntityId
+        UNION ALL
+        SELECT s1.* FROM project_frame_info s1, r WHERE s1.entityId = r.puid
+        ) SELECT
+        group_concat( r.entityName ORDER BY LEVEL DESC SEPARATOR '-' )
+        FROM
+        r
+        GROUP BY
+        r.projectid
+        ) AS deviceEntityName,
+        device.deviceRegionId,
+        device.dStatus STATUS,
+        device.configured,
+        device.createTime,
+        region.regionName deviceRegionName,
+        device.sn,
+        IF(
+        (IF
+        ( param.deviceNo IS NOT NULL, ( REPLACE(param.deviceNo,'"','') REGEXP tmpDeviceNoReg.deviceNoReg ), 1 )
+        )AND
+        (IF
+        ( param.subSection IS NOT NULL, ( REPLACE(param.subSection,'"','') REGEXP projectSubSection.subSectionReg ), 1 )
+        ), 1, 0) configurationStatus
+        FROM project_device_info device
+        LEFT JOIN project_device_region region ON device.deviceRegionId = region.regionId
+        LEFT JOIN (
+        SELECT
+        json_extract( deviceParam, '$.deviceNo.deviceNo' ) deviceNo,
+        json_extract( deviceParam, '$.deviceNo.devNoRule.subSection' ) subSection,
+        deviceId,
+        serviceId
+        FROM project_device_param_info
+        WHERE serviceId = 'deviceNo'
+        ) param ON param.deviceId = device.deviceId
+        LEFT JOIN (
+        SELECT
+        CONCAT( '^(', REPLACE ( GROUP_CONCAT( codeRule ORDER BY `level` DESC ), ',', '' ), '$)' ) subSectionReg,
+        projectId
+        FROM
+        project_entity_level_cfg
+        WHERE isDisable = '0' AND projectId = #{projectId}
+        GROUP BY projectId
+        ) projectSubSection ON device.projectId = projectSubSection.projectId
+        LEFT JOIN (
+        SELECT
+        IF
+        (
+        device.deviceType != '3',
+        CONCAT(
+        '^(',
+        (
+        SELECT entityCode FROM project_frame_info frame WHERE frame.entityId =  IF (
+        device.houseId IS NULL
+        OR device.houseId = '',
+        device.unitId,
+        device.houseId
+        )
+        ),
+        (
+        CASE
+        WHEN device.deviceType = '1' THEN
+        '([1-9]0|0[1-9]|[1-9]{2}))$'
+        WHEN device.deviceType = '2' THEN
+        CONCAT( '[0]{', cfg.codeRule - 1, '}([1-9]0|0[1-9]|[1-9]{2}))$' ) ELSE NULL
+        END
+        )
+        ),
+        (
+        SELECT
+        CONCAT( '^([0]{', SUM( codeRule ) - 1, '}([1-9]0|0[1-9]|[1-9]{2}))$' )
+        FROM
+        project_entity_level_cfg
+        WHERE isDisable = '0' AND projectId = #{projectId}
+        GROUP BY
+        projectId
+        )
+        ) AS deviceNoReg,
+        device.deviceId
+        FROM
+        project_device_info device
+        LEFT JOIN project_entity_level_cfg cfg ON device.projectId = cfg.projectId
+        WHERE
+        cfg.`level` = 1
+        ) tmpDeviceNoReg ON device.deviceId = tmpDeviceNoReg.deviceId
+        <where>
+            <!--设备类型id 及项目id 必填-->
+            <if test="query.deviceTypeId!=null and query.deviceTypeId!=''">
+                and device.deviceType = #{query.deviceTypeId}
+            </if>
+            <if test="query.deviceName!=null and query.deviceName!=''">
+                and (device.deviceName like concat('%',#{query.deviceName},'%')
+                or device.deviceAlias like concat('%',#{query.deviceName},'%'))
+            </if>
+            <if test="query.deviceCode!=null and query.deviceCode!=''">
+                and device.deviceCode like concat('%',#{query.deviceCode},'%')
+            </if>
+            <if test="query.sn!=null and query.sn!=''">
+                and device.sn like concat('%',#{query.sn},'%')
+            </if>
+            <if test="query.status!=null and query.status!=''">
+                and device.dstatus = #{query.status}
+            </if>
+            <if test="query.deviceRegionId!=null and query.deviceRegionId!=''">
+                and device.deviceRegionId = #{query.deviceRegionId}
+            </if>
+            <if test="query.productId!=null and query.productId!=''">
+                and device.productId = #{query.productId}
+            </if>
+            <if test="query.accessMethod!=null and query.accessMethod!=''">
+                and device.accessMethod = #{query.accessMethod}
+            </if>
+            <if test="query.ipv4!=null and query.ipv4!=''">
+                and device.ipv4 like concat('%',#{query.ipv4},'%')
+            </if>
+            <if test="query.excludedDeviceIDList!=null and query.excludedDeviceIDList.size>0">
+                and device.deviceId not in
+                <foreach collection="query.excludedDeviceIDList" item="id" open="(" close=")" separator=",">
+                    #{id}
+                </foreach>
+            </if>
+            <if test="query.configured!=null and query.configured!=''">
+                and device.configured = #{query.configured}
+            </if>
+        </where>
+        ) tmp_device_table
+        <where>
+            <if test="query.configurationStatus!=null and query.configurationStatus!=''">
+                configurationStatus = #{query.configurationStatus}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectParamPage" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoPageVo">
+        SELECT
+        d.deviceId ,d.deviceName,d.deviceCode,d.deviceType,d.deviceEntityId ,d.deviceAlias,
+        (
+        SELECT COUNT(*)
+        FROM project_device_monitor_conf
+        WHERE project_device_monitor_conf.deviceTypeId = d.deviceType
+        AND project_device_monitor_conf.projectId = d.projectId) 'checkItemNum',
+        (
+        with recursive r as (
+        select * from project_frame_info s1 where s1.entityId = d.deviceEntityId
+        union all
+        select s1.* from project_frame_info s1, r where s1.entityId = r.puid
+        ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r group by r.projectid
+        ) as deviceEntityName,
+        d.deviceRegionId ,d.dStatus status,d.createTime ,pdr.regionName deviceRegionName,d.sn,
+        projectSubSection.subSectionReg,
+        tmpDeviceNoReg.deviceNoReg,
+        param.deviceParam
+        FROM project_device_info d
+        LEFT JOIN project_device_region pdr on d.deviceRegionId = pdr.regionId
+        LEFT JOIN project_device_param_info param ON d.deviceId = param.deviceId
+        LEFT JOIN (
+        SELECT
+        CONCAT( '^(?=', REPLACE ( GROUP_CONCAT( codeRule ORDER BY `level` DESC ), ',', '' ), '$)' ) subSectionReg,
+        projectId
+        FROM
+        project_entity_level_cfg
+        where isDisable = '0' AND projectId = #{projectId}
+        GROUP BY projectId
+        ) projectSubSection ON d.projectId = projectSubSection.projectId
+        LEFT JOIN (
+        SELECT
+        CONCAT(
+        '^(',
+        REPLACE(
+        (
+        with recursive r as
+        (
+        select * from project_frame_info f1 where f1.entityId = IF(device.houseId IS NULL OR device.houseId = '',
+        device.unitId, device.houseId)
+        union all
+        select f2.* from project_frame_info f2, r where f2.entityId = r.puid
+        ) select GROUP_CONCAT(entityCode ORDER BY LEVEL DESC) from r
+        ) ,',',''),
+        IF(device.houseId IS NOT NULL AND device.houseId != '',
+        '([1-9]0|0[1-9]|[1-9]{2}))$',
+        CONCAT('[0]{', cfg.codeRule - 1, '}([1-9]0|0[1-9]|[1-9]{2}))$')
+        )
+        ) as deviceNoReg,
+        device.deviceId
+        FROM project_device_info device
+        LEFT JOIN project_entity_level_cfg cfg ON device.projectId = cfg.projectId
+        WHERE cfg.`level` = 1
+        ) tmpDeviceNoReg on d.deviceId = tmpDeviceNoReg.deviceId
+        <where>
+            <if test="query.deviceName!=null and query.deviceName!=''">
+                and (d.deviceName like concat('%',#{query.deviceName},'%')
+                or d.deviceAlias like concat('%',#{query.deviceName},'%'))
+            </if>
+            <if test="query.sn!=null and query.sn!=''">
+                and d.sn like concat('%',#{query.sn},'%')
+            </if>
+            and (param.serviceId = 'DeviceNoObj' OR param.serviceId IS NULL)
+            and d.productId = #{query.productId}
+        </where>
+    </select>
+
+
+    <select id="getProjectDeviceInfoById" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoVo">
+        select d.*,
+               d.dCompany                                                                                   company,
+               d.dStatus                                                                                    status,
+               d.isActive                                                                                   active,
+               d.isBlueTeeth                                                                                blueTeeth,
+               d.dPort                                                                                      port,
+               pbi.buildingName,
+               pui.unitName,
+               phi.houseName,
+               if(d.deviceRegionId = '1', '社区', pdr.regionName)                                             deviceRegionName
+        from project_device_info d
+                 left join project_building_info pbi on d.buildingId = pbi.buildingId
+                 left join project_unit_info pui on d.unitId = pui.unitId
+                 left join project_house_info phi on d.houseId = phi.houseId
+                 left join project_device_region pdr on d.deviceRegionId = pdr.regionId
+        where d.deviceId = #{id}
+    </select>
+
+    <select id="getProjectDeviceInfoByMac" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoVo">
+        select d.*,
+               d.dCompany                                                                                   company,
+               d.dStatus                                                                                    status,
+               d.isActive                                                                                   active,
+               d.configured                                                                                   configured,
+               d.isBlueTeeth                                                                                blueTeeth,
+               d.dPort                                                                                      port,
+               pbi.buildingName,
+               pui.unitName,
+               phi.houseName,
+               if(d.deviceRegionId = '1', '社区', pdr.regionName)                                             deviceRegionName
+        from project_device_info d
+                 left join project_building_info pbi on d.buildingId = pbi.buildingId
+                 left join project_unit_info pui on d.unitId = pui.unitId
+                 left join project_house_info phi on d.houseId = phi.houseId
+                 left join project_device_region pdr on d.deviceRegionId = pdr.regionId
+        where d.mac = #{mac}
+    </select>
+
+    <select id="getIotDeviceByType" resultType="com.aurine.cloudx.estate.vo.ProjectIotDeviceInfoVo">
+        SELECT
+        info.*,
+        param.deviceParam paramJson
+        FROM
+        project_device_info info
+        LEFT JOIN
+        (
+        SELECT * FROM project_device_param_info
+        WHERE project_device_param_info.serviceId = 'IotDeviceParamObj' OR project_device_param_info.serviceId IS NULL
+        ) param ON param.deviceId = info.deviceId
+        WHERE (param.serviceId = 'IotDeviceParamObj' OR param.serviceId IS NULL)
+        <if test="param!=null and param.types!=null and param.types.size>0">
+            AND info.deviceType in
+            <foreach collection="param.types" item="type" index="index" open="(" close=")" separator=",">
+                ${type}
+            </foreach>
+        </if>
+        <if test="param != null and param.deviceName != null and param.deviceName != ''">
+            AND info.deviceName like concat('%',#{param.deviceName},'%')
+        </if>
+    </select>
+
+    <select id="getStreetLightList" resultType="com.aurine.cloudx.estate.vo.ProjectIotDeviceInfoVo">
+        SELECT
+            device.*,
+            alarm.*,
+            IF(param.deviceParam IS NULL, '{"LightDeviceStatus":{"lightingStatus":"0","brightness":"50"}}' , param.deviceParam) 'paramJson'
+        FROM
+            project_device_info device
+                LEFT JOIN (
+                SELECT
+                    project_device_info.deviceId,
+                    GROUP_CONCAT(DISTINCT eventTypeName) eventNames,
+                    COUNT( project_entrance_alarm_event.eventTypeId ) alarmNum
+                FROM
+                    project_device_info
+                        LEFT JOIN project_entrance_alarm_event ON project_entrance_alarm_event.deviceId = project_device_info.deviceId
+                        LEFT JOIN sys_event_type_conf ON sys_event_type_conf.eventTypeId = project_entrance_alarm_event.eventTypeId
+                WHERE
+                    project_device_info.deviceType = '12'
+                  AND project_entrance_alarm_event.`status` != '2'
+                GROUP BY
+                    deviceId
+            ) alarm ON alarm.deviceId = device.deviceId
+                LEFT JOIN project_device_param_info param ON ( param.deviceId = device.deviceId AND param.serviceId = 'LightDeviceStatus' )
+        <where>
+            device.deviceType = '12'
+            <if test="param != null and param.deviceName != null and param.deviceName != ''">
+                AND device.deviceName like concat('%',#{param.deviceName},'%')
+            </if>
+        </where>
+    </select>
+
+    <!--分页查询监控设备-->
+    <select id="pageCameraVo" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceCameraVo">
+        select d.deviceId ,d.deviceName,d.deviceCode,d.deviceType,d.deviceEntityId ,d.deviceAlias,
+        (
+        SELECT COUNT(*) FROM project_device_monitor_conf
+        WHERE project_device_monitor_conf.deviceTypeId = d.deviceType AND project_device_monitor_conf.projectId =
+        d.projectId
+        ) 'checkItemNum',
+        (with recursive r as
+        (
+        select * from project_frame_info s1 where s1.entityId = d.deviceEntityId
+        union all
+        select s1.* from project_frame_info s1, r where s1.entityId = r.puid
+        ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r group by r.projectid ) as
+        deviceEntityName,
+        d.deviceRegionId ,d.dStatus status,d.createTime ,pdr.regionName deviceRegionName,d.sn ,
+        attr1.attrValue belongToDeviceId,info.deviceName belongToDeviceName,info.deviceCode
+        belongToDeviceCode,attr2.attrValue monitorType
+        ,d.deviceDesc
+        from project_device_info d left join project_device_region pdr on d.deviceRegionId = pdr.regionId
+        left join project_device_attr attr1 on attr1.attrCode='attachDeviceId' and attr1.deviceId=d.deviceId and
+        attr1.projectId=d.projectId
+        left join project_device_info info on info.deviceId=attr1.attrValue
+        left join project_device_attr attr2 on attr2.attrCode='monitorDeviceType' and attr2.deviceId=d.deviceId and
+        attr2.projectId=d.projectId
+        <where>
+            <!--设备类型id 及项目id 必填-->
+            and d.deviceType = #{query.deviceTypeId}
+            <if test="query.deviceName!=null and query.deviceName!=''">
+                and d.deviceName like concat('%',#{query.deviceName},'%')
+            </if>
+            <if test="query.sn!=null and query.sn!=''">
+                and d.sn like concat('%',#{query.sn},'%')
+            </if>
+            <if test="query.deviceCode!=null and query.deviceCode!=''">
+                and d.deviceCode like concat('%',#{query.deviceCode},'%')
+            </if>
+            <if test="query.status!=null and query.status!=''">
+                and d.dstatus = #{query.status}
+            </if>
+            <if test="query.deviceRegionId!=null and query.deviceRegionId!=''">
+                and d.deviceRegionId = #{query.deviceRegionId}
+            </if>
+        </where>
+    </select>
+
+    <!--分页查询报警主机-->
+    <select id="pageAlarmVo" resultType="com.aurine.cloudx.estate.vo.ProjectAlarmHostVo">
+        SELECT
+        d.deviceId,
+        deviceCode ,
+        sn,
+        deviceType,
+        deviceName,
+        deviceAlias,
+        dStatus status,
+        pdr.regionName deviceRegionName,
+        p.num defenceAreaNum,
+        if(p.armedStatus>=1,'1','0') armedStatus,
+        d.createTime,
+        d.deviceRegionId
+        FROM
+        project_device_info d
+        left join project_device_region pdr on pdr.regionId =d.deviceRegionId
+        left join (
+        select count(*) num,deviceId,sum(armedStatus) armedStatus from project_perimeter_alarm_area group by deviceId
+        ) p on d.deviceId=p.deviceId
+        <where>
+            and d.deviceType = #{query.deviceTypeId}
+            <if test="query.deviceName!=null and query.deviceName!=''">
+                and (d.deviceName like concat('%',#{query.deviceName},'%')
+                or d.deviceAlias like concat('%',#{query.deviceName},'%'))
+            </if>
+            <if test="query.sn!=null and query.sn!=''">
+                and d.sn like concat('%',#{query.sn},'%')
+            </if>
+            <if test="query.status!=null and query.status!=''">
+                and d.dstatus=#{query.status}
+            </if>
+            <if test="query.deviceRegionId!=null and query.deviceRegionId!=''">
+                and d.deviceRegionId = #{query.deviceRegionId}
+            </if>
+
+        </where>
+
+    </select>
+
+    <!--分页查询智能水表-->
+    <select id="pageWaterMeterVo" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceVo">
+        SELECT
+        info.deviceId,
+        info.sn,
+        info.deviceType,
+        info.deviceAlias,
+        info.dstatus status,
+        region.regionName deviceRegionName,
+        info.createTime,
+        (
+        SELECT
+        CONCAT( CONCAT( address.address, '-' ), info.deviceName )) deviceName
+        FROM
+        project_device_info info
+        LEFT JOIN (
+        SELECT DISTINCT
+        *
+        FROM
+        (
+        SELECT
+        house.entityId houseId,
+        (
+        WITH recursive r AS (
+        SELECT
+        *
+        FROM
+        project_frame_info pfi
+        WHERE
+        pfi.entityId = house.entityId UNION ALL
+        SELECT
+        pfi.*
+        FROM
+        project_frame_info pfi,
+        r
+        WHERE
+        pfi.entityId = r.puid
+        ) SELECT
+        group_concat( r.entityName ORDER BY LEVEL DESC SEPARATOR '-' )
+        FROM
+        r
+        GROUP BY
+        projectId
+        ORDER BY
+        LEVEL
+        ) address
+        FROM
+        project_frame_info AS house
+        LEFT JOIN project_frame_info AS unit ON unit.entityId = house.puid
+        LEFT JOIN project_frame_info AS building ON building.entityId = unit.puid
+        LEFT JOIN project_house_person_rel ON house.entityId = project_house_person_rel.houseId
+        LEFT JOIN project_person_info ON project_person_info.personId = project_house_person_rel.personId
+        WHERE
+        house.entityId IN ( SELECT houseId FROM project_device_info WHERE deviceType = #{query.deviceTypeId})
+        ) houseAddressTable
+        ) address ON info.houseId = address.houseId
+        LEFT JOIN project_device_region region ON info.deviceRegionId = region.regionId
+        <where>
+            and info.deviceType = #{query.deviceTypeId}
+            <if test="query.deviceName!=null and query.deviceName!=''">
+                and (info.deviceName like concat('%',#{query.deviceName},'%')
+                or info.deviceDesc like concat('%',#{query.deviceName},'%'))
+            </if>
+            <if test="query.sn!=null and query.sn!=''">
+                and info.sn like concat('%',#{query.sn},'%')
+            </if>
+            <if test="query.status!=null and query.status!=''">
+                and info.dstatus=#{query.status}
+            </if>
+        </where>
+    </select>
+
+    <!--分页查询设备-->
+    <select id="pageDeviceVo" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceVo">
+        SELECT
+        d.deviceId,
+        d.deviceCode,
+        sn,
+        d.deviceType,
+        deviceName,
+        deviceAlias,
+        dStatus STATUS,
+        pdr.regionName deviceRegionName,
+        d.createTime,
+        d.ipv4,
+        d.accessMethod,
+        d.brand
+        FROM
+        project_device_info d
+        LEFT JOIN project_device_region pdr ON pdr.regionId = d.deviceRegionId
+        <where>
+            and d.deviceType = #{query.deviceTypeId}
+            <if test="query.deviceName!=null and query.deviceName!=''">
+                and (d.deviceName like concat('%',#{query.deviceName},'%')
+                or d.deviceAlias like concat('%',#{query.deviceName},'%'))
+            </if>
+            <if test="query.deviceCode!=null and query.deviceCode!=''">
+                and d.deviceCode like concat('%',#{query.deviceCode},'%')
+            </if>
+            <if test="query.status!=null and query.status!=''">
+                and d.dstatus=#{query.status}
+            </if>
+            <if test="query.ipv4!=null and query.ipv4!=''">
+                and d.ipv4 like concat('%',#{query.ipv4},'%')
+            </if>
+            <if test="query.deviceRegionId!=null and query.deviceRegionId!=''">
+                and d.deviceRegionId = #{query.deviceRegionId}
+            </if>
+            <if test="query.excludedDeviceIDList!=null and query.excludedDeviceIDList.size>0">
+                and d.deviceId not in
+                <foreach collection="query.excludedDeviceIDList" item="id" open="(" close=")" separator=",">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+
+    <!--查询出巡点拥有的设备列表-->
+    <select id="listDeviceByPointId" resultType="com.aurine.cloudx.estate.vo.ProjectPointDeviceVo">
+        SELECT device_rel.deviceId,
+               device_info.deviceCode,
+               device_rel.deviceName,
+               device_rel.deviceSn 'sn', device_rel.deviceType 'deviceType', device_info.deviceRegionId 'regionId', device_region.regionName,
+               device_type.deviceTypeName,
+               (SELECT COUNT(*)
+                FROM project_device_monitor_conf
+                WHERE project_device_monitor_conf.deviceTypeId = device_info.deviceType
+                  AND project_device_monitor_conf.projectId = device_rel.projectId) 'checkItemNum', CONCAT_WS('-', building.entityName, unit.entityName, house.entityName) 'address'
+        FROM project_inspect_point_device_rel device_rel
+                 LEFT JOIN project_inspect_point_conf point_conf ON point_conf.pointId = device_rel.pointId
+                 LEFT JOIN project_device_info device_info ON device_info.deviceId = device_rel.deviceId
+                 LEFT JOIN project_device_type device_type ON device_type.deviceTypeId = device_rel.deviceType
+                 LEFT JOIN project_frame_info house ON house.entityId = device_info.houseId
+                 LEFT JOIN project_frame_info unit ON unit.entityId = device_info.unitId
+                 LEFT JOIN project_frame_info building ON building.entityId = device_info.buildingId
+                 LEFT JOIN project_device_region device_region ON device_region.regionId = device_info.deviceRegionId
+        WHERE point_conf.pointId = #{pointId}
+          AND device_rel.deviceId != ''
+    </select>
+    <select id="getByThirdPartyCode" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoProxyVo">
+        SELECT project_device_info.*,
+               project_device_info.tenant_id as tenantId
+        FROM project_device_info
+        WHERE project_device_info.thirdPartyCode = #{thirdPartyCode}
+    </select>
+    <select id="getByThirdPartyNo" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoProxyVo">
+        SELECT project_device_info.*,
+               project_device_info.tenant_id as tenantId
+        FROM project_device_info
+        WHERE project_device_info.thirdpartNo = #{thirdPartyNo}
+    </select>
+    <select id="getByDeviceSn" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoProxyVo">
+        SELECT project_device_info.*,
+               project_device_info.tenant_id as tenantId
+        FROM project_device_info
+        WHERE project_device_info.sn = #{deviceSn}
+    </select>
+
+    <select id="getByDeviceId" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoProxyVo">
+        SELECT project_device_info.*,
+               project_device_info.tenant_id as tenantId
+        FROM project_device_info
+        WHERE project_device_info.deviceId = #{deviceId}
+    </select>
+
+    <select id="listByProjectId" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoProxyVo">
+        SELECT project_device_info.*,
+               project_device_info.tenant_id as tenantId
+        FROM project_device_info
+        WHERE project_device_info.projectId = #{projectId}
+          and project_device_info.deviceType in ('2', '3')
+    </select>
+    <select id="listByDeviceType" resultType="com.aurine.cloudx.estate.entity.ProjectDeviceInfo">
+        SELECT project_device_info.*,
+               project_device_info.tenant_id as tenantId
+        FROM project_device_info
+        WHERE project_device_info.projectId = #{projectId}
+          and project_device_info.deviceType = #{type}
+    </select>
+
+
+    <select id="listByBuildingIdList" resultType="java.lang.String">
+        SELECT
+        deviceId
+        FROM
+        project_building_info building_info
+        LEFT JOIN project_device_info device_info ON building_info.buildingId = device_info.buildingId
+        WHERE building_info.buildingId IN
+        <foreach collection="buildingIdList" item="buildingId" index="index" open="(" close=")" separator=",">
+            #{buildingId}
+        </foreach>
+
+    </select>
+    <select id="findFaceCapacityDoorDevice" resultType="com.aurine.cloudx.estate.entity.ProjectDeviceInfo">
+        select info.* from project_device_info info
+        where
+        info.dStatus !='4'
+        and info.deviceType in('2','3')
+        and instr(deviceCapabilities ,'face') >0
+    </select>
+    <select id="countBySn" resultType="java.lang.Integer">
+        select count(sn) from project_device_info
+        where
+        sn =#{sn}
+        <if test="deviceId!=null and deviceId!=''">
+            and deviceId!=#{deviceId}
+        </if>
+    </select>
+    <select id="countThirdPartyCode" resultType="java.lang.Integer">
+        SELECT count(*)
+        FROM project_device_info
+        WHERE project_device_info.thirdpartyCode = #{thirdpartyCode}
+    </select>
+
+    <select id="getDeviceNoPreByDeviceId" resultType="java.lang.String">
+        SELECT entityCode
+        FROM project_device_info device
+                 LEFT JOIN project_frame_info frame_info ON frame_info.entityId = IF
+            (device.houseId IS NULL OR device.houseId = '', device.unitId, device.houseId)
+        WHERE device.deviceId = #{deviceId}
+    </select>
+
+
+    <insert id="saveDeviceProxy">
+        INSERT
+        INTO project_device_info
+        (deviceId,
+         deviceCode,
+         deviceName,
+         deviceType,
+         deviceAlias,
+         deviceDesc,
+         projectId,
+         dStatus,
+         isActive,
+         buildingId,
+         unitId,
+         houseId,
+         passType,
+         deviceRegionId,
+         deviceEntityId,
+         sn,
+         mac,
+         location,
+         thirdpartyCode,
+         thirdpartNo,
+         lon,
+         lat,
+         alt,
+         gisArea,
+         gisType,
+         isCloudCtl,
+         productId,
+         tenant_id,
+         operator)
+        VALUES (#{deviceInfo.deviceId},
+                #{deviceInfo.deviceCode},
+                #{deviceInfo.deviceName},
+                #{deviceInfo.deviceType},
+                #{deviceInfo.deviceAlias},
+                #{deviceInfo.deviceDesc},
+                #{deviceInfo.projectId},
+                #{deviceInfo.status},
+                #{deviceInfo.active},
+                #{deviceInfo.buildingId},
+                #{deviceInfo.unitId},
+                #{deviceInfo.houseId},
+                #{deviceInfo.passType},
+                #{deviceInfo.deviceRegionId},
+                #{deviceInfo.deviceEntityId},
+                #{deviceInfo.sn},
+                #{deviceInfo.mac},
+                #{deviceInfo.location},
+                #{deviceInfo.thirdpartyCode},
+                #{deviceInfo.thirdpartNo},
+                #{deviceInfo.lon},
+                #{deviceInfo.lat},
+                #{deviceInfo.alt},
+                #{deviceInfo.gisArea},
+                #{deviceInfo.gisType},
+                #{deviceInfo.cloudCtl},
+                #{deviceInfo.productId},
+                #{deviceInfo.tenantId},
+                #{deviceInfo.operator})
+
+    </insert>
+
+    <select id="getDeviceBrand" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceProductNameVo">
+        SELECT
+            m.productName productName,
+            m.productModel productModel,
+            concat( m.productModel, '-', m.productName ) attrValue,
+            m.productId productId
+        FROM
+            sys_device_product_map m
+        left join sys_device_type_model on sys_device_type_model.productId = m.productId
+        WHERE
+            sys_device_type_model.deviceTypeId = #{deviceTypeId}
+    </select>
+
+    <select id="getDeviceBrandByAttr" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceProductNameVo">
+        SELECT
+            *
+        FROM
+            (
+                SELECT
+                    m.productName productName,
+                    m.productModel productModel,
+                    concat( m.productName, '-', m.productModel ) attrValue,
+                    m.productId productId
+                FROM
+                    sys_device_product_map m
+            ) tmp_table
+        WHERE
+            tmp_table.attrValue = #{attrVal}
+            OR tmp_table.productModel = #{attrVal}
+    </select>
+
+
+    <select id="getControllerIMEL" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceProductNameVo">
+        SELECT attrValue
+        FROM project_device_attr
+        WHERE deviceType = '12'
+          AND attrCode = 'sn'
+          AND attrValue NOT IN (SELECT sn
+                                FROM project_device_info info
+                                         LEFT JOIN project_device_attr attr ON info.sn = attr.attrValue
+                                WHERE info.deviceType = '12')
+    </select>
+
+    <select id="getMonitoring" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoPageVo">
+        SELECT
+            rel.monitorDeviceId deviceId,
+            info.deviceName
+        FROM
+            project_device_monitor_rel rel
+                left join project_device_info info on rel.monitorDeviceId = info.deviceId
+        WHERE
+            rel.deviceId = #{deviceId}
+    </select>
+
+    <select id="countSn" resultType="Integer">
+        select projectId from project_device_info where sn = #{sn}
+        <if test='deviceId != null or deviceId != ""'>
+            and deviceId != #{deviceId}
+        </if>
+    </select>
+
+    <select id="getProductIdByDeviceSn" resultType="java.lang.String">
+        select product.productName
+        from project_device_info  device
+                 left join sys_device_product_map product on device.productId = product.productId
+        where device.sn = #{deviceSn}
+    </select>
+
+
+    <select id="listAbnormalDevice" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoAbnormalVo">
+        SELECT DISTINCTROW device_info.*,project_device_abnormal.abnormalDesc, project_device_abnormal.devAddTime, project_device_abnormal.seq as abnormalSeq
+        FROM (
+                 SELECT *
+                 FROM project_device_info base_device_info
+                 WHERE base_device_info.deviceId = #{deviceId}
+                   AND base_device_info.projectId = #{projectId}
+                 UNION ALL
+                 (
+                     SELECT ip_device_info.*
+                     FROM project_device_info device_info
+                              LEFT JOIN project_device_info ip_device_info
+                                        ON ip_device_info.ipv4 = device_info.ipv4
+                                            AND ip_device_info.ipv4 IS NOT NULL
+                                            AND ip_device_info.ipv4 != ''
+                     WHERE device_info.deviceId = #{deviceId}
+                       AND ip_device_info.deviceId != #{deviceId}
+                       AND device_info.projectId = #{projectId}
+                 )
+                 UNION ALL
+                 (
+                     SELECT mac_device_info.*
+                     FROM project_device_info device_info
+                              LEFT JOIN project_device_info mac_device_info
+                                        ON mac_device_info.mac = device_info.mac
+                                            AND mac_device_info.mac IS NOT NULL
+                                            AND mac_device_info.mac != ''
+                     WHERE device_info.deviceId = #{deviceId}
+                       AND mac_device_info.deviceId != #{deviceId}
+                       AND device_info.projectId = #{projectId}
+                 )
+                 UNION ALL
+                 (
+                     SELECT device_code_device_info.*
+                     FROM project_device_info device_info
+                              LEFT JOIN project_device_info device_code_device_info
+                                        ON device_code_device_info.deviceCode = device_info.deviceCode
+                                               AND device_code_device_info.deviceCode IS NOT NULL
+                                               AND device_code_device_info.deviceCode != ''
+                     WHERE device_info.deviceId = #{deviceId}
+                       AND device_code_device_info.deviceId != #{deviceId}
+                       AND device_info.projectId = #{projectId}
+                 )
+             ) device_info LEFT JOIN project_device_abnormal ON project_device_abnormal.deviceId = device_info.deviceId
+    </select>
+
+    <select id="getBuildingAndUnitByDeviceId" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceBuildingUnitNameVo">
+        SELECT
+            building.buildingName,
+            unit.unitName,
+            house.houseName
+        FROM
+            project_device_info device
+                LEFT JOIN project_building_info building ON device.buildingId = building.buildingId
+                LEFT JOIN project_unit_info unit ON device.unitId = unit.unitId
+                LEFT JOIN project_house_info house ON device.houseId = house.houseId
+        WHERE
+            device.deviceId = #{deviceId}
+    </select>
+    <select id="getModule" resultType="java.lang.String">
+
+        SELECT
+            concat(s3.subsystemName ,'-',s2.subsystemName,'-',s1.subsystemName)  name
+
+        FROM
+            project_device_subsystem s1
+                left join project_device_subsystem s2 on s1.pid = s2.subsystemId
+                left join project_device_subsystem s3 on s2.pid = s3.subsystemId
+        WHERE
+                s1.subsystemCode = ( SELECT deviceType FROM project_device_info WHERE deviceId = #{deviceId} )
+          AND s1.projectId = #{projectId}
+    </select>
+
+    <select id="getAbnormalCount" resultType="java.lang.Integer">
+        SELECT
+            count(*)
+        FROM
+            project_device_abnormal
+        WHERE
+                deviceId IN (
+                SELECT
+                    deviceId
+                FROM
+                    project_device_info
+                WHERE
+                    deviceType = #{type})
+    </select>
+    <select id="getDeviceNameAndBuildingNameAndUnitName" resultType="com.aurine.cloudx.estate.entity.ProjectNoticeDevice">
+        select a.deviceName,b.entityName buildingName,c.entityName unitName from project_device_info a
+        left join project_frame_info b on b.entityId = a.buildingId
+        left join project_frame_info c on c.entityId = a.unitId
+        where a.deviceId = #{deviceId}
+    </select>
+    <select id="getDevicesByParDeviceId" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoVo" >
+        SELECT project_device_info.*,
+               project_device_info.tenant_id as tenantId,
+               project_device_info.dStatus as status
+        FROM project_device_info
+        WHERE project_device_info.deviceId in (select deviceId FROM project_device_rel where parDeviceId = #{deviceId})
+        <if test="deviceAlias!=null and deviceAlias!=''">
+            and project_device_info.deviceAlias like concat('%',#{deviceAlias},'%')
+        </if>
+        <if test="ipv4!=null and ipv4!=''">
+            and project_device_info.ipv4 like concat('%',#{ipv4},'%')
+        </if>
+    </select>
+    <select id="getParDeviceByDeviceId" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoProxyVo" >
+        SELECT project_device_info.*,
+               project_device_info.tenant_id as tenantId,
+               project_device_info.dStatus as status
+        FROM project_device_info
+        WHERE project_device_info.deviceId = (select parDeviceId FROM project_device_rel where deviceId = #{deviceId})
+    </select>
+    <update id="updateAliasById">
+        update project_device_info
+        set project_device_info.deviceAlias = #{deviceAlias}
+        where project_device_info.deviceId = #{deviceId};
+    </update>
+
+    <select id="pageElevator" resultType="com.aurine.cloudx.estate.vo.ProjectElevatorDeviceVo">
+        SELECT
+        *
+        FROM
+        (
+        SELECT
+        IF
+        ( count( child_floor_set_repeat.deviceId ) > 1, '1', '0' ) elevatorStatus,
+        building_info.buildingName,
+        region.regionName,
+        device.deviceName,
+        device.createTime,
+        device.deviceId
+        FROM
+        project_device_info device
+        LEFT JOIN (
+        SELECT
+        (
+        WITH RECURSIVE r AS (
+        SELECT
+        *
+        FROM
+        project_frame_info pfi
+        WHERE
+        pfi.entityId = building.entityId UNION ALL
+        SELECT
+        pfi.*
+        FROM
+        project_frame_info pfi,
+        r
+        WHERE
+        pfi.entityId = r.puid
+        ) SELECT
+        group_concat( r.entityName ORDER BY LEVEL DESC SEPARATOR '-' )
+        FROM
+        r
+        GROUP BY
+        projectId
+        ORDER BY
+        LEVEL
+        ) buildingName,
+        building.entityId buildingId
+        FROM
+        project_frame_info building
+        WHERE
+        building.isBuilding = '1'
+        ) building_info ON building_info.buildingId = device.buildingId
+        LEFT JOIN (
+        SELECT
+        deviceId,
+        COUNT( floorSet )
+        FROM
+        (
+        SELECT
+        device_info.deviceId,
+        IFNULL( attr.attrValue, device_info.seq ) floorSet
+        FROM
+        project_device_info device_info
+        LEFT JOIN project_device_rel device_rel ON ( device_rel.parDeviceId = device_info.deviceId )
+        LEFT JOIN project_device_attr attr ON ( device_rel.deviceId = attr.deviceId OR attr.deviceId IS NULL )
+        WHERE
+        ( attrCode = 'floorSet' OR attrCode IS NULL )
+        AND device_info.deviceType = '23'
+        AND attr.deviceType = '17'
+        ) tmp_floor_count
+        GROUP BY
+        deviceId,
+        floorSet
+        ) child_floor_set_repeat ON child_floor_set_repeat.deviceId = device.deviceId
+        LEFT JOIN project_device_region region ON device.deviceRegionId = region.regionId
+        <where>
+            device.deviceType = '23'
+            <if test="query.deviceName != null and query.deviceName != ''">
+                AND device.deviceName like concat('%', #{query.deviceName}, '%')
+            </if>
+        </where>
+        GROUP BY
+            building_info.buildingName,
+            device.deviceName,
+            device.createTime,
+            device.deviceId
+        ) elevator_table
+        <where>
+            <if test="query.elevatorStatus != null and query.elevatorStatus != ''">
+                AND elevator_table.elevatorStatus = #{query.elevatorStatus}
+            </if>
+        </where>
+    </select>
+
+    <select id="pageLayerDevice" resultType="com.aurine.cloudx.estate.vo.ProjectLayerDeviceInfoVo">
+        SELECT DISTINCT
+        IF
+        ( ( SELECT COUNT(*) FROM project_device_rel r WHERE device.deviceId = r.deviceId ) > 0, 2, 1 ) selectStatus,
+        region.regionName,
+        (
+        WITH recursive r AS (
+        SELECT
+        *
+        FROM
+        project_frame_info pfi
+        WHERE
+        pfi.entityId = device.buildingId UNION ALL
+        SELECT
+        pfi.*
+        FROM
+        project_frame_info pfi,
+        r
+        WHERE
+        pfi.entityId = r.puid
+        ) SELECT
+        group_concat( r.entityName ORDER BY LEVEL DESC SEPARATOR '-' )
+        FROM
+        r
+        GROUP BY
+        projectId
+        ORDER BY
+        LEVEL
+        ) buildingName,
+        REPLACE ( json_extract( param.deviceParam, '$.LiftBaseParamsObj.floorSet' ), '"', '' ) floorSet,
+            IFNULL(attr_open_door_model.attrValue, '') openDoorMode,
+            device.*
+        FROM
+            project_device_info device
+            LEFT JOIN project_device_region region ON device.deviceRegionId = region.regionId
+            LEFT JOIN project_device_param_info param ON param.deviceId = device.deviceId
+            LEFT JOIN project_device_attr attr_open_door_model ON attr_open_door_model.deviceId = device.deviceId
+            LEFT JOIN project_device_rel device_rel ON device_rel.deviceId = device.deviceId
+        <where>
+            device.deviceType = '17'
+        AND param.serviceId = 'LiftBaseParamsObj'
+            and (attr_open_door_model.attrCode = 'openDoorMode' OR attr_open_door_model.attrCode IS NULL)
+            and (device.unitId = #{unitId} OR device.unitId IS NULL)
+            and (device_rel.seq IS NULL
+            <if test="containDeviceIdList != null and containDeviceIdList.size > 0">
+                OR device_rel.deviceId
+                IN
+                <foreach collection="containDeviceIdList" item="id" index="index" open="(" close=")" separator=",">
+                    #{id}
+                </foreach>
+            </if>
+            )
+            <if test="query.sn != null and query.sn != ''">
+                and device.sn like concat('%', #{query.sn}, '%')
+            </if>
+            <if test="query.deviceName != null and query.deviceName != ''">
+                and device.deviceName like concat('%', #{query.deviceName}, '%')
+            </if>
+            <if test="query.floorSet != null and query.floorSet != ''">
+                and attr.attrCode = #{query.floorSet}
+            </if>
+
+            <if test='query.selectStatus == "1"'>
+                and (select count(*) from project_device_rel where device.deviceId = device_rel.deviceId) = 0
+            </if>
+            <if test='query.selectStatus == "2"'>
+                and (select count(*) from project_device_rel where device.deviceId = device_rel.deviceId) > 0
+            </if>
+        </where>
+    </select>
+
+
+    <select id="pageRecognizerControlDevice" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoVo">
+        SELECT
+        IF( (SELECT COUNT(*) FROM project_device_rel r WHERE device.deviceId = r.deviceId) > 0 ,2,1 ) selectStatus,
+        region.regionName deviceRegionName,
+            (
+                with recursive r as
+                (
+                    select * from project_frame_info pfi where pfi.entityId = device.buildingId
+                    union all
+                    select pfi.* from project_frame_info pfi, r where pfi.entityId = r.puid
+                ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r GROUP BY projectId ORDER BY level
+            ) buildingName,
+            device.*
+        FROM
+            project_device_info device LEFT JOIN project_device_region region ON device.deviceRegionId = region.regionId
+        <where>
+            device.deviceType = '18'
+            and (device.unitId = #{unitId} OR device.unitId IS NULL)
+            <if test="query.sn != null and query.sn != ''">
+                and device.sn like concat('%', #{query.sn}, '%')
+            </if>
+            <if test="query.deviceName != null and query.deviceName != ''">
+                and device.deviceName like concat('%', #{query.deviceName}, '%')
+            </if>
+            <if test='query.selectStatus == "1"'>
+                and (select count(*) from project_device_rel r where device.deviceId = r.deviceId) = 0
+            </if>
+            <if test='query.selectStatus == "2"'>
+                and (select count(*) from project_device_rel  r where device.deviceId = r.deviceId) > 0
+            </if>
+        </where>
+    </select>
+
+    <select id="getDeviceListByType" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceInfoVo">
+        SELECT
+            region.regionName deviceRegionName,
+            (
+                with recursive r as
+                (
+                    select * from project_frame_info pfi where pfi.entityId = device.buildingId
+                    union all
+                    select pfi.* from project_frame_info pfi, r where pfi.entityId = r.puid
+                ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r GROUP BY projectId ORDER BY level
+            ) buildingName,
+            device.*
+        FROM project_device_rel device_rel
+            LEFT JOIN project_device_info device ON device_rel.deviceId = device.deviceId
+            LEFT JOIN project_device_region region ON device.deviceRegionId = region.regionId
+        WHERE device_rel.parDeviceId = #{deviceId} AND device.deviceType = #{deviceType}
+    </select>
+
+
+    <select id="getPersonAddressByDeviceId" resultType="java.lang.String">
+        SELECT
+            CONCAT(frameBuilding.entityName, frameUnit.entityName, frameHouse.entityName ) address
+        FROM
+                project_frame_info frameHouse
+                LEFT JOIN project_frame_info frameUnit ON frameUnit.entityId = #{unitId}
+                LEFT JOIN project_frame_info frameBuilding ON frameBuilding.entityId = #{buildingId}
+        WHERE
+            frameHouse.entityId = #{houseId}
+            limit 1
+    </select>
+
+    <select id="getProjectDeviceInfoByStatue" resultType="com.aurine.cloudx.estate.excel.entity.access.IndoorDeviceExportExcel">
+        select d.*,
+               d.dCompany                                                                                   company,
+               d.dStatus                                                                                    status,
+               d.isActive                                                                                   active,
+               d.isBlueTeeth                                                                                blueTeeth,
+               d.dPort                                                                                      port,
+               pbi.buildingName                                                                             building,
+               pui.unitName                                                                                 unit,
+               phi.houseName                                                                                house,
+            (SELECT attrValue
+                FROM project_device_attr where deviceId = d.deviceId and attrCode = 'centerServerIP') as centerServerIP,
+            (SELECT attrValue
+                FROM project_device_attr where deviceId = d.deviceId and attrCode = 'dns1') as dns1,
+            (SELECT attrValue
+                FROM project_device_attr where deviceId = d.deviceId and attrCode = 'dns2') as dns2,
+            (SELECT attrValue
+                FROM project_device_attr where deviceId = d.deviceId and attrCode = 'gateway') as gateway,
+            (SELECT attrValue
+                FROM project_device_attr where deviceId = d.deviceId and attrCode = 'subnet') as subnet,
+               if(d.deviceRegionId = '1', '社区', pdr.regionName)                                             deviceRegionName
+        from project_device_info d
+                 left join project_building_info pbi on d.buildingId = pbi.buildingId
+                 left join project_unit_info pui on d.unitId = pui.unitId
+                 left join project_house_info phi on d.houseId = phi.houseId
+                 left join project_device_region pdr on d.deviceRegionId = pdr.regionId
+        where d.deviceType='1'
+        <if test='status == "3"'>
+            and (d.dStatus = '1' or d.dStatus = '2' or d.dStatus = '3' or d.dStatus = '9')
+        </if>
+        <if test='status == "2"'>
+            and d.dStatus = '4'
+        </if>
+
+    </select>
+
+    <select id="listVehicleBarrierDevice" resultType="com.aurine.cloudx.estate.vo.ProjectVehicleBarrierDeviceInfoVo">
+        select *,dStatus `status` from project_device_info
+        where deviceType = '22'
+        <if test="query.deviceName != null and query.deviceName != ''">
+          AND deviceName LIKE concat('%',#{query.deviceName},'%')
+        </if>
+    </select>
+
+    <select id="AlarmDeviceTypeList" resultType="integer">
+        select count(*) from sys_event_type_conf e
+        <where>
+            <if test="value!=null and value != ''">
+                and e.deviceType = #{value}
+            </if>
+        </where>
+    </select>
+
+    <select id="getProprietorCertHouseRelationVo" resultType="java.lang.String">
+        SELECT
+            f.entityCode roomList
+        FROM
+            aurine.project_frame_info f
+                LEFT JOIN aurine.project_house_person_rel r ON f.entityId = r.houseId
+        WHERE
+            f.puid = #{unitId}
+          AND r.personId = #{personId}
+        ORDER BY
+            roomList ASC
+    </select>
+
+    <select id="getProprietorStairNoList" resultType="java.lang.Integer">
+        SELECT
+            IF
+                ( hasStiltFloor = 1, 0, NULL ) stairNoList
+        FROM
+            aurine.project_building_info b
+        WHERE
+            buildingId = #{buildingId}
+            and hasStiltFloor = '1'
+        UNION ALL
+        SELECT
+            r.floor stairNoList
+        FROM
+            aurine_parking.project_parking_place p
+                LEFT JOIN aurine_parking.project_park_region r ON p.parkRegionId = r.parkRegionId
+        WHERE
+            p.personId = #{personId}
+    </select>
+
+    <select id="getVisitorCertHouseRelationVo" resultType="java.lang.String">
+        SELECT
+            h.houseCode roomList
+        FROM
+            project_visitor_his v
+                LEFT JOIN project_house_info h ON v.visitHouseId = h.houseId
+        WHERE
+            v.visitId = #{personId}
+          AND v.visitHouseId != ''
+        ORDER BY
+            roomList ASC
+    </select>
+    <select id="getVisitorStairNoList" resultType="java.lang.Integer">
+        SELECT
+            IF
+                ( hasStiltFloor = 1, 0, NULL ) stairNoList
+        FROM
+            aurine.project_building_info b
+        WHERE
+            buildingId = #{buildingId}
+            and hasStiltFloor = '1'
+        UNION ALL
+        SELECT
+            r.floor stairNoList
+        FROM
+            project_visitor_his v
+                LEFT JOIN aurine_parking.project_parking_place p ON v.visitPersonId = p.personId
+                LEFT JOIN aurine_parking.project_park_region r ON p.parkRegionId = r.parkRegionId
+        WHERE
+            v.visitId = #{personId}
+          AND v.visitPersonId != ''
+    </select>
+    <select id="getLiftLadderList" resultType="java.lang.String">
+        SELECT
+            i.deviceId
+        FROM
+            project_device_info d
+                left join project_device_info lift  on lift.buildingId = d.buildingId
+                left join project_device_rel rel on rel.parDeviceId = lift.deviceId
+                left join project_device_info i on i.deviceId = rel.deviceId
+        WHERE
+                d.deviceId IN (
+                SELECT
+                    deviceId
+                FROM
+                    project_person_device
+                WHERE
+                    personId = #{personId})
+          and d.deviceType = 2
+          and lift.deviceType  = 23
+          and i.deviceType = 18
+    </select>
+</mapper>

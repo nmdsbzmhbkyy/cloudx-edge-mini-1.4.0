@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectShiftPlanStaffMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectShiftPlanStaff" id="ProjectShiftPlanStaffMap">
+        <id property="relId" column="relId" jdbcType="VARCHAR"/>
+        <result property="planId" column="planId" jdbcType="VARCHAR"/>
+        <result property="staffId" column="staffId" jdbcType="VARCHAR"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="getStaffListByPlanId" resultType="com.aurine.cloudx.open.origin.vo.ProjectStaffListVo">
+        select ps.staffName, ps.staffId,spd.deptName
+        from project_shift_plan_staff psps
+        left join project_staff ps on  psps.staffId = ps.staffId
+        left join sys_project_dept spd on ps.departmentId = spd.deptId
+        where psps.planId = #{planId}
+    </select>
+</mapper>

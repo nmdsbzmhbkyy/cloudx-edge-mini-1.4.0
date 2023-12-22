@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectNoticeObjectMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectNoticeObject" id="ProjectNoticeObjectMap">
+        <result property="uid" column="uid" jdbcType="VARCHAR"/>
+        <result property="noticeId" column="noticeId" jdbcType="VARCHAR"/>
+        <result property="objectId" column="objectId" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <select id="pageNoticeObject" resultType="com.aurine.cloudx.estate.vo.ProjectNoticeObjectVo">
+        select * from(
+        select pno.noticeId,pno.objectId houseId,
+        pfi.entityName as houseName,pfi_Unit.entityName as unitName,
+
+        (
+        with recursive r as
+        (
+        select * from project_frame_info pfi where pfi.entityId = pbi.entityId
+        union all
+        select pfi.* from project_frame_info pfi, r where pfi.entityId = r.puid
+        ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r GROUP BY projectId ORDER BY level
+        ) buildName
+        from project_notice_object pno
+        left join project_frame_info pfi on pfi.entityId = pno.objectId
+        left join project_frame_info pfi_Unit on pfi_Unit.entityId = pfi.puid
+        left join project_frame_info pbi on pfi_Unit.puid = pbi.entityId
+        <where>
+            <if test="unitName!=null and unitName!=''">
+                and pfi_Unit.entityName like concat('%',#{unitName},'%')
+            </if>
+            <if test="houseName !=null and houseName!='' ">
+                and pfi.entityName like  concat('%',#{houseName},'%')
+            </if>
+            <if test="noticeId!=null">
+                and pno.noticeId=#{noticeId}
+            </if>
+        </where>
+        ) tb
+        <where>
+            <if test="buildName!=null and buildName!='' ">
+                and tb.buildName like concat('%',#{buildName},'%')
+            </if>
+        </where>
+    </select>
+
+</mapper>

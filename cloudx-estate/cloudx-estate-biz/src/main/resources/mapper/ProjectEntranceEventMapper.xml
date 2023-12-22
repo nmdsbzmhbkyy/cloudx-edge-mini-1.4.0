@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectEntranceEventMapper">
+
+    <select id="select" parameterType="com.aurine.cloudx.estate.vo.ProjectEventSearchCondition" resultType="com.aurine.cloudx.estate.vo.ProjectEventVo">
+        SELECT
+        p_event.*,
+        p_event.deviceRegionName AS regionName,
+        CONCAT(IfNULL(p_event.personName,''),IfNULL(p_visitor.personName,''),IfNULL(p_staff.staffName,'')) AS personName
+        FROM project_entrance_event p_event
+        LEFT JOIN project_visitor p_visitor ON p_event.personId = p_visitor.visitorId
+        LEFT JOIN project_staff p_staff on p_event.personId = p_staff.staffId
+        <where>
+            AND p_event.projectId = #{param.projectId}
+            AND p_event.tenant_id = #{param.tenantId}
+            <if test="param.personName != null and param.personName != ''">
+                AND (p_event.personName LIKE concat('%',#{param.personName},'%')
+                OR p_visitor.personName LIKE concat('%',#{param.personName},'%')
+                OR p_staff.staffName LIKE concat('%',#{param.personName},'%'))
+            </if>
+            <if test="param.eventType != null and param.eventType != ''">
+                AND p_event.eventType LIKE concat('%',#{param.eventType},'%')
+            </if>
+            <if test="param.openMode != null and param.openMode.size >0 ">
+                and p_event.openType in
+                <foreach collection="param.openMode" item="openMode" open="(" close=")" separator=",">
+                    #{openMode}
+                </foreach>
+            </if>
+            <if test="param.cardNo != null and param.cardNo != ''">
+                AND p_event.eventDesc LIKE concat('%',#{param.cardNo},'%')
+            </if>
+            <if test="param.deviceName != null and param.deviceName != ''">
+                AND p_event.deviceName LIKE concat('%',#{param.deviceName},'%')
+            </if>
+            <if test="param.effTime != null">
+                AND
+                DATE_FORMAT(p_event.eventTime, '%Y-%m-%d %H:%i:%s')
+                <![CDATA[>=]]>
+                DATE_FORMAT(#{param.effTime}, '%Y-%m-%d %H:%i:%s')
+            </if>
+            <if test="param.expTime != null">
+                AND
+                DATE_FORMAT(p_event.eventTime, '%Y-%m-%d %H:%i:%s')
+                <![CDATA[<=]]>
+                DATE_FORMAT(#{param.expTime}, '%Y-%m-%d %H:%i:%s')
+            </if>
+        </where>
+        ORDER BY p_event.eventTime desc
+    </select>
+
+    <select id="findNum" resultType="com.aurine.cloudx.estate.vo.ProjectEventVo">
+        SELECT
+        eventType, COUNT(eventType) AS eventTypeNum
+        FROM project_entrance_event p_event
+        WHERE
+        date_format(eventTime,'%e %b %y') = date_format(now(), '%e %b %y')
+        AND p_event.projectId = #{projectId}
+        AND p_event.tenant_id = #{tenantId}
+        GROUP BY
+        eventType
+    </select>
+    <select id="countOneDayByPersonType" resultType="java.lang.Integer">
+
+        select count(*) from project_entrance_event e  where
+          e.projectId = #{projectId}
+        AND e.tenant_id = #{tenantId}
+
+        <if test="personType != null and personType != ''">
+            AND e.personType = #{personType}
+            AND personId is not  null
+        </if>
+        <if test="personType == null or personType == ''">
+            AND personId is  null
+        </if>
+
+          and e.eventTime BETWEEN DATE_FORMAT(NOW(),'%Y-%m-%d 00:00:00')
+          AND DATE_FORMAT(NOW(),'%Y-%m-%d 23:59:59')
+
+
+    </select>
+    <select id="getPageByPersonId" resultType="com.aurine.cloudx.estate.vo.ProjectAppEventVo">
+        SELECT
+            pee.eventTime,
+            pee.entranceType,
+            pee.certMedia,
+            pee.deviceRegionName,
+            pdi.deviceName,
+            pdi.dAddress
+        FROM project_entrance_event pee, project_device_info pdi
+        WHERE pee.personId = #{personId} AND pee.deviceId = pdi.deviceId
+        <if test="date != null">
+            AND date_format(pee.eventTime, '%Y-%m-%d') = #{date}
+        </if>
+    </select>
+
+</mapper>

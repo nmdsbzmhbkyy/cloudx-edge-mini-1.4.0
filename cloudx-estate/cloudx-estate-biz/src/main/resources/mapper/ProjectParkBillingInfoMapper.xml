@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, lengleng All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: lengleng (wangiegie@gmail.com)
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectParkBillingInfoMapper">
+
+    <resultMap id="parkBillingInfoMap" type="com.aurine.cloudx.estate.entity.ProjectParkBillingInfo">
+        <id property="seq" column="seq"/>
+        <result property="payorderno" column="payOrderNo"/>
+        <result property="payordercode" column="payOrderCode"/>
+        <result property="parkid" column="parkId"/>
+        <result property="platenumber" column="plateNumber"/>
+        <result property="ordertype" column="orderType"/>
+        <result property="receivable" column="receivable"/>
+        <result property="payment" column="payment"/>
+        <result property="paytime" column="payTime"/>
+        <result property="paytype" column="payType"/>
+        <result property="entertime" column="enterTime"/>
+        <result property="parkorderno" column="parkOrderNo"/>
+        <result property="projectid" column="projectId"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="operator" column="operator"/>
+        <result property="createtime" column="createTime"/>
+        <result property="updatetime" column="updateTime"/>
+    </resultMap>
+    <select id="selectPage" resultType="com.aurine.cloudx.estate.vo.ProjectParkBillingInfoVo">
+        SELECT
+--         CONCAT(LEFT(p_billing.plateNumber,2),' ',RIGHT(p_billing.plateNumber,CHAR_LENGTH(p_billing.plateNumber)-2)) AS plateNumber,
+        p_billing.*,
+        parking_info.parkName,
+        p_entrance_his.outTime,
+        p_entrance_his.parkOrderCode
+        FROM
+        project_park_billing_info p_billing
+        LEFT JOIN
+        project_park_entrance_his p_entrance_his ON p_billing.parkOrderNo = p_entrance_his.parkOrderNo
+        LEFT JOIN
+        project_parking_info parking_info ON p_billing.parkId = parking_info.parkId
+        <where>
+            and parking_info.projectId = #{projectId}
+            AND p_billing.projectId = #{param.projectId}
+            and p_billing.tenant_id=#{param.tenantId}
+
+            <if test="param.parkId != null and param.parkId != ''">
+                AND parking_info.parkId = #{param.parkId}
+            </if>
+            <if test="param.plateNumber != null and param.plateNumber != ''">
+                AND p_billing.plateNumber like concat('%', #{param.plateNumber},'%')
+            </if>
+            <if test="param.effTime != null">
+                AND date_format(p_billing.payTime,'%Y-%m-%d %H:%m') <![CDATA[ >= ]]> date_format(#{param.effTime},'%Y-%m-%d %H:%m')
+            </if>
+            <if test="param.expTime != null">
+                AND date_format(p_billing.payTime,'%Y-%m-%d %H:%m') <![CDATA[ <= ]]> date_format(#{param.expTime},'%Y-%m-%d %H:%m')
+            </if>
+            <if test="param.orderType != null and param.orderType != ''">
+                AND p_billing.orderType = #{param.orderType}
+            </if>
+        </where>
+        ORDER BY p_billing.payTime
+    </select>
+    <select id="selectAllBilling" resultType="com.aurine.cloudx.estate.vo.ProjectParkBillingSearchConditionVo">
+        SELECT
+        SUM(CASE orderType WHEN '1' THEN sumPayment ELSE 0 END) as monthly,
+        SUM(CASE orderType WHEN '2' THEN sumPayment ELSE 0 END ) as temp,
+        t.payTime
+        FROM
+        (
+        SELECT
+        sum(bill.payment) AS sumPayment,
+        bill.orderType,
+        DATE_FORMAT(bill.payTime, '%Y-%m-%d') as payTime
+        FROM
+        project_park_billing_info bill
+        <where>
+            AND bill.projectId = #{param.projectId}
+            and bill.tenant_id=#{param.tenantId}
+            <if test="param.parkId != null and param.parkId != ''">
+                AND bill.parkId = #{param.parkId}
+            </if>
+            <if test="param.effTime != null">
+                AND DATE_FORMAT(bill.payTime, '%Y-%m-%d %H:%m') <![CDATA[ >= ]]> DATE_FORMAT(#{param.effTime}, '%Y-%m-%d %H:%m')
+            </if>
+            <if test="param.expTime != null">
+                AND DATE_FORMAT(bill.payTime, '%Y-%m-%d %H:%m') <![CDATA[ <= ]]> DATE_FORMAT(#{param.expTime}, '%Y-%m-%d %H:%m')
+            </if>
+        </where>
+        GROUP BY
+        DATE_FORMAT(bill.payTime, '%Y-%m-%d'),
+        bill.payTime,
+        bill.orderType
+        ORDER BY bill.payTime desc
+        )
+        as t group by t.payTime
+    </select>
+    <select id="selectIncome" resultType="com.aurine.cloudx.estate.vo.ProjectParkBillingTotalSearchConditionVo">
+        SELECT
+        SUM(pay.monthly) AS totalMonthly,
+        SUM(pay.temp) AS totalTemp
+        FROM
+        (
+        SELECT
+        SUM(CASE orderType WHEN '1' THEN sumPayment ELSE 0 END) AS monthly,
+        SUM(CASE orderType WHEN '2' THEN sumPayment ELSE 0 END ) AS temp,
+        t.payTime
+        FROM
+        (
+        SELECT
+        sum(bill.payment) AS sumPayment,
+        bill.orderType,
+        DATE_FORMAT(bill.payTime, '%Y-%m-%d') as payTime
+        FROM
+        project_park_billing_info bill
+        <where>
+            AND bill.projectId = #{param.projectId}
+            and bill.tenant_id=#{param.tenantId}
+            <if test="param.parkId != null and param.parkId != ''">
+                AND bill.parkId = #{param.parkId}
+            </if>
+            <if test="param.effTime != null">
+                AND DATE_FORMAT(bill.payTime, '%Y-%m-%d %H:%m') <![CDATA[ >= ]]> DATE_FORMAT(#{param.effTime}, '%Y-%m-%d %H:%m')
+            </if>
+            <if test="param.expTime != null">
+                AND DATE_FORMAT(bill.payTime, '%Y-%m-%d %H:%m') <![CDATA[ <= ]]> DATE_FORMAT(#{param.expTime}, '%Y-%m-%d %H:%m')
+            </if>
+        </where>
+        GROUP BY
+        DATE_FORMAT(bill.payTime, '%Y-%m-%d'),
+        bill.payTime,
+        bill.orderType
+        ORDER BY bill.payTime desc
+        )
+        as t group by t.payTime
+        ) AS pay
+    </select>
+    <select id="selectByParkCode" resultType="java.lang.String">
+        SELECT
+        parkCode
+        FROM
+        project_parking_info
+        <where>
+            AND project_parking_info.projectId = #{projectId}
+            <if test="parkId != null and parkId != ''">
+                AND parkId = #{parkId}
+            </if>
+        </where>
+    </select>
+    <select id="selectBySource" resultType="com.aurine.cloudx.estate.vo.ProjectParkBillingSourceSearchConditionVo">
+        SELECT
+        SUM(CASE payType WHEN '1' THEN payment ELSE 0 END) AS cash,
+        SUM(CASE payType WHEN '2' THEN payment ELSE 0 END ) AS offlineWeChat,
+        SUM(CASE payType WHEN '3' THEN payment ELSE 0 END ) AS offlineAliPay,
+        SUM(CASE payType WHEN '4' THEN payment ELSE 0 END ) AS weChat,
+        SUM(CASE payType WHEN '5' THEN payment ELSE 0 END ) AS aliPay,
+        SUM(CASE payType WHEN '6' THEN payment ELSE 0 END ) AS other,
+        DATE_FORMAT(t.payTime, '%Y-%m-%d') AS payTime
+        -- t.payTime
+        FROM
+        (
+        SELECT
+        bill.payment,
+        bill.payType,
+        DATE_FORMAT(bill.payTime, '%Y-%m-%d') as payTime
+        FROM
+        project_park_billing_info bill
+        <where>
+            AND bill.projectId = #{param.projectId}
+            AND bill.tenant_id = #{param.tenantId}
+            <if test="param.parkId != null and param.parkId != ''">
+                AND bill.parkId = #{param.parkId}
+            </if>
+            <if test="param.effTime != null">
+                AND DATE_FORMAT(bill.payTime, '%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{param.effTime}, '%Y-%m-%d')
+            </if>
+            <if test="param.expTime != null">
+                AND DATE_FORMAT(bill.payTime, '%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{param.expTime}, '%Y-%m-%d')
+            </if>
+        </where>
+        )as t
+        GROUP BY
+        t.payType,
+        t.payTime
+        ORDER BY
+        t.payTime DESC
+    </select>
+    <select id="selectSourceIncome" resultType="com.aurine.cloudx.estate.vo.ProjectParkBillingSourceSearchTotalConditionVo">
+        SELECT
+        SUM(cash) AS cashTotal,
+        SUM(offlineWeChat) AS offlineWeChatTotal,
+        SUM(offlineAliPay) AS offlineAliPayTotal,
+        SUM(weChat) AS weChatTotal,
+        SUM(aliPay) AS aliPayTotal,
+        SUM(other) AS otherTotal
+        FROM
+        (
+        SELECT
+        SUM(CASE payType WHEN '1' THEN payment ELSE 0 END) AS cash,
+        SUM(CASE payType WHEN '2' THEN payment ELSE 0 END ) AS offlineWeChat,
+        SUM(CASE payType WHEN '3' THEN payment ELSE 0 END ) AS offlineAliPay,
+        SUM(CASE payType WHEN '4' THEN payment ELSE 0 END ) AS weChat,
+        SUM(CASE payType WHEN '5' THEN payment ELSE 0 END ) AS aliPay,
+        SUM(CASE payType WHEN '6' THEN payment ELSE 0 END ) AS other,
+        t.payTime
+        -- t.payTime
+        FROM
+        (
+        SELECT
+        bill.payment,
+        bill.payType,
+        DATE_FORMAT(bill.payTime, '%Y-%m-%d') as payTime
+        FROM
+        project_park_billing_info bill
+        <where>
+            AND bill.projectId = #{param.projectId}
+            AND bill.tenant_id = #{param.tenantId}
+            <if test="param.parkId != null and param.parkId != ''">
+                AND bill.parkId = #{param.parkId}
+            </if>
+            <if test="param.effTime != null">
+                AND DATE_FORMAT(bill.payTime, '%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{param.effTime}, '%Y-%m-%d')
+            </if>
+            <if test="param.expTime != null">
+                AND DATE_FORMAT(bill.payTime, '%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{param.expTime}, '%Y-%m-%d')
+            </if>
+        </where>
+        )AS t
+        GROUP BY
+        t.payType,
+        t.payTime
+        ORDER BY
+        t.payTime DESC
+        ) AS dailyIncome
+    </select>
+
+    <select id="selectBySource" resultType="com.aurine.cloudx.estate.vo.ProjectParkBillingSourceSearchConditionVo">
+        SELECT
+        SUM(CASE payType WHEN '1' THEN payment ELSE 0 END) AS cash,
+        SUM(CASE payType WHEN '2' THEN payment ELSE 0 END ) AS offlineWeChat,
+        SUM(CASE payType WHEN '3' THEN payment ELSE 0 END ) AS offlineAliPay,
+        SUM(CASE payType WHEN '4' THEN payment ELSE 0 END ) AS weChat,
+        SUM(CASE payType WHEN '5' THEN payment ELSE 0 END ) AS aliPay,
+        SUM(CASE payType WHEN '6' THEN payment ELSE 0 END ) AS other,
+        t.payTime AS payTime
+        -- t.payTime
+        FROM
+        (
+        SELECT
+        bill.payment,
+        bill.payType,
+        DATE_FORMAT(bill.payTime, '%Y-%m-%d') as payTime
+        FROM
+        project_park_billing_info bill
+        <where>
+            AND bill.projectId = #{param.projectId}
+            AND bill.tenant_id = #{param.tenantId}
+            <if test="param.parkId != null and param.parkId != ''">
+                AND bill.parkId = #{param.parkId}
+            </if>
+            <if test="param.effTime != null">
+                AND DATE_FORMAT(bill.payTime, '%Y-%m-%d %H:%m') <![CDATA[ >= ]]> DATE_FORMAT(#{param.effTime}, '%Y-%m-%d %H:%m')
+            </if>
+            <if test="param.expTime != null">
+                AND DATE_FORMAT(bill.payTime, '%Y-%m-%d %H:%m') <![CDATA[ <= ]]> DATE_FORMAT(#{param.expTime}, '%Y-%m-%d %H:%m')
+            </if>
+        </where>
+        )as t
+        GROUP BY
+        t.payType,
+        t.payTime
+        ORDER BY
+        t.payTime DESC
+    </select>
+    <select id="currMonthPayment" resultType="java.math.BigDecimal">
+        SELECT
+            SUM(bill.payment)
+            FROM
+            project_park_billing_info AS bill
+            where date_format(bill.payTime,'%Y-%m') = DATE_FORMAT(now(), '%Y-%m')
+            AND bill.projectId = #{projectId}
+            AND bill.tenant_id = #{tenantId}
+    </select>
+
+    <select id="monthPayment" resultType="java.math.BigDecimal">
+        SELECT
+            SUM(bill.payment)
+            FROM
+            project_park_billing_info AS bill
+            where date_format(bill.payTime,'%Y-%m') = DATE_FORMAT( #{date}, '%Y-%m')
+            AND bill.projectId = #{projectId}
+            AND bill.tenant_id = #{tenantId}
+    </select>
+
+    <select id="dayPayment" resultType="java.math.BigDecimal">
+        SELECT
+            SUM(bill.payment)
+            FROM
+            project_park_billing_info AS bill
+            where to_days(bill.payTime) = to_days(#{date})
+            AND bill.projectId = #{projectId}
+            AND bill.tenant_id = #{tenantId}
+    </select>
+</mapper>

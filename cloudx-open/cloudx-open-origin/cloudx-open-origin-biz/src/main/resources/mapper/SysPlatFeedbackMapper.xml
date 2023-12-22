@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.SysPlatFeedbackMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.SysPlatFeedback" id="SysPlatFeedbackMap">
+        <result property="feedbackId" column="feedbackId" jdbcType="VARCHAR"/>
+        <result property="userId" column="userId" jdbcType="VARCHAR"/>
+        <result property="origin" column="origin" jdbcType="VARCHAR"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="feedbackTime" column="feedbackTime" jdbcType="TIMESTAMP"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="replyContent" column="replyContent" jdbcType="VARCHAR"/>
+        <result property="replyTime" column="replyTime" jdbcType="TIMESTAMP"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <select id="selectAllByOwner" resultType="com.aurine.cloudx.open.origin.vo.SysPlatFeedbackVo">
+        select plat.*,user.username from sys_plat_feedback plat
+        left join pigxx.sys_user user on user.user_id=plat.operator
+        where plat.operator=#{param.userId} and plat.origin=#{param.origin}
+        <if test="param.status!=null and param.status!=''">
+            and plat.status=#{param.status}
+        </if>
+
+    </select>
+    <select id="pageAll" resultType="com.aurine.cloudx.open.origin.vo.SysPlatFeedbackVo">
+        select plat.*,user.username from sys_plat_feedback plat
+        left join pigxx.sys_user user on user.user_id=plat.operator
+        <where>
+            <if test="param.content!=null and param.content!=''">
+                and plat.content like concat('%', #{param.content}, '%')
+            </if>
+            <if test="param.contactInfo!=null and param.contactInfo!=''">
+                and plat.contactInfo like concat('%',#{param.contactInfo},'%')
+            </if>
+            <if test="param.origin!=null and param.origin!=''">
+                and plat.origin=#{param.origin}
+            </if>
+            <if test="param.status!=null and param.status!=''">
+                and plat.status=#{param.status}
+            </if>
+        </where>
+        order by plat.feedbackTime desc
+    </select>
+
+</mapper>

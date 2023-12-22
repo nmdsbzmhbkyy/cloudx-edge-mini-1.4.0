@@ -1,0 +1,563 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectBillingInfoMapper">
+    <update id="updateListByBillMonth">
+        update project_billing_info
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="payStatus =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.payStatus!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.payStatus}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="paidBy =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.paidBy!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.paidBy}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="payTime =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.payTime!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.payTime}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="payOrderNO =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.payOrderNO!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.payOrderNO}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="promotionAmount =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.promotionAmount!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.promotionAmount}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="actAmount =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.actAmount!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.actAmount}
+                    </if>
+                </foreach>
+            </trim>
+        </trim>
+        where houseId in
+        <foreach collection="list" item="item" index="index" separator="," open="(" close=")">
+            #{item.houseId}
+        </foreach>
+        and payStatus = '1'
+    </update>
+
+
+    <select id="pageBillTotal" resultType="com.aurine.cloudx.open.origin.vo.ProjectHouseFeeTotalVo"
+            parameterType="com.aurine.cloudx.open.origin.vo.ProjectHouseFeeTotalFormVo">
+
+        select * from (
+        SELECT building.projectId,
+        building.entityId buildingId,
+        (with recursive r as
+        (
+        select *
+        from project_frame_info pfi
+        where pfi.entityId = building.entityId
+        union all
+        select pfi.*
+        from project_frame_info pfi,
+        r
+        where pfi.entityId = r.puid
+        )
+        select group_concat(r.entityName order by level desc SEPARATOR '-')
+        from r
+        GROUP BY projectId
+        ) as buildingName,
+        unit.entityId unitId,
+        unit.entityName unitName,
+        house.entityId houseId,
+        house.entityName houseName,
+        phs.area as houseArea,
+        info. totalPayableAmount,
+        info. totalActAmount,
+        info. totalPromotionAmount,
+        info. totalRefundAmount,
+        rel.checkInTime,
+        IF(info.uncollected is null, 0, info.uncollected) uncollected,
+        if(info.uncollectedNum is null, 0, info.uncollectedNum) uncollectedNum,
+        if(item.feeCout is null or item.feeCout = 0, '0', '1') haveSetFee,
+        if(info.uncollectedNum is null or info.uncollectedNum = 0, '1', '0') havePayUp
+        FROM project_frame_info building
+        left JOIN project_frame_info unit ON building.entityId = unit.puid and unit.isUnit=1
+        left JOIN project_frame_info house ON unit.entityId = house.puid
+        LEFT JOIN project_house_info phi on phi.houseId = house.entityId
+        left join project_house_design phs on phi.houseDesginId = phs.designId
+        and house.isHouse=1
+        left join (select houseId, min(checkInTime) checkInTime
+        from project_house_person_rel
+        where householdType = '1'
+        and status = '1'
+        group by houseId) rel
+        on rel.houseId = house.entityId
+        left join (
+        select houseId,
+        sum(if(payStatus = '1', payAbleAmount, 0)) uncollected,
+        sum(if(payStatus = '1',1,0)) uncollectedNum,
+        sum(if(payStatus in ('1','2','4'),payableAmount,0)) totalPayableAmount,
+        sum(if(payStatus in ('1','2','4'),actAmount,0)) totalActAmount,
+        sum(if(payStatus in ('1','2','4'),promotionAmount,0)) totalPromotionAmount,
+        sum(if(payStatus in ('3'),payableAmount,0)) totalRefundAmount
+        from project_billing_info
+        <where>
+            <if test="query!=null and  query.feeIds!=null and query.feeIds.size>0">
+                and feeId in
+                <foreach collection="query.feeIds" item="feeId" open="(" close=")" separator=",">
+                    #{feeId}
+                </foreach>
+            </if>
+        </where>
+        group by houseId
+        ) info on info.houseId = house.entityId
+        left join (select houseId, count(feeId) feeCout
+        from project_house_fee_item
+        group by houseId) item
+        on house.entityId = item.houseId
+        <where>
+            and house.entityId is not null and building.isBuilding=1
+            <if test="query!=null and query.haveSetFee!=null and query.haveSetFee!=''">
+                and if(item.feeCout is null or item.feeCout = 0, '0', '1')=#{query.haveSetFee}
+            </if>
+            <if test="query!=null and query.havePayUp!=null and query.havePayUp!=''">
+                and if(info.uncollectedNum is null or info.uncollectedNum = 0, '1', '0')=#{query.havePayUp}
+            </if>
+            <if test="query!=null and query.unitName!=null and query.unitName!=''">
+                and unit.entityName like concat('%', #{query.unitName},'%')
+            </if>
+            <if test="query!=null and query.houseName!=null and query.houseName!=''">
+                and house.entityName like concat('%', #{query.houseName},'%')
+            </if>
+        </where>
+        ) a
+        <where>
+            <if test="query!=null and query.buildingName!=null and query.buildingName!=''">
+                and a.buildingName like concat('%',#{query.buildingName},'%')
+            </if>
+        </where>
+    </select>
+    <select id="pageBill" resultType="com.aurine.cloudx.open.origin.vo.ProjectBillingInfoVo"
+            parameterType="com.aurine.cloudx.open.origin.vo.ProjectBillingInfoFormVo">
+        select info.* ,
+        IF(pfc.isFixAmount = '0', concat('单价: ', pfc.unitPrice, '元'),
+        concat('金额: ', pfc.fixAmount, '元')) unitString,
+        m1.feeLabel feeLabel,
+        pfc.feeType,
+        m5.houseName houseName
+        from project_billing_info info
+        left join project_fee_conf pfc on info.feeId = pfc.feeId
+        left join (
+
+        SELECT
+        t.`VALUE` as feeValue,
+        max( t.label ) as feeLabel
+        FROM
+        (
+        SELECT
+        sd.dict_id,
+        sd.`VALUE`,
+        sd.label,
+        '1' AS `STATUS`
+        FROM
+        pigxx.sys_dict_item sd
+        WHERE
+        sd.dict_id = (select DISTINCT sd1.dict_id FROM pigxx.sys_dict_item sd1 where sd1.type='fee_type')
+        UNION ALL
+        SELECT
+        dictGroupCode AS dict_id,
+        dictCode AS `VALUE`,
+        dictValue AS `label`,
+        `STATUS`
+        FROM
+        aurine.project_dict
+     ) t
+        GROUP BY
+        t.dict_id,
+        t.`VALUE`
+
+            ) m1 on m1.feeValue=pfc.feeType
+        left join (
+
+        SELECT
+        m1.houseId,
+        concat(	m4.entityName,	m1.houseName) houseName
+        FROM
+        project_house_info m1
+        left join
+        project_frame_info m2 on m1.houseId=m2.entityId
+        left join
+        project_frame_info m3 on m3.entityId=m2.puid
+        left join
+        project_frame_info m4 on m4.entityId=m3.puid
+
+        ) m5 on m5.houseId=info.houseId
+        <where>
+            <if test="query.textString!=null and query.textString !=''">
+                and m5.houseName like concat('%',#{query.textString},'%')
+            </if>
+            <if test="query.houseId!=null and query.houseId !=''">
+                and info.houseId = #{query.houseId}
+            </if>
+            <if test="query.beginDateString!=null and query.beginDateString !=''">
+                and info.billMonth &gt;= #{query.beginDateString}
+            </if>
+            <if test="query.endDateString!=null and query.endDateString !=''">
+                and info.billMonth &lt;= #{query.endDateString}
+            </if>
+            <if test="query.prestore!=null and query.prestore !=''">
+                and info.isPrestore = #{query.prestore}
+            </if>
+            <if test="query.feeName!=null and query.feeName !=''">
+                and info.feeName like concat('%',#{query.feeName},'%')
+            </if>
+            <if test="query.payOrderNo !=null and query.payOrderNo !=''">
+                and info.payOrderNo = #{query.payOrderNo}
+            </if>
+            <if test="query.payStatus !=null and query.payStatus !=''">
+                and info.payStatus = #{query.payStatus}
+            </if>
+            <if test="query.payDateString !=null and query.payDateString !=''">
+                and info.billMonth = #{query.payDateString}
+            </if>
+            <if test="query.feeType !=null and query.feeType !=''">
+                and pfc.feeType = #{query.feeType}
+            </if>
+            <if test="query.billingNo !=null and query.billingNo !=''">
+                and pfc.billingNo = #{query.billingNo}
+            </if>
+        </where>
+        order by info.billMonth desc
+    </select>
+    <select id="listVo" resultType="com.aurine.cloudx.open.origin.vo.ProjectBillingInfoVo">
+        select
+        info.billingNo,
+        info.feeName,
+        info.isPrestore prestore,
+        info.billMonth,
+        info.houseId,
+        info.houseArea,
+        info.feeId,
+        info.feeCycleStart,
+        info.feeCycleEnd,
+        info.paidBy,
+        info.payTime,
+        m1.feeLabel,
+        info.payAbleAmount,
+        info.promotionAmount,
+        info.actAmount,
+        info.payStatus,
+        info.payOrderNO,
+        info.unitPrice,
+        info.operator,
+        info.createTime,
+        info.updateTime,
+        IF(pfc.isFixAmount = '0', concat('单价: ', pfc.unitPrice, '元'),
+        concat('金额: ', pfc.fixAmount, '元')) unitString,
+        if((select count(pb.billingNo)
+        from project_billing_info pb
+        where pb.payStatus = '1' and pb.houseId=info.houseId
+        and STR_TO_DATE(pb.billMonth, '%Y%m') &lt; date_sub(now(), interval 1 MONTH)
+        ) &gt; 0, '1', '0') lastHave
+        from project_billing_info info
+        left join project_fee_conf pfc on info.feeId = pfc.feeId
+        left join (
+
+        SELECT
+        t.`VALUE` as feeValue,
+        max( t.label ) as feeLabel
+        FROM
+        (
+        SELECT
+        sd.dict_id,
+        sd.`VALUE`,
+        sd.label,
+        '1' AS `STATUS`
+        FROM
+        pigxx.sys_dict_item sd
+        WHERE
+        sd.dict_id = (select DISTINCT sd1.dict_id FROM pigxx.sys_dict_item sd1 where sd1.type='fee_type')
+        UNION ALL
+        SELECT
+        dictGroupCode AS dict_id,
+        dictCode AS `VALUE`,
+        dictValue AS `label`,
+        `STATUS`
+        FROM
+        aurine.project_dict
+        ) t
+        GROUP BY
+        t.dict_id,
+        t.`VALUE`
+
+        ) m1 on m1.feeValue=pfc.feeType
+        <where>
+            and info.houseId = #{houseId}
+            <if test="payStatusList!=null and payStatusList.size>0">
+                and info.payStatus in
+                <foreach collection="payStatusList" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="billIds!=null and billIds.size>0">
+                and info.billingNo in
+                <foreach collection="billIds" item="billingNo" open="(" close=")" separator=",">
+                    #{billingNo}
+                </foreach>
+            </if>
+        </where>
+        order by info.seq asc
+    </select>
+
+    <select id="listOnDeposit" resultType="com.aurine.cloudx.open.origin.vo.ProjectBillingInfoVo">
+        select a.*,
+               IF(pfc.isFixAmount = '0', concat('单价: ', pfc.unitPrice, '元'),
+                  concat('金额: ', pfc.fixAmount, '元')) unitString
+        from project_billing_info a
+                 left join project_fee_conf pfc on a.feeId = pfc.feeId
+        where a.houseId = #{id}
+          and a.payStatus = '2'
+          and pfc.feeType = '4'
+    </select>
+    <select id="getFeeReportPage" resultType="com.aurine.cloudx.open.origin.vo.ProjectBillingInfoVo">
+
+        SELECT
+        pbi.feeId,
+        pfc.feeName,
+        pfc.feeType,
+        sum(
+        IF
+        ( pbi.actAmount IS NULL, 0, pbi.actAmount )) AS actAmount
+        FROM
+        project_fee_conf pfc
+        LEFT JOIN project_billing_info pbi ON pbi.feeId = pfc.feeId
+         AND pbi.payStatus = 2
+        <where>
+            <if test="query.dateRange !=null and query.dateRange.length>0">
+                AND DATE_FORMAT(STR_TO_DATE(CONCAT(billMonth, '01'),'%Y%m%d') ,'%Y-%m-%d')BETWEEN #{query.dateRange[0]}
+                AND #{query.dateRange[1]}
+            </if>
+        </where>
+        GROUP BY
+        pfc.feeId
+
+    </select>
+
+    <select id="findListByHouseId" resultType="com.aurine.cloudx.open.origin.vo.ProjectBillingInfoVo">
+
+
+
+        SELECT
+        any_value(ifnull(m1.dcTimes,0)) dcTimes,
+        any_value(m1.billMonth) billMonth,
+        any_value(m2.personId) personId,
+        IFNULL(sum(m1. payableAmount),0.0),
+        m2.houseName houseName
+        FROM
+        project_billing_info m1
+        left join (
+        SELECT
+        t1.houseId,
+        t2.personName,
+        t2.personId,
+        t3.houseName
+        FROM
+        project_house_person_rel t1
+        left join project_person_info t2 on t1.personId=t2.personId
+        left join project_house_info t3 on t3.houseId=t1.houseId
+        WHERE
+        t1.householdType = '1'
+        ) m2 on m1.houseId=m2.houseId
+        WHERE
+        m1.houseId = #{houseId}
+        AND m1.payStatus = 1
+        AND
+        m1.billMonth &lt; DATE_FORMAT(NOW(),'%Y%m')
+        group by  m1.billMonth
+
+    </select>
+    <select id="getFeeRate" resultType="com.aurine.cloudx.open.origin.vo.FeeRate">
+        SELECT
+        IF
+        (
+        sum( payableAmount ) IS NULL,
+        0,
+        sum( payableAmount )) AS payableAmount,
+        IF
+        (
+        sum( promotionAmount ) IS NULL,
+        0,
+        sum( promotionAmount )) AS promotionAmount,
+        ( 	select IF
+        ( sum( actAmount ) IS NULL, 0, sum( actAmount ) ) AS actAmount FROM project_billing_info
+        WHERE project_billing_info.projectId =  #{query.projectId}
+        AND  project_billing_info.paystatus = 2
+        AND DATE_FORMAT( STR_TO_DATE( CONCAT( billMonth, '01' ), '%Y%m%d' ), '%Y-%m-%d' ) BETWEEN #{query.dateRange[0]}
+        AND #{query.dateRange[1]}) AS actAmount,
+        	(
+        	SELECT
+        		count1 / count2
+        	FROM
+        		(
+        		SELECT
+        			count(*) AS count1
+        		FROM
+        			( SELECT houseid FROM project_billing_info WHERE projectId = #{query.projectId,jdbcType=INTEGER} AND DATE_FORMAT(STR_TO_DATE(CONCAT(billMonth, '01'),'%Y%m%d') ,'%Y-%m-%d') BETWEEN #{query.dateRange[0]} AND #{query.dateRange[1]} AND payStatus = '2'	 GROUP BY houseId ) a
+        		) b,
+        		( SELECT count(*) * ${query.monthValue} AS count2 FROM project_house_info WHERE project_house_info.projectId =  #{query.projectId} ) c
+        	) feeRate
+        FROM
+        	project_billing_info
+        WHERE
+	        project_billing_info.projectId = #{query.projectId}
+	        AND DATE_FORMAT(STR_TO_DATE(CONCAT(billMonth, '01'),'%Y%m%d') ,'%Y-%m-%d')BETWEEN #{query.dateRange[0]}
+	        AND #{query.dateRange[1]}
+
+    </select>
+
+    <select id="getDict" resultType="map">
+        SELECT
+            t.`VALUE` as feeValue,
+            max( t.label ) as feeLabel
+        FROM
+            (
+                SELECT
+                    sd.dict_id,
+                    sd.`VALUE`,
+                    sd.label,
+                    '1' AS `STATUS`
+                FROM
+                    pigxx.sys_dict_item sd
+                WHERE
+                        sd.dict_id = (select DISTINCT sd1.dict_id FROM pigxx.sys_dict_item sd1 where sd1.type='fee_type')
+                UNION ALL
+                SELECT
+                    dictGroupCode AS dict_id,
+                    dictCode AS `VALUE`,
+                    dictValue AS `label`,
+                    `STATUS`
+                FROM
+                    aurine.project_dict
+            ) t
+        GROUP BY
+            t.dict_id,
+            t.`VALUE`
+
+    </select>
+    <select id="getDetailByOrder" resultType="com.aurine.cloudx.open.origin.vo.AppProjectBillingInfoVo">
+        SELECT
+            concat(billMonth,"账单") billMonthName,
+            t2.feeName feeNameString,
+            t3.feeLabel feeLabelString,
+            t1.*
+        FROM
+            project_billing_info t1
+                LEFT JOIN project_fee_conf t2 ON t2.feeId = t1.feeId
+                left join
+            (
+
+                SELECT
+                    t.`VALUE` as feeValue,
+                    max( t.label ) as feeLabel
+                FROM
+                    (
+                        SELECT
+                            sd.dict_id,
+                            sd.`VALUE`,
+                            sd.label,
+                            '1' AS `STATUS`
+                        FROM
+                            pigxx.sys_dict_item sd
+                        WHERE
+                                sd.dict_id = (select DISTINCT sd1.dict_id FROM pigxx.sys_dict_item sd1 where sd1.type='fee_type')
+                        UNION ALL
+                        SELECT
+                            dictGroupCode AS dict_id,
+                            dictCode AS `VALUE`,
+                            dictValue AS `label`,
+                            `STATUS`
+                        FROM
+                            aurine.project_dict
+                    ) t
+                GROUP BY
+                    t.dict_id,
+                    t.`VALUE`
+            ) t3 on  t3.feeValue=t2.feeType
+           where 1=1  and t1.payOrderNo=#{orderNo}
+
+    </select>
+
+
+    <select id="findPersonIdList" resultType="string">
+        select rel.houseId
+        from     project_house_person_rel rel
+                 join project_person_info info on rel.personId = info.personId
+        where rel.houseId = #{houseId}
+          and rel.auditStatus = '2'
+    </select>
+    <select id="findHouseList" resultType="string">
+
+        SELECT houseId FROM `project_house_info`
+
+
+    </select>
+    <select id="findMoneyByHouseId" resultType="double">
+
+
+        SELECT
+        if(sum(payableAmount) is null ,0.0,sum(payableAmount))
+        FROM
+
+        project_billing_info
+        where
+        payStatus='2'
+        and
+        houseId=#{houseId}
+        and
+        billMont &lt;=DATE_FORMAT(NOW(),'%Y%m')
+
+
+
+    </select>
+
+    <select id="findMoneyByBillingNo" resultType="double">
+
+
+        SELECT
+            convert(if(sum(payableAmount) is null ,0.00,sum(payableAmount)),decimal(10,2))
+        FROM
+            project_billing_info
+        where
+            payStatus='1'
+          and
+            billingNo=#{billingNo}
+    </select>
+</mapper>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectCardMapper">
+
+    <resultMap id="projectCardMap" type="com.aurine.cloudx.estate.entity.ProjectCard">
+        <id property="seq" column="seq"/>
+        <result property="cardNo" column="cardNo"/>
+        <result property="personType" column="personType"/>
+        <result property="personId" column="personId"/>
+        <result property="status" column="status"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="getByCode" resultType="com.aurine.cloudx.estate.entity.ProjectCard">
+            SELECT
+            card.seq,
+            card.cardId,
+            card.cardCode,
+            card.cardNo,
+            card.projectId,
+            card.personType,
+            card.personId,
+            card.`status`,
+            card.tenant_id,
+            card.operator,
+            card.createTime,
+            card.updateTime
+            FROM
+            project_card AS card
+            WHERE
+            card.projectId = #{projectId} AND
+            card.cardCode = #{code}
+
+    </select>
+    <select id="getByCardNo" resultType="com.aurine.cloudx.estate.entity.ProjectCard">
+            SELECT
+            card.seq,
+            card.cardId,
+            card.cardCode,
+            card.cardNo,
+            card.projectId,
+            card.personType,
+            card.personId,
+            card.`status`,
+            card.tenant_id,
+            card.operator,
+            card.createTime,
+            card.updateTime
+            FROM
+            project_card AS card
+            WHERE
+            card.projectId = #{projectId} AND
+            card.cardNo = #{cardNo}
+
+    </select>
+</mapper>

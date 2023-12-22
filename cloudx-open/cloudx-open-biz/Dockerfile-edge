@@ -1,0 +1,8 @@
+FROM pig4cloud/java:8-jre
+MAINTAINER  www.aurine.cn
+ENV TZ=Asia/Shanghai
+RUN ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+WORKDIR /opt
+EXPOSE 5001
+ADD ./target/cloudx-open-biz.jar ./
+CMD java -Xms128m -Xmx2048m -Djava.security.egd=file:/dev/./urandom  -Xdebug -Xrunjdwp:transport=dt_socket,suspend=n,server=y,address=5556 -jar cloudx-open-biz.jar --spring.profiles.active=pre

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectAttendancePointMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectAttendance" id="ProjectAttendanceMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="attendanceId" column="attendanceId" jdbcType="VARCHAR"/>
+        <result property="staffId" column="staffId" jdbcType="VARCHAR"/>
+        <result property="staffName" column="staffName" jdbcType="VARCHAR"/>
+        <result property="deptId" column="deptId" jdbcType="INTEGER"/>
+        <result property="deptName" column="deptName" jdbcType="VARCHAR"/>
+        <result property="attenDate" column="attenDate" jdbcType="DATE"/>
+        <result property="workTime" column="workTime" jdbcType="TIME"/>
+        <result property="checkInTime" column="checkInTime" jdbcType="TIME"/>
+        <result property="offworkTime" column="offworkTime" jdbcType="TIME"/>
+        <result property="checkOutTime" column="checkOutTime" jdbcType="TIME"/>
+        <result property="result" column="result" jdbcType="VARCHAR"/>
+        <result property="checkInArea" column="checkInArea" jdbcType="VARCHAR"/>
+        <result property="checkOutArea" column="checkOutArea" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+</mapper>

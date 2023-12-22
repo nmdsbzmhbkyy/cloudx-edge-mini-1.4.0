@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectHouseFeeItemMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectHouseFeeItem" id="ProjectHouseFeeItemMap">
+        <result property="recordId" column="recordId" jdbcType="VARCHAR"/>
+        <result property="houseId" column="houseId" jdbcType="VARCHAR"/>
+        <result property="feeId" column="feeId" jdbcType="VARCHAR"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+
+    <!--   获取配置好的账单信息 -->
+    <select id="selectHouseFeeItemConf" resultType="com.aurine.cloudx.estate.vo.ProjectHouseFeeItemConfVo">
+
+        SELECT pfc.*,
+               item.recordId,
+               pfc.isFixAmount     fixAmountOrNot,
+               pfc.isDifferential  differentialOrNot,
+               -- 房屋id
+               item.houseId,
+               -- 房屋面积
+               design.area         houseArea,
+               -- 入住时间或固定时间
+               rel.checkInTime,
+               -- 最后账单日期
+               (
+                   SELECT max(billDate.endDate) endDate
+                   FROM (
+                            SELECT i.houseId,
+                                   i.feeId,
+                                   i.billMonth endDate
+                            FROM project_billing_info i
+                                 -- 过滤掉是预存的账单 取 账单类型为预存 未缴费 已缴费的
+                            where i.isPrestore != '1'
+                              and i.payStatus in ('1', '2', '4')
+                            UNION
+                            SELECT c.houseId,
+                                   c.feeId,
+                                   date_format(
+                                           date_sub(str_to_date(CONCAT(c.billMonth, '01'), '%Y%m%d'), interval 1 month),
+                                           '%Y%m') endDate
+                            FROM project_house_fee_item c
+                        ) billDate
+                   WHERE billDate.houseId = item.houseId
+                     AND billDate.feeId = item.feeId
+                   GROUP BY billDate.houseId,
+                            billDate.feeId
+               )                   lastMonth,
+               -- 最后预付时段
+               billPay.lastPreDate,
+               billPay.paidBy,
+               billPay.payOrderNo,
+               billPay.actAmount,
+               billPay.payTime,
+               billPay.unitPrice   preUnitPrice,
+               billPay.unit        preUnit,
+               billPay.isFixAmount preFixAmountOrNot,
+               billPay.fixAmount   preFixAmount,
+               billPay.houseArea   preHouseArea
+        FROM project_house_fee_item item
+                 LEFT JOIN project_fee_conf pfc ON item.feeId = pfc.feeId
+
+                 LEFT JOIN project_house_info phi ON item.houseId = phi.houseId
+                 left join aurine.project_house_design design on phi.houseDesginId = design.designId
+                 LEFT JOIN project_house_person_rel rel ON rel.houseId = item.houseId
+            -- 关联查询户主的信息 租户信息暂时不考虑
+            AND rel.isOwner = '1'
+                 left join (
+            select billMax.lastPreDate,
+                   billMax.houseId,
+                   billMax.feeId,
+                   i2.paidBy,
+                   i2.payOrderNo,
+                   i2.actAmount,
+                   i2.payTime,
+                   i2.unitPrice,
+                   i2.unit,
+                   i2.isFixAmount,
+                   i2.fixAmount,
+                   i2.houseArea
+            from (
+                     select max(i.feeCycleEnd) lastPreDate, i.feeId, i.houseId
+                     from project_billing_info i
+                     where i.isPrestore = '1'
+                     group by i.feeId, i.houseId
+                 ) billMax
+                     left join project_billing_info i2
+                               on i2.houseId = billMax.houseId and i2.feeId = billMax.feeId and i2.isPrestore = '1'
+                                   and i2.feeCycleEnd = billMax.lastPreDate
+        ) billPay on billPay.houseId = item.houseId and billPay.feeId = item.feeId
+        where
+          -- 临时费用不算入费用 且 费用设置必须为启用
+            pfc.feeCycleType = '1'
+          and pfc.status = '1'
+          -- 约束费用类型为 1 2 3 4 5 6
+          AND pfc.feeType IN ('1', '2', '3', '6')
+
+    </select>
+    <select id="listHouseFeeItemConf" resultType="com.aurine.cloudx.estate.vo.ProjectHouseFeeItemConfVo">
+
+        SELECT pfc.feeId,
+        pfc.feeName,
+        pfc.status,
+        pfc.feeType,
+        pfc.feeCycleType,
+        pfc.feeCycle,
+        pfc.billCycleType,
+        pfc.feeStartDayType,
+        pfc.isFixAmount fixAmountOrNot,
+        pfc.isDifferential differentialOrNot,
+        pfc.feeStartDay,
+        pfc.fixAmount,
+        pfc.formula,
+        pfc.unit,
+        pfc.unitPrice,
+        pfc.projectId,
+        pfc.feeCycleType,
+        item.recordId,
+        IF(pfc.isFixAmount = '0', concat('单价: ', pfc.unitPrice, '元'),
+        concat('金额: ', pfc.fixAmount, '元')) unitString,
+        -- 房屋id
+        item.houseId,
+        item.billMonth beginBillMonth,
+        -- 房屋面积
+        design.area houseArea,
+        -- 入住时间或固定时间
+        rel.checkInTime,
+        -- 最后缴费日期
+        (
+        SELECT max(billDate.endDate) endDate
+        FROM (
+        SELECT i.houseId,
+        i.feeId,
+        i.billMonth endDate
+        FROM project_billing_info i
+        -- 过滤掉是预存的账单 取预交和已缴费
+        where i.isPrestore != '1' and i.payStatus in ('2','4')
+        UNION
+        SELECT c.houseId,
+        c.feeId,
+        date_format(
+        date_sub(str_to_date(CONCAT(c.billMonth, '01'), '%Y%m%d'), interval 1 month),
+        '%Y%m') endDate
+        FROM project_house_fee_item c
+        ) billDate
+        WHERE billDate.houseId = item.houseId
+        AND billDate.feeId = item.feeId
+        GROUP BY billDate.houseId,
+        billDate.feeId
+        ) lastMonth,
+        -- 最后预付时段
+        billPay.lastPreDate
+        FROM project_house_fee_item item
+        LEFT JOIN project_fee_conf pfc ON item.feeId = pfc.feeId
+        LEFT JOIN project_house_info phi ON item.houseId = phi.houseId
+        left join aurine.project_house_design design on phi.houseDesginId=design.designId
+        LEFT JOIN project_house_person_rel rel ON rel.houseId = item.houseId
+        -- 关联查询户主的信息 租户信息暂时不考虑
+        AND rel.isOwner = '1'
+        left join (
+        select billMax.lastPreDate,
+        billMax.houseId,
+        billMax.feeId
+        from (
+        select max(i.feeCycleEnd) lastPreDate, i.feeId, i.houseId
+        from project_billing_info i
+        where i.isPrestore = '1'
+        group by i.feeId, i.houseId
+        ) billMax
+        ) billPay on billPay.houseId = item.houseId and billPay.feeId = item.feeId
+        where
+        -- 费用设置必须为启用
+        pfc.status='1'
+        <if test="feeCycleTypes!=null and feeCycleTypes.size>0">
+
+            and pfc.feeCycleType in
+            <foreach collection="feeCycleTypes" item="type" open="(" close=")" separator=",">
+                #{type}
+            </foreach>
+        </if>
+        <if test="feeTypes!=null and feeTypes.size>0">
+            and pfc.feeType in
+            <foreach collection="feeTypes" item="feeType" open="(" close=")" separator=",">
+                #{feeType}
+            </foreach>
+        </if>
+        <!-- 如果是查询预存添加以下条件 -->
+        <if test="houseId!=null and houseId!='' ">
+            and item.houseId = #{houseId}
+            <if test="ids!=null and ids.size>0">
+                and item.feeId in
+                <foreach collection="ids" item="feeId" open="(" close=")" separator=",">
+                    #{feeId}
+                </foreach>
+            </if>
+        </if>
+    </select>
+
+
+</mapper>

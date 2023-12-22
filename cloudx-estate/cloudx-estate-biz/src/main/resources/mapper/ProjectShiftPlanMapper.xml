@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectShiftPlanMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectShiftPlan" id="ProjectShiftPlanMap">
+        <id property="planId" column="planId" jdbcType="VARCHAR"/>
+        <result property="planName" column="planName" jdbcType="VARCHAR"/>
+        <result property="shiftId" column="shiftId" jdbcType="VARCHAR"/>
+        <result property="shiftDesc" column="shiftDesc" jdbcType="VARCHAR"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="pageShiftPlan" resultType="com.aurine.cloudx.estate.vo.ProjectShiftPlanPageVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectShiftPlanPageVo">
+        select psp.*, case when psps.num is null then 0 else psps.num end num,u.true_name as operatorName from aurine.project_shift_plan psp
+        left join (select count(1) as num,planId from project_shift_plan_staff group by planId) psps on psps.planId = psp.planId
+        left join pigxx.sys_user u on psp.operator = u.user_id
+        <where>
+            <if test="query.planName != null and query.planName != ''">
+                and psp.planName like concat('%',#{query.planName},'%')
+            </if>
+            <if test="query.startTime != null">
+                AND date(psp.createTime) <![CDATA[>=]]>
+                #{query.startTime,jdbcType=DATE}
+            </if>
+            <if test="query.endTime != null">
+                AND date(psp.createTime) <![CDATA[<=]]>
+                #{query.endTime,jdbcType=DATE}
+            </if>
+        </where>
+        order by psp.createTime desc
+    </select>
+</mapper>

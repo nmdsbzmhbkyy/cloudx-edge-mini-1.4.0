@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectDeviceCollectCfgMapper">
+
+    <resultMap id="projectDeviceCollectCfgMap" type="com.aurine.cloudx.estate.entity.ProjectDeviceCollectCfg">
+        <id property="attrId" column="attrId"/>
+        <result property="deviceType" column="deviceType"/>
+        <result property="attrCode" column="attrCode"/>
+        <result property="attrName" column="attrName"/>
+        <result property="remark" column="remark"/>
+        <result property="projectId" column="projectId"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+</mapper>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectStaffNoticeMapper">
+
+    <resultMap id="projectStaffNoticeMap" type="com.aurine.cloudx.open.origin.entity.ProjectStaffNotice">
+        <id property="noticeId" column="noticeId"/>
+        <result property="contentType" column="contentType"/>
+        <result property="noticeTitle" column="noticeTitle"/>
+        <result property="content" column="content"/>
+        <result property="pubTime" column="pubTime"/>
+        <result property="target" column="target"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="getByVo" resultType="com.aurine.cloudx.open.origin.vo.ProjectStaffNoticeVo"
+            parameterType="com.aurine.cloudx.open.origin.vo.ProjectStaffNoticeVo">
+        SELECT
+        t.seq, t.noticeId, t.projectId, t.contentType, t.noticeTitle, t.content, t.pubTime, t.target, t.tenant_id,
+        t.sender, t.operator, t.createTime, t.updateTime, t.seq, t.noticeId, t.projectId, t.contentType, t.noticeTitle,
+        t.content, t.pubTime, t.target, t.tenant_id, t.operator, t.createTime, t.updateTime,
+        o.status
+        FROM
+        project_staff_notice t
+        left JOIN project_staff_notice_object o ON t.noticeId = o.noticeId
+        <where>
+            o.userId = #{userId}
+            <if test='status == "0"'>
+                and (o.status is null or o.status = '0')
+            </if>
+            <if test='status == "1"'>
+                and o.status = '1'
+            </if>
+        </where>
+        order by o.status , t.createTime desc
+    </select>
+
+
+    <select id="countUnReadByStaffId" resultType="java.lang.Integer">
+        SELECT
+        count(1)
+        FROM
+        project_staff_notice t
+        left JOIN project_staff_notice_object o ON t.noticeId = o.noticeId
+        <where>
+            o.userId = #{userId} and (o.status = '0' or o.status is null)
+        </where>
+    </select>
+
+
+    <select id="countUnReadByPersonId" resultType="java.lang.Integer">
+        SELECT
+        count(1)
+        FROM
+        project_notice t
+        left JOIN project_staff_notice_object o ON t.noticeId = o.noticeId
+        <where>
+            o.userId = #{userId} and (o.status = '0' or o.status is null)
+        </where>
+    </select>
+
+</mapper>

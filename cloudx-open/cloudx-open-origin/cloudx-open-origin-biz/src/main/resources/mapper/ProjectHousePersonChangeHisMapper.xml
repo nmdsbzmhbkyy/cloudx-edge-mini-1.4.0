@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectHousePersonChangeHisMapper">
+
+  <resultMap id="projectHousePersonChangeHisMap" type="com.aurine.cloudx.open.origin.entity.ProjectHousePersonChangeHis">
+                  <id property="seq" column="seq"/>
+                        <result property="houseId" column="houseId"/>
+                        <result property="personId" column="personId"/>
+                        <result property="action" column="action"/>
+                        <result property="effTime" column="effTime"/>
+                        <result property="expTime" column="expTime"/>
+                        <result property="remark" column="remark"/>
+                        <result property="operator" column="operator"/>
+            </resultMap>
+</mapper>

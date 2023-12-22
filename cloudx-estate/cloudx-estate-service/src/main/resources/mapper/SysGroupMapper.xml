@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.SysGroupMapper">
+    <resultMap id="projectGroupMap" type="com.aurine.cloudx.estate.entity.SysGroup">
+        <id property="projectGroupId" column="projectGroupId"/>
+        <result property="projectGroupName" column="projectGroupName"/>
+        <result property="contactPerson" column="contactPerson"/>
+        <result property="contactPhone" column="contactPhone"/>
+        <result property="remark" column="remark"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <!--    集团管理员分页查询项目组-->
+    <select id="pageGroup" resultType="com.aurine.cloudx.estate.entity.SysGroup"
+            parameterType="com.aurine.cloudx.estate.entity.SysGroup">
+        select * from aurine.sys_project_group g left join pigxx.sys_dept d on d.dept_id=g.projectGroupId
+        <where>
+            and d.del_flag='0'
+            <if test="query.projectGroupId!=null  ">
+                and g.projectGroupId= #{query.projectGroupId}
+            </if>
+            <if test="query.projectGroupName!=null and query.projectGroupName != '' ">
+                and g.projectGroupName like concat('%', #{query.projectGroupName}, '%')
+            </if>
+            <!--            TODO:      暂时设置parentId可以为空 后期不同用户角色登录根据部门来过滤必须设值 xull@aurine.cn 2020年5月9日 16点35分-->
+            <if test="query.parentId!=null ">
+                and d.parent_id = #{query.parentId}
+            </if>
+            <if test="query.contactPerson!=null and query.contactPerson != '' ">
+                and g.contactPerson like concat('%', #{query.contactPerson}, '%')
+            </if>
+            <if test="query.contactPhone!=null and query.contactPhone != '' ">
+                and g.contactPhone like concat( #{query.contactPhone}, '%')
+            </if>
+            <if test="query.operator!=null ">
+                and g.operator = #{query.operator}
+            </if>
+
+        </where>
+        order by g.createTime desc
+    </select>
+
+    <!--    根据当前项目组id获取下级所有项目组id-->
+    <select id="findAllById" resultType="java.lang.Integer">
+        select d.dept_id
+        from pigxx.sys_dept_relation rel
+                 left join pigxx.sys_dept d on rel.descendant = d.dept_id
+        where d.dept_type_id = '2'
+          and d.del_flag = '0'
+          and rel.ancestor = #{id}
+    </select>
+
+    <!--    根据集团id获取下级所有项目组-->
+    <select id="selectTree" resultType="com.pig4cloud.pigx.admin.api.entity.SysDept">
+        select d.dept_id deptId, d.parent_id parentId, d.name, d.sort, d.dept_type_id deptTypeId
+        from pigxx.sys_dept_relation rel
+                 left join pigxx.sys_dept d on rel.descendant = d.dept_id
+        where d.dept_type_id in ('1', '2')
+          and d.del_flag = '0'
+          and rel.ancestor = #{id}
+    </select>
+
+    <!--    根据集团id获取次级项目组id-->
+    <select id="findByCompanyId" resultType="java.lang.Integer">
+        select d.dept_id
+        from pigxx.sys_dept d
+        where d.dept_type_id = '2'
+          and d.del_flag = '0'
+          and d.parent_id = #{id}
+    </select>
+    <select id="findById" resultType="com.aurine.cloudx.estate.entity.SysGroup">
+        select g.*
+        from pigxx.sys_dept_relation rel
+                 inner join pigxx.sys_dept d on rel.descendant = d.dept_id
+                 inner join aurine.sys_project_group g on g.projectGroupId = d.dept_id
+        where d.dept_type_id = '2'
+          and d.del_flag = '0'
+          and rel.ancestor = #{id}
+    order by g.createTime desc
+    </select>
+
+
+</mapper>

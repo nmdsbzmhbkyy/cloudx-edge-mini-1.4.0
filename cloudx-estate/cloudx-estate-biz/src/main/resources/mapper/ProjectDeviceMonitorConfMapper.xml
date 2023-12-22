@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectDeviceMonitorConfMapper">
+
+    <select id="listMoitorByDeviceId" resultType="com.aurine.cloudx.estate.entity.ProjectDeviceMonitorConf">
+    SELECT
+        device_monitor_conf.monitorId,device_monitor_conf.monitorName,device_monitor_conf.remark,device_info.deviceId
+    FROM project_device_info device_info
+    LEFT JOIN project_device_monitor_conf device_monitor_conf ON device_info.deviceType = device_monitor_conf.deviceTypeId
+    WHERE device_info.deviceId = #{deviceId} AND monitorId != ''
+    </select>
+</mapper>

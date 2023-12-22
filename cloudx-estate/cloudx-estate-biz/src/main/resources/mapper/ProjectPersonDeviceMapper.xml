@@ -1,0 +1,785 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPersonDeviceMapper">
+
+    <resultMap id="projectPersonDeviceMap" type="com.aurine.cloudx.estate.entity.ProjectPersonDevice">
+        <id property="seq" column="seq"/>
+        <result property="personType" column="personType"/>
+        <result property="personId" column="personId"/>
+        <result property="planId" column="planId"/>
+        <result property="deviceId" column="deviceId"/>
+        <result property="status" column="status"/>
+        <result property="isActive" column="isActive"/>
+        <result property="effTime" column="effTime"/>
+        <result property="expTime" column="expTime"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+
+    <!-- 查询已授权的人员ID-->
+    <select id="findPerson" resultType="java.lang.String">
+        select t.personId from project_person_plan_rel t
+        <if test="buildingId != null and buildingId != ''">
+            join project_house_person_rel prel on t.personId = prel.personId
+            join project_frame_info house on prel.houseId = house.entityId
+            join project_frame_info unit on house.puid = unit.entityId
+            join project_frame_info building on unit.puid = building.entityId
+        </if>
+        <if test="groupId != null and groupId != ''">
+            join project_house_person_rel prel on t.personId = prel.personId
+            join project_frame_info house on prel.houseId = house.entityId
+            join project_frame_info unit on house.puid = unit.entityId
+            join project_frame_info building on unit.puid = building.entityId
+            join project_frame_info gp ON building.puid = gp.entityId
+        </if>
+
+        <if test="planIdList != null and planIdList.size>0">
+            where t.planId in
+            <foreach collection="planIdList" item="planId" open="(" close=")" separator=",">
+                #{planId}
+            </foreach>
+
+            <if test="buildingId != null and buildingId != ''">
+                and building.entityId = #{buildingId}
+            </if>
+            <if test="unitId != null and unitId != ''">
+                and unit.entityId = #{unitId}
+            </if>
+            <if test="groupId != null and groupId != ''">
+                and gp.entityId = #{groupId}
+            </if>
+        </if>
+        group by t.personId
+    </select>
+
+    <!--住户通行权限分页查询-->
+    <select id="fetchList" parameterType="com.aurine.cloudx.estate.vo.ProjectProprietorDeviceSearchCondition"
+            resultType="com.aurine.cloudx.estate.vo.ProjectProprietorDeviceRecordVo">
+        select * from (
+        -- 住户的查询
+        SELECT
+        park_house.personName,
+        park_house.personId,
+        GROUP_CONCAT(DISTINCT park_house.address) AS groupAddress,
+        park_house.telephone,
+        any_value(park_house.sortSeq) as sortSeq,
+        (CASE
+        WHEN (COUNT(pd.personId) = 0) THEN '0'
+        WHEN (pd.isActive = 0) AND MAX(pd.expTime) &gt; NOW() THEN '3'
+        WHEN (pd.isActive = 0) AND MAX(pd.expTime) &lt; NOW() THEN '2'
+        WHEN
+        (COUNT(pd.personId) &gt; 0
+        AND MAX(pd.expTime) &gt; NOW())
+        THEN
+        '1'
+        WHEN
+        (COUNT(pd.personId) &gt; 0
+        AND MAX(pd.expTime) &lt; NOW())
+        THEN
+        '2'
+        ELSE '0'
+        END) AS rightStatus,
+        pd.isActive,
+        any_value(park_house.createTime) sortTIme
+        FROM
+        (SELECT CONCAT(pi.parkName, '-',pg.parkRegionName,'-',pp.placeName) AS address,
+        ppi.personName,
+        ppi.personId,
+        ppi.telephone,
+        ppi.createTime,
+        pp.seq sortSeq
+        FROM project_parking_place pp,
+        project_park_region pg,
+        project_parking_info pi,
+        project_person_info ppi
+        where pp.personId = ppi.personId
+        and pp.parkRegionId = pg.parkRegionId
+        and pg.parkId = pi.parkId
+        and pg.isPublic = '0'
+        and pp.projectId = #{projectId}
+        UNION ALL
+        SELECT CONCAT(
+        <if test="isGroup">
+        (with recursive r as
+        (
+        select *
+        from project_frame_info pfi
+        where pfi.entityId = building.entityId
+        union all
+        select pfi.*
+        from project_frame_info pfi,
+        r
+        where pfi.entityId = r.puid
+        )
+        select group_concat(r.entityName order by level desc SEPARATOR '-')
+        from r
+        GROUP BY projectId
+        )
+        </if>
+        <if test="!isGroup">
+        building.entityName
+        </if>
+        , '-', unit.entityName, '-', house.entityName) AS address,
+        ppi.personName,
+        ppi.personId,
+        ppi.telephone,
+        ppi.createTime,
+        pr.seq sortSeq
+        FROM project_house_person_rel pr,
+        project_frame_info house,
+        project_frame_info unit,
+        project_frame_info building,
+        project_person_info ppi
+        where pr.personId = ppi.personId
+        AND pr.houseId = house.entityId
+        and house.puid = unit.entityId
+        and unit.puid = building.entityId
+        and pr.projectId = #{projectId}
+        and ppi.projectId = #{projectId}
+        and pr.auditStatus = '2'
+        ) park_house
+        LEFT JOIN
+        (
+        select * from
+        project_person_plan_rel
+        order by createTime desc
+        )
+        pd ON pd.personId = park_house.personId
+        <where>
+            park_house.personName LIKE concat('%',#{searchCondition.personName},'%')
+            -- 当查询条件为楼栋、单元、房号时
+            <if test="searchCondition.houseSearch">
+                and exists (select 1 from project_house_person_rel
+                pr,project_frame_info house,project_frame_info unit,
+                project_frame_info building
+                where pr
+                .personId = park_house.personId
+                AND pr.houseId = house.entityId
+                AND house.puid = unit.entityId
+                AND unit.puid = building.entityId
+                AND pr.projectId = #{projectId}
+                <if test="searchCondition.buildingName != null and searchCondition.buildingName != ''">
+                    AND building.entityName LIKE concat('%',#{searchCondition.buildingName},'%')
+                </if>
+                <if test="searchCondition.unitName != null and searchCondition.unitName != ''">
+                    AND unit.entityName LIKE concat('%',#{searchCondition.unitName},'%')
+                </if>
+                <if test="searchCondition.houseName != null and searchCondition.houseName != ''">
+                    AND house.entityName LIKE concat('%',#{searchCondition.houseName},'%')
+                </if>
+                )
+            </if>
+            <if test="searchCondition.parkSearch">
+                -- 当查询条件为车场、区域、车位时
+                and exists
+                (select 1 from project_parking_place pp,project_park_region pg,project_parking_info pi
+                where pp.personId = park_house.personId
+                and pp.parkRegionId = pg.parkRegionId
+                and pg.parkId = pi.parkId
+                and pg.isPublic = '0'
+                <if test="searchCondition.parkName != null and searchCondition.parkName != ''">
+                    AND pi.parkName LIKE concat('%',#{searchCondition.parkName},'%')
+                </if>
+                <if test="searchCondition.parkRegionName != null and searchCondition.parkRegionName != ''">
+                    AND pg.parkRegionName LIKE concat('%',#{searchCondition.parkRegionName},'%')
+                </if>
+                <if test="searchCondition.placeName != null and searchCondition.placeName != ''">
+                    AND pp.placeName LIKE concat('%',#{searchCondition.placeName},'%')
+                </if>
+                )
+            </if>
+        </where>
+        GROUP BY park_house.personId , park_house.telephone , park_house.personName , pd.isActive
+   /*     order by  sortTime desc*/
+        ) result_table
+        <where>
+            <if test="searchCondition.rightStatus != null and searchCondition.rightStatus != ''">
+                AND rightStatus = #{searchCondition.rightStatus}
+            </if>
+        </where>
+        order by result_table.sortSeq desc
+    </select>
+
+    <!--    查询员工-->
+    <select id="findStaffDevicePage" parameterType="com.aurine.cloudx.estate.vo.ProjectStaffDeviceSearchConditionVo"
+            resultType="com.aurine.cloudx.estate.vo.ProjectStaffDeviceRecordVo">
+SELECT * FROM  (
+        SELECT
+        any_value(passRight.expTime) 'expTime',
+        any_value(passRight.isActive) 'isActive',
+        any_value(passRight.personType) 'personType',
+        any_value(dept.deptName) 'deptName',
+        any_value( passRight.createTime) 'sortTime',
+        -- staff.staffPost,staff.grade,
+        (
+        CASE
+        WHEN ( any_value(passRight.seq) is null ) THEN
+        '0'
+        WHEN (any_value(passRight.isActive) = 0) THEN '3'
+        WHEN ( any_value(passRight.seq) is NOT null AND any_value(passRight.expTime) &gt;= NOW( ) ) THEN
+        '1'
+        WHEN ( any_value(passRight.seq) is NOT null AND any_value(passRight.expTime) &lt; NOW( ) ) THEN
+        '2'
+        ELSE '0'
+        END
+        ) AS rightStatus ,
+        staff.*
+        FROM
+        project_staff staff
+        join sys_project_dept dept on staff.departmentId = dept.deptId
+        LEFT JOIN (
+        select * from  project_person_plan_rel order by createTime desc
+        ) passRight ON staff.staffId = passRight.personId
+
+        where 1 = 1
+        AND staff.projectId = #{searchCondition.projectId}
+        <if test="searchCondition.staffName != null and searchCondition.staffName != ''">
+            AND staff.staffName like concat('%', #{searchCondition.staffName},'%')
+        </if>
+        <if test="searchCondition.deptName != null and searchCondition.deptName != ''">
+            AND dept.deptId = #{searchCondition.deptName}
+        </if>
+
+        <if test="searchCondition.staffPost != null and searchCondition.staffPost != ''">
+            AND staff.staffPost = #{searchCondition.staffPost}
+        </if>
+        <if test="searchCondition.grade != null and searchCondition.grade != ''">
+            AND staff.grade = #{searchCondition.grade}
+        </if>
+        GROUP BY
+        staff.staffId
+        order by sortTime desc
+        ) staffDevice
+        <if test="searchCondition.rightStatus != null and searchCondition.rightStatus != ''">
+         WHERE staffDevice.rightStatus = #{searchCondition.rightStatus}
+        </if>
+        ORDER BY
+        createTime DESC
+    </select>
+
+
+    <select id="listByPerson" resultType="com.aurine.cloudx.estate.vo.ProjectPassDeviceVo">
+        select device.deviceId,
+        device.deviceName,
+        device.deviceAlias,
+        device.deviceDesc,
+        device.deviceType,
+        device.buildingId,
+        device.unitId,
+        device.status,
+        IF(max(disabled) >= 1, true, false) disabled
+        from (
+        -- 公共区口以及住户所在组团区口
+        <if test="isFrameGate">
+            SELECT
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            1 as disabled
+
+            FROM
+            project_house_person_rel housePerson
+            JOIN project_frame_info house ON housePerson.houseId = house.entityId
+            JOIN project_frame_info unit on house.puid = unit.entityId
+            join project_frame_info building on unit.puid = building.entityId
+            join project_frame_info group4 on building.puid = group4.entityId
+            right join project_device_info device on device.deviceEntityId = group4.entityId
+            where (housePerson.personId = #{personId} and device.deviceType = '3')
+            or
+            (device.deviceType = '3' and device.dStatus <![CDATA[<>]]> '4' and (device.deviceEntityId = '' or device.deviceEntityId is null))
+
+            union all
+            select
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            1 as disabled
+            from project_device_info device
+            where device.deviceType = '3'
+            and device.dStatus <![CDATA[<>]]> '4'
+
+
+            union all
+        </if>
+        -- 所有区口机
+        <if test="isGate">
+            select
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            1 as disabled
+            from project_device_info device
+            where device.deviceType = '3'
+            and device.dStatus <![CDATA[<>]]> '4'
+
+
+            union all
+        </if>
+
+        -- 人员资产下的楼栋的所有梯口机
+        <if test="isBuildingLadder">
+            SELECT
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            1 as disabled
+
+            FROM
+            project_house_person_rel housePerson
+            JOIN project_frame_info house ON housePerson.houseId = house.entityId
+            JOIN project_frame_info unit on house.puid = unit.entityId
+            join project_frame_info building on unit.puid = building.entityId
+            join project_frame_info unitAll on building.entityId = unitAll.puid
+            join project_device_info device on device.unitId = unitAll.entityId
+            where housePerson.personId = #{personId} and device.deviceType = '2'
+            and housePerson.auditStatus = 2
+            and device.dStatus <![CDATA[<>]]> '4'
+
+
+            union all
+        </if>
+        -- 所在单元梯口
+
+        <if test="isUnitLadder">
+            SELECT
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            1 as disabled
+
+            FROM
+            project_house_person_rel housePerson
+            JOIN project_frame_info house ON housePerson.houseId = house.entityId
+            JOIN project_frame_info unit on house.puid = unit.entityId
+            join project_frame_info building on unit.puid = building.entityId
+            join project_device_info device on device.unitId = unit.entityId
+            where
+            housePerson.personId = #{personId}
+            and housePerson.auditStatus = 2
+            and device.deviceType = '2'
+            and device.dStatus <![CDATA[<>]]> '4'
+
+            union all
+        </if>
+        -- 获取住户的方案的物理策略需要使用的设备
+        select
+        device.deviceId,
+        device.deviceName,
+        device.deviceAlias,
+        device.deviceDesc,
+        device.deviceType,
+        device.buildingId,
+        device.unitId,
+        device.dStatus as status,
+        1 as disabled
+        from
+        project_physical_pass_policy physical
+        join project_pass_plan_policy_rel policyRel on policyRel.policyId = physical.policyId
+        join project_person_plan_rel planRel on planRel.planId = policyRel.planId
+        join project_device_info device on device.deviceId = physical.deviceId
+        where
+        1=1
+        <if test="planId != null and planId != ''">
+            and planRel.planId = #{planId}
+        </if>
+        <if test="planId == null or planId == ''">
+            and planRel.personId = #{personId}
+        </if>
+        <if test="!onlyPlan">
+            union all
+            -- 获取住户的所有自选设备
+            select
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            0 as disabled
+            FROM
+            project_person_device selfDevice join project_device_info device on selfDevice.deviceId = device.deviceId
+            where (selfDevice.planId is null or selfDevice.planId = '') and selfDevice.personid = #{personId}
+        </if>
+
+        ) as device group by device.deviceId,
+        device.deviceName,
+        device.deviceAlias,
+        device.deviceDesc,
+        device.deviceType,
+        device.buildingId,
+        device.unitId,
+        device.status
+
+    </select>
+
+    <select id="pageByPerson" resultType="com.aurine.cloudx.estate.vo.ProjectPassDeviceVo">
+
+        select device.deviceId,
+        device.deviceName,
+        device.deviceAlias,
+        device.deviceDesc,
+        device.deviceType,
+        device.buildingId,
+        device.unitId,
+        device.status,
+        IF(max(disabled) >= 1, true, false) disabled
+
+        from (
+
+        -- 公共区口以及住户所在组团区口
+        <if test="isFrameGate">
+            SELECT
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            1 as disabled
+
+            FROM
+            project_house_person_rel housePerson
+            JOIN project_frame_info house ON housePerson.houseId = house.entityId
+            JOIN project_frame_info unit on house.puid = unit.entityId
+            join project_frame_info building on unit.puid = building.entityId
+            join project_frame_info group4 on building.puid = group4.entityId
+            right join project_device_info device on device.deviceEntityId = group4.entityId
+            where (housePerson.personId = #{personId} and device.deviceType = '3')
+            or
+            (device.deviceType = '3' and device.dStatus <![CDATA[<>]]> '4' and (device.deviceEntityId = '' or device.deviceEntityId is null))
+
+            union all
+        </if>
+        -- 所有区口机
+        <if test="isGate">
+            select
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            1 as disabled
+            from project_device_info device
+            where device.deviceType = '3'
+            and device.dStatus <![CDATA[<>]]> '4'
+
+            union all
+        </if>
+
+        -- 用户的房产所在的楼栋所有梯口机
+        <if test="isBuildingLadder">
+            SELECT
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            1 as disabled
+
+            FROM
+            project_house_person_rel housePerson
+            JOIN project_frame_info house ON housePerson.houseId = house.entityId
+            JOIN project_frame_info unit on house.puid = unit.entityId
+            join project_frame_info building on unit.puid = building.entityId
+            join project_frame_info unitAll on building.entityId = unitAll.puid
+            join project_device_info device on device.unitId = unitAll.entityId
+            where housePerson.personId = #{personId}
+              and housePerson.auditStatus = 2
+              and device.deviceType = '2'
+              and device.dStatus <![CDATA[<>]]> '4'
+
+
+            union all
+        </if>
+        -- 所在单元梯口
+
+        <if test="isUnitLadder">
+            SELECT
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            1 as disabled
+
+            FROM
+            project_house_person_rel housePerson
+            JOIN project_frame_info house ON housePerson.houseId = house.entityId
+            JOIN project_frame_info unit on house.puid = unit.entityId
+            join project_frame_info building on unit.puid = building.entityId
+            join project_device_info device on device.unitId = unit.entityId
+            where
+            housePerson.personId = #{personId}
+            and housePerson.auditStatus = 2
+            and device.deviceType = '2'
+            and device.dStatus <![CDATA[<>]]> '4'
+
+            union all
+        </if>
+        -- 获取住户的方案的物理策略需要使用的设备
+        select
+        device.deviceId,
+        device.deviceName,
+        device.deviceAlias,
+        device.deviceDesc,
+        device.deviceType,
+        device.buildingId,
+        device.unitId,
+        device.dStatus as status,
+        1 as disabled
+        from
+        project_physical_pass_policy physical
+        join project_pass_plan_policy_rel policyRel on policyRel.policyId = physical.policyId
+        join project_person_plan_rel planRel on planRel.planId = policyRel.planId
+        join project_device_info device on device.deviceId = physical.deviceId
+        where planRel.personId = #{personId}
+
+        <if test="!onlyPlan">
+            union all
+
+            -- 获取住户的所有自选设备
+            select
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            0 as disabled
+            FROM
+            project_person_device selfDevice join project_device_info device on selfDevice.deviceId = device.deviceId
+            where (selfDevice.planId is null or selfDevice.planId = '') and selfDevice.personid = #{personId}
+        </if>
+
+        ) as device group by device.deviceId,
+        device.deviceName,
+        device.deviceAlias,
+        device.deviceDesc,
+        device.deviceType,
+        device.buildingId,
+        device.unitId,
+        device.status
+    </select>
+
+
+    <select id="getTodayExpList" resultType="com.aurine.cloudx.estate.entity.ProjectPersonPlanRel">
+        SELECT
+        	*
+        FROM
+        	project_person_plan_rel
+        WHERE
+        DATE_FORMAT(expTime, '%Y-%m-%d') = DATE_FORMAT(NOW(), '%Y-%m-%d')
+    </select>
+
+
+    <select id="listOriginByFrame" resultType="com.aurine.cloudx.estate.dto.ProjectUserHouseDTO">
+        SELECT DISTINCT
+        houseInfo.houseId,
+        houseInfo.houseName,
+        houseInfo.houseCode,
+        person.personName,
+        person.personId,
+        person.pStatus,
+        person.picUrl,
+        person.peopleTypeCode,
+        person.telephone,
+        houseInfo.projectId,
+        houseInfo.tenant_id
+        FROM
+        project_frame_info group4
+        RIGHT JOIN project_frame_info building ON group4.entityId = building.puid
+        JOIN project_frame_info unit ON building.entityId = unit.puid
+        JOIN project_frame_info house ON house.puid = unit.entityId
+        JOIN project_house_info houseInfo ON house.entityId = houseInfo.houseId
+        -- 已启用云对讲服务的房屋
+        JOIN project_house_service houseService ON house.entityId = houseService.houseId
+        JOIN sys_service_cfg serviceCfg ON houseService.serviceId = serviceCfg.serviceId
+
+        JOIN project_house_person_rel personRel ON house.entityId = personRel.houseId
+        JOIN project_person_info person ON person.personId = personRel.personId
+        WHERE
+        1 = 1
+        AND house.projectId = #{projectId}
+        AND houseInfo.houseCode IS NOT NULL
+        AND houseInfo.houseCode  <![CDATA[<>]]> ''
+        -- 增值服务为云对讲
+        AND serviceCfg.serviceType = 'YDJ'
+        -- 只获取审核通过的住户
+        and personRel.auditStatus = 2
+
+        <if test="groupId != null and groupId != ''">
+            -- 组团所在区域
+            AND group4.entityId = #{groupId}
+        </if>
+        <if test="buildingId != null and buildingId != ''">
+            -- 所在楼栋
+            AND building.entityId = #{buildingId}
+        </if>
+        <if test="unitId != null and unitId != ''">
+            -- 梯口机
+            AND unit.entityId = #{unitId}
+        </if>
+
+        ORDER BY
+        -- houseInfo.houseCode
+        <if test="useHouseName">
+            houseInfo.houseName
+        </if>
+
+        <if test="!useHouseName">
+            houseInfo.houseCode
+        </if>
+
+    </select>
+
+    <select id="listOriginByHousePerson" resultType="com.aurine.cloudx.estate.dto.ProjectUserHouseDTO">
+        -- 一个房间可以访问哪些设备
+
+        with personMap as (
+        -- 住户房屋数据
+        SELECT DISTINCT
+        houseInfo.houseId,
+        unit.entityId unitId,
+        building.entityId buildingId,
+        group4.entityId groupId,
+        houseInfo.houseCode,
+        houseInfo.houseName,
+        person.personName,
+        person.personId,
+        person.pStatus,
+        person.peopleTypeCode,
+        person.telephone,
+        person.picUrl,
+        houseInfo.projectId,
+        houseInfo.tenant_id
+        FROM
+        project_frame_info group4
+        RIGHT JOIN project_frame_info building ON group4.entityId = building.puid
+        JOIN project_frame_info unit ON building.entityId = unit.puid
+        JOIN project_frame_info house ON house.puid = unit.entityId
+        JOIN project_house_info houseInfo ON house.entityId = houseInfo.houseId
+        -- 已启用云对讲服务的房屋
+        JOIN project_house_service houseService ON house.entityId = houseService.houseId
+        JOIN sys_service_cfg serviceCfg ON houseService.serviceId = serviceCfg.serviceId
+
+        JOIN project_house_person_rel personRel ON house.entityId = personRel.houseId
+        JOIN project_person_info person ON person.personId = personRel.personId
+        WHERE
+        1 = 1
+
+        AND houseInfo.houseCode IS NOT NULL
+        AND houseInfo.houseCode <![CDATA[<>]]> ''
+        AND serviceCfg.serviceType = 'YDJ'
+        -- 只获取审核通过的住户
+        and personRel.auditStatus = 2
+
+        <if test="personId!=null and personId != ''">
+
+            AND personRel.personId = #{personId}
+        </if>
+
+        and personRel.houseId = #{houseId}
+
+        ORDER BY
+        houseInfo.houseCode
+        )
+
+        -- 大门公共区口机 获取框架号
+        select personMap.houseId,
+        personMap.unitId,
+        personMap.buildingId,
+        personMap.groupId,
+        personMap.houseCode,
+        personMap.houseName,
+        personMap.personName,
+        personMap.personId,
+        personMap.pStatus,
+        personMap.peopleTypeCode,
+        personMap.picUrl,
+        personMap.telephone,
+        personMap.projectId,
+        personMap.tenant_id,device.sn from personMap join project_device_info device on personMap.projectId = device.projectId
+        where device.deviceType = '3'   and (device.deviceEntityId is null or device.deviceEntityId = '')
+        UNION
+
+        -- 所属楼栋区口机 获取框架号
+        select personMap.houseId,
+        personMap.unitId,
+        personMap.buildingId,
+        personMap.groupId,
+        personMap.houseCode,
+        personMap.houseName,
+        personMap.personName,
+        personMap.personId,
+        personMap.pStatus,
+        personMap.peopleTypeCode,
+        personMap.picUrl,
+        personMap.telephone,
+        personMap.projectId,
+        personMap.tenant_id,device.sn from personMap join project_device_info device on personMap.groupId = device.deviceEntityId
+        where device.deviceType = '3'
+        UNION
+        -- 所属楼栋单元口机，直接获取房间号
+        select personMap.houseId,
+        personMap.unitId,
+        personMap.buildingId,
+        personMap.groupId,
+        personMap.houseCode,
+        personMap.houseName,
+        personMap.personName,
+        personMap.personId,
+        personMap.pStatus,
+        personMap.peopleTypeCode,
+        personMap.picUrl,
+        personMap.telephone,
+        personMap.projectId,
+        personMap.tenant_id,device.sn from personMap join project_device_info device on personMap.unitId = device.unitId
+        where device.deviceType = '2'
+
+    </select>
+</mapper>

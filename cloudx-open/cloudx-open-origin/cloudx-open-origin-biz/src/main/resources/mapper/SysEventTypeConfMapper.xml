@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.SysEventTypeConfMapper">
+
+    <select id="pageAlarmType" resultType="com.aurine.cloudx.open.origin.entity.SysEventTypeConf"
+            parameterType="com.aurine.cloudx.open.origin.entity.SysEventTypeConf">
+        select * from aurine.sys_event_type_conf e
+        <where>
+            <if test="query.deviceType!=null and query.deviceType != ''">
+                and e.deviceType = #{query.deviceType}
+            </if>
+            <if test="query.eventTypeName!=null and query.eventTypeName != '' ">
+                and e.eventTypeName like concat('%',#{query.eventTypeName},'%')
+            </if>
+        </where>
+
+    </select>
+
+    <select id="pageAlarmTypeByPlanId" resultType="com.aurine.cloudx.open.origin.entity.SysEventTypeConf"
+            parameterType="com.aurine.cloudx.open.origin.entity.SysEventTypeConf">
+        select c.deviceType,c.eventTypeName from sys_expert_plan_event_type_rel r
+        left join sys_event_type_conf c on c.eventTypeId = r.eventTypeId
+        WHERE r.planId = #{query.planId}
+    </select>
+</mapper>

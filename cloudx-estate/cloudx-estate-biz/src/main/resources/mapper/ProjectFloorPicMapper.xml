@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectFloorPicMapper">
+    <select id="select" parameterType="com.aurine.cloudx.estate.vo.ProjectFloorPicSearchCondition" resultType="com.aurine.cloudx.estate.vo.ProjectFloorPicVo">
+        <!-- 3层结构情况下  楼栋、单元、房间、业主及其关系
+        SELECT * FROM aurine.project_floor_pic projectFloorPic join pigxx.sys_user u on projectFloorPic.operator = u.user_id-->
+        SELECT projectFloorPic.*,staff.staffName userName
+        FROM aurine.project_floor_pic projectFloorPic
+        join pigxx.sys_user u on projectFloorPic.operator = u.user_id
+        join aurine.project_staff staff on staff.userId = u.user_id
+
+        <where>
+            <if test="searchCondition.picName != null and searchCondition.picName != ''">
+                AND projectFloorPic.picName like concat('%', #{searchCondition.picName},'%')
+            </if>
+            <if test="searchCondition.projectId != null">
+                and projectFloorPic.projectId = #{searchCondition.projectId}
+                and staff.projectId = #{searchCondition.projectId}
+            </if>
+            <if test="searchCondition.regionId != null">
+                and projectFloorPic.regionId = #{searchCondition.regionId}
+            </if>
+        </where>
+        ORDER BY projectFloorPic.updateTime desc
+    </select>
+
+
+    <select id="selectLocation" resultType="com.aurine.cloudx.estate.vo.ProjectFloorPicVo">
+        SELECT
+            location.lat,
+            location.lon,
+            projectFloorPic.*,
+            staff.staffName userName
+        FROM
+            aurine.project_floor_pic projectFloorPic
+                JOIN pigxx.sys_user u ON projectFloorPic.operator = u.user_id
+                JOIN aurine.project_staff staff ON staff.userId = u.user_id
+                LEFT JOIN ( SELECT * FROM aurine.project_device_location location WHERE location.deviceId = #{deviceId} AND location.projectId = #{projectId} ) location ON projectFloorPic.picId = location.picId
+        WHERE
+            projectFloorPic.regionId = #{regionId}
+          AND projectFloorPic.projectId = #{projectId}
+          AND staff.projectId = #{projectId}
+        ORDER BY
+            projectFloorPic.updateTime DESC
+    </select>
+
+</mapper>

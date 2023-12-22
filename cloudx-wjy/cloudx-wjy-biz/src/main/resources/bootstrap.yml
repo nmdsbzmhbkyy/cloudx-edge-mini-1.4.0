@@ -1,0 +1,24 @@
+server:
+  port: 6060
+feign:
+  okhttp:
+    enabled: true
+spring:
+  application:
+    name: '@artifactId@'
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS-HOST:pigx-register}:${NACOS-PORT:8848}
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        file-extension: yml
+        shared-configs:
+          - application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+  profiles:
+    active: '@profiles.active@'
+swagger:
+  exclude_path:
+    - '/api/**'
+    - '/actuator/**'
+    - '/error'

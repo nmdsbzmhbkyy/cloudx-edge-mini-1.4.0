@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectDeviceModifyLogMapper">
+
+    <select id="getUpdateRecordByDeviceid" resultType="com.aurine.cloudx.open.origin.vo.ProjectDeviceModifyLogVo">
+        SELECT
+            info.deviceName,
+            log.*
+        FROM
+            project_device_modify_log log
+                left join project_device_info info on log.deviceId = info.deviceId
+        WHERE
+            log.deviceId = #{deviceId}
+            LIMIT 0,#{count}
+    </select>
+
+    <select id="getAbnormalParam" resultType="java.lang.Integer">
+        WITH device AS ( SELECT ipv4, deviceCode, mac, projectId FROM project_device_info WHERE deviceId = #{deviceId} ) SELECT
+            count(*)
+        FROM
+            device
+                LEFT JOIN project_device_info info ON device.projectId = info.projectId
+        WHERE
+            (
+                    device.ipv4 = info.ipv4 or device.deviceCode = info.deviceCode or device.mac = info.mac)
+
+    </select>
+
+</mapper>

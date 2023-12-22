@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectCardHisMapper">
+    <delete id="handleCardHis">
+        DELETE t1
+        FROM
+        project_card_his t1
+        JOIN project_card_his t2 ON t1.cardNo = t2.cardNo
+        WHERE
+        t1.seq <![CDATA[<]]> t2.seq
+    </delete>
+
+    <select id="pageVo" resultType="com.aurine.cloudx.estate.vo.ProjectCardHisVo">
+
+        SELECT
+        his.operationType,
+        his.createTime operationTime,
+        u.true_name operationName,
+        his.cardNo,
+        his.oldCardNo,
+        his.personName,
+        his.personType,
+        his.phone,
+        his.state,
+        his.personId
+        FROM
+        aurine.project_card_his his
+        left join pigxx.sys_user u on his.operator = u.user_id
+        <where>
+            <if test="query.operationType != null and query.operationType != '' ">
+                and his.operationType = #{query.operationType}
+            </if>
+
+            <if test="query.operationTimeBegin != null">
+                AND
+                DATE_FORMAT(his.createTime, '%Y-%m-%d %H:%i:%s')
+                <![CDATA[>=]]>
+                DATE_FORMAT(#{query.operationTimeBegin}, '%Y-%m-%d %H:%i:%s')
+            </if>
+            <if test="query.operationTimeEnd != null">
+                AND
+                DATE_FORMAT(createTime, '%Y-%m-%d %H:%i:%s')
+                <![CDATA[<=]]>
+                DATE_FORMAT(#{query.operationTimeEnd}, '%Y-%m-%d %H:%i:%s')
+            </if>
+            <if test="query.operationName != null and query.operationName != '' ">
+                and u.true_name like concat('%',#{query.operationName},'%')
+            </if>
+            <if test="query.cardNo != null and query.cardNo != '' ">
+                and (his.cardNo like concat('%',#{query.cardNo},'%') or his.oldCardNo like concat('%',#{query.cardNo},'%'))
+            </if>
+            <if test="query.personName != null and query.personName != '' ">
+                and his.personName like concat('%',#{query.personName},'%')
+            </if>
+            <if test="query.personType != null and query.personType != '' ">
+                and his.personType = #{query.personType}
+            </if>
+            <if test="query.phone != null and query.phone != '' ">
+                and his.phone like concat('%',#{query.phone},'%')
+            </if>
+        </where>
+        order by his.createTime desc
+    </select>
+</mapper>

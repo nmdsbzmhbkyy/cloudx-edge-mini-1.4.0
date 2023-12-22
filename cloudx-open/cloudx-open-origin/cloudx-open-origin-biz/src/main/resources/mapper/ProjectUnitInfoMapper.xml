@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectUnitInfoMapper">
+    <select id="getByCode" resultType="com.aurine.cloudx.open.origin.vo.ProjectUnitInfoVo">
+        SELECT seq,
+               unitId,
+               unitCode,
+               projectId,
+               unitName,
+               standardAddress,
+               addressName,
+               picUrl1,
+               picUrl2,
+               picUrl3,
+               remark,
+               tenant_id,
+               operator,
+               createTime,
+               updateTime
+        FROM project_unit_info
+        WHERE unitCode = #{unitCode}
+          AND projectId = #{projectId}
+    </select>
+
+    <insert id="saveUnit">
+        INSERT
+        INTO project_unit_info
+        (unitId,
+         unitCode,
+         frameNo,
+         projectId,
+         unitName,
+         standardAddress,
+         addressName,
+         picUrl1,
+         picUrl2,
+         picUrl3,
+         remark,
+         tenant_id,
+         operator)
+        VALUES (#{unitInfo.unitId},
+                #{unitInfo.unitCode},
+                #{unitInfo.frameNo},
+                #{unitInfo.projectId},
+                #{unitInfo.unitName},
+                #{unitInfo.standardAddress},
+                #{unitInfo.addressName},
+                #{unitInfo.picUrl1},
+                #{unitInfo.picUrl2},
+                #{unitInfo.picUrl3},
+                #{unitInfo.remark},
+                #{unitInfo.tenantId},
+                #{unitInfo.operator})
+
+    </insert>
+
+    <select id="listUnitInfo"  resultType="com.aurine.cloudx.open.origin.vo.ProjectUnitInfoCountVo">
+        select unit.*,(select count(1) from project_frame_info house where house.puid=unit.unitId) houseCount from project_unit_info unit
+        left join project_frame_info info on info.entityId=unit.unitId
+        where info.puid=#{buildingId}
+    </select>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectUnitInfo"
+            resultType="com.aurine.cloudx.open.common.entity.vo.UnitInfoVo"
+    >
+        SELECT
+        *
+        FROM project_unit_info pui
+        <where>
+            <if test="query.projectId != null">
+                AND pui.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND pui.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.unitId != null and query.unitId != ''">
+                AND pui.unitId = #{query.unitId}
+            </if>
+            <if test="query.unitCode != null and query.unitCode != ''">
+                AND pui.unitCode = #{query.unitCode}
+            </if>
+            <if test="query.frameNo != null and query.frameNo != ''">
+                AND pui.frameNo = #{query.frameNo}
+            </if>
+            <if test="query.unitName != null and query.unitName != ''">
+                AND pui.unitName LIKE concat('%', #{query.unitName}, '%')
+            </if>
+            <if test="query.addressName != null and query.addressName != ''">
+                AND pui.addressName LIKE concat('%', #{query.addressName}, '%')
+            </if>
+            <if test="query.remark != null and query.remark != ''">
+                AND pui.remark LIKE concat('%', #{query.remark}, '%')
+            </if>
+        </where>
+    </select>
+
+</mapper>

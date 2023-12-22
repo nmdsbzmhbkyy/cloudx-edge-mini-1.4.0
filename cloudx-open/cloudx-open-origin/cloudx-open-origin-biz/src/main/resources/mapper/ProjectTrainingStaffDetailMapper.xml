@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectTrainingStaffDetailMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectTrainingStaffDetail" id="ProjectTrainingStaffDetailMap">
+        <result property="detailId" column="detailId" jdbcType="VARCHAR"/>
+        <result property="trainingId" column="trainingId" jdbcType="VARCHAR"/>
+        <result property="staffId" column="staffId" jdbcType="VARCHAR"/>
+        <result property="fileId" column="fileId" jdbcType="VARCHAR"/>
+        <result property="progress" column="progress" jdbcType="VARCHAR"/>
+        <result property="completeTime" column="completeTime" jdbcType="TIMESTAMP"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+    </resultMap>
+
+</mapper>

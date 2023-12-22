@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectLogicPassPolicyMapper">
+
+    <resultMap id="projectLogicPassPolicyMap" type="com.aurine.cloudx.open.origin.entity.ProjectLogicPassPolicy">
+        <id property="policyId" column="policyId"/>
+        <result property="macroId" column="macroId"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectLogicPassPolicy"
+            resultType="com.aurine.cloudx.open.common.entity.vo.LogicPassPolicyVo"
+    >
+        SELECT
+        *
+        FROM project_logic_pass_policy plpp
+        <where>
+            <if test="query.projectId != null">
+                AND plpp.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND plpp.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.policyId != null and query.policyId != ''">
+                AND plpp.policyId = #{query.policyId}
+            </if>
+            <if test="query.macroId != null and query.macroId != ''">
+                AND plpp.macroId = #{query.macroId}
+            </if>
+        </where>
+    </select>
+
+</mapper>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectVehiclesEntryExitMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectVehiclesEntryExit" id="ProjectVehiclesEntryExitMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="entryId" column="entryId" jdbcType="VARCHAR"/>
+        <result property="entryCode" column="entryCode" jdbcType="VARCHAR"/>
+        <result property="entryName" column="entryName" jdbcType="VARCHAR"/>
+        <result property="lon" column="lon" jdbcType="NUMERIC"/>
+        <result property="lat" column="lat" jdbcType="NUMERIC"/>
+        <result property="gisArea" column="gisArea" jdbcType="VARCHAR"/>
+        <result property="gisType" column="gisType" jdbcType="VARCHAR"/>
+        <result property="entryType" column="entryType" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="direction" column="direction" jdbcType="VARCHAR"/>
+        <result property="laneNumber" column="laneNumber" jdbcType="INTEGER"/>
+        <result property="parkId" column="parkId" jdbcType="VARCHAR"/>
+        <result property="remark" column="remark" jdbcType="VARCHAR"/>
+        <result property="picUrl" column="picUrl" jdbcType="VARCHAR"/>
+        <result property="floor" column="floor" jdbcType="INTEGER"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+</mapper>

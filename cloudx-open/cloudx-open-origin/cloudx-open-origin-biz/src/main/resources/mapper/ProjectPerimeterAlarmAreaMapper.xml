@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectPerimeterAlarmAreaMapper">
+
+
+    <select id="findPage" resultType="com.aurine.cloudx.open.origin.vo.ProjectPerimeterAlarmAreaVo">
+        SELECT
+        w.regionName regionName,
+        alarm.infoUid,
+        alarm.deviceId,
+        moduleNo,
+        channelNo,
+        channelName,
+        channelType,
+        armedStatus,
+        w.parRegionId parRegionId,
+        w.regionId deviceRegionId
+        FROM
+        project_device_info info
+        LEFT JOIN project_perimeter_alarm_area alarm ON info.deviceId = alarm.deviceId
+        LEFT JOIN (
+        SELECT
+        region.regionId regionId,
+        region.parRegionId parRegionId,
+        info.deviceId,
+        region.regionName regionName
+        FROM
+        project_perimeter_alarm_area alarm
+        LEFT JOIN project_device_info info ON alarm.infoUid = info.deviceId
+        LEFT JOIN project_device_region region ON info.deviceRegionId = region.regionId
+        ) w on alarm.infoUid = w.deviceId
+        <where>
+            alarm.deviceId = #{query.deviceId}
+            <if test="query.regionName !=null and query.regionName!=''">
+                and regionName like concat('%',#{query.regionName},'%')
+            </if>
+
+            <if test="query.channelName!=null and query.channelName!=''">
+                and alarm.channelName like concat('%',#{query.channelName},'%')
+            </if>
+        </where>
+    </select>
+
+    <select id="reacquireDefenseArea" resultType="com.aurine.cloudx.open.origin.entity.ProjectDeviceInfo">
+        SELECT *
+        FROM project_device_info
+        WHERE deviceId = #{value}
+    </select>
+
+    <select id="comparison" resultType="java.lang.Integer">
+        SELECT count(*)
+        FROM project_device_info
+        WHERE sn = #{value}
+    </select>
+
+
+</mapper>

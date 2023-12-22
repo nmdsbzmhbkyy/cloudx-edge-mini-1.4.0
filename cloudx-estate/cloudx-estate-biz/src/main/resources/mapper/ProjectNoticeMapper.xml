@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectNoticeMapper">
+    <resultMap id="projectNoticeMap" type="com.aurine.cloudx.estate.entity.ProjectNotice">
+        <id property="noticeId" column="noticeId"/>
+        <result property="projectId" column="projectId"/>
+        <result property="noticeType" column="noticeType"/>
+        <result property="contentType" column="contentType"/>
+        <result property="noticeTitle" column="noticeTitle"/>
+        <result property="content" column="content"/>
+        <result property="target" column="target"/>
+        <result property="pubTime" column="pubTime"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <!--    信息发布分页查询-->
+    <select id="pageNotice" resultType="com.aurine.cloudx.estate.vo.ProjectNoticeVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectNoticeFormVo">
+        select pn.*,case when fc.countFailNum is null
+        then 0 else fc.countFailNum end countFailNum from aurine.project_notice pn left join
+        (
+        select count(1) countFailNum,noticeId from project_notice_device where dlStatus ='2' group by noticeId
+        ) fc on pn.noticeId = fc.noticeId
+
+        <where>
+            <if test="query.noticeTitle !=null and query.noticeTitle != '' ">
+                and pn.noticeTitle like concat('%', #{query.noticeTitle}, '%')
+            </if>
+            <if test="query.content !=null and query.content != '' ">
+                and pn.content like concat('%', #{query.content}, '%')
+            </if>
+            <if test="query.noticeType !=null and query.noticeType != '' ">
+                and pn.noticeType= #{query.noticeType}
+            </if>
+            <if test="query.noticeCategory != null and query.noticeCategory != '' ">
+                and pn.noticeCategory = #{query.noticeCategory}
+            </if>
+            <if test="query.startTime != null">
+                AND date(pn.pubTime) &gt;=
+                #{query.startTime,jdbcType=DATE}
+            </if>
+            <if test="query.endTime != null">
+                AND date(pn.pubTime) &lt;=
+                #{query.endTime,jdbcType=DATE}
+            </if>
+        </where>
+        order by pn.pubTime desc
+    </select>
+
+    <!--根据设备id批量查询-->
+    <select id="projectNoticeDeviceList" resultType="com.aurine.cloudx.estate.entity.ProjectNoticeDevice"
+            parameterType="java.util.List">
+        select * from project_notice_device
+        <where>
+            dlStatus != '4'
+            <if test="deviceIds!=null and deviceIds.size>0">
+                and deviceId in
+                <foreach collection="deviceIds" item="deviceId" open="(" close=")" separator=",">
+                    #{deviceId}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    <select id="pageByPerson" resultType="com.aurine.cloudx.estate.vo.ProjectPersonNoticeVo">
+        select pn.*, psno.status, psno.userId
+        from  project_notice pn
+                 left join project_staff_notice_object psno on pn.noticeId = psno.noticeId
+        where psno.userId = #{personId}
+        order by psno.status, pn.createTime desc
+    </select>
+    <select id="pageByNoticeType" resultType="com.aurine.cloudx.estate.vo.ProjectPersonNoticeVo">
+        select pn.*, psno.status, psno.userId
+        from  project_notice pn
+                 left join project_staff_notice_object psno on pn.noticeId = psno.noticeId
+        where psno.userId = #{personId} and pn.targetType like concat('%', #{type},'%')
+        order by psno.status, pn.createTime desc
+    </select>
+</mapper>

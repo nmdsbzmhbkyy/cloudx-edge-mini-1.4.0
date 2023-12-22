@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectDeviceReplaceInfoMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectDeviceReplaceInfo" id="ProjectDeviceReplaceInfoMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="deviceId" column="deviceId" jdbcType="VARCHAR"/>
+        <result property="replaceTime" column="replaceTime" jdbcType="TIMESTAMP"/>
+        <result property="replaceReason" column="replaceReason" jdbcType="VARCHAR"/>
+        <result property="deviceCode" column="deviceCode" jdbcType="VARCHAR"/>
+        <result property="deviceName" column="deviceName" jdbcType="VARCHAR"/>
+        <result property="deviceType" column="deviceType" jdbcType="VARCHAR"/>
+        <result property="deviceAlias" column="deviceAlias" jdbcType="VARCHAR"/>
+        <result property="deviceDesc" column="deviceDesc" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="dStatus" column="dStatus" jdbcType="VARCHAR"/>
+        <result property="isActive" column="isActive" jdbcType="VARCHAR"/>
+        <result property="buildingId" column="buildingId" jdbcType="VARCHAR"/>
+        <result property="unitId" column="unitId" jdbcType="VARCHAR"/>
+        <result property="houseId" column="houseId" jdbcType="VARCHAR"/>
+        <result property="deviceFeature" column="deviceFeature" jdbcType="VARCHAR"/>
+        <result property="passType" column="passType" jdbcType="VARCHAR"/>
+        <result property="deviceRegionId" column="deviceRegionId" jdbcType="VARCHAR"/>
+        <result property="deviceEntitiyId" column="deviceEntitiyId" jdbcType="VARCHAR"/>
+        <result property="sn" column="sn" jdbcType="VARCHAR"/>
+        <result property="mac" column="mac" jdbcType="VARCHAR"/>
+        <result property="ipv4" column="ipv4" jdbcType="VARCHAR"/>
+        <result property="ipv6" column="ipv6" jdbcType="VARCHAR"/>
+        <result property="dPort" column="dPort" jdbcType="INTEGER"/>
+        <result property="locateCode" column="locateCode" jdbcType="VARCHAR"/>
+        <result property="location" column="location" jdbcType="VARCHAR"/>
+        <result property="picUrl" column="picUrl" jdbcType="VARCHAR"/>
+        <result property="qrCode" column="qrCode" jdbcType="VARCHAR"/>
+        <result property="dAddress" column="dAddress" jdbcType="VARCHAR"/>
+        <result property="isCloudCtl" column="isCloudCtl" jdbcType="VARCHAR"/>
+        <result property="channel" column="channel" jdbcType="VARCHAR"/>
+        <result property="channelDesc" column="channelDesc" jdbcType="VARCHAR"/>
+        <result property="dCompany" column="dCompany" jdbcType="VARCHAR"/>
+        <result property="brand" column="brand" jdbcType="VARCHAR"/>
+        <result property="companyAccount" column="companyAccount" jdbcType="VARCHAR"/>
+        <result property="companyPasswd" column="companyPasswd" jdbcType="VARCHAR"/>
+        <result property="thirdpartyCode" column="thirdpartyCode" jdbcType="VARCHAR"/>
+        <result property="hardVersion" column="hardVersion" jdbcType="VARCHAR"/>
+        <result property="softVersion" column="softVersion" jdbcType="VARCHAR"/>
+        <result property="dockerType" column="dockerType" jdbcType="VARCHAR"/>
+        <result property="originSystem" column="originSystem" jdbcType="VARCHAR"/>
+        <result property="lon" column="lon" jdbcType="NUMERIC"/>
+        <result property="lat" column="lat" jdbcType="NUMERIC"/>
+        <result property="alt" column="alt" jdbcType="NUMERIC"/>
+        <result property="gisArea" column="gisArea" jdbcType="VARCHAR"/>
+        <result property="gisType" column="gisType" jdbcType="VARCHAR"/>
+        <result property="isBlueTeeth" column="isBlueTeeth" jdbcType="VARCHAR"/>
+        <result property="blueTeethMac" column="blueTeethMac" jdbcType="VARCHAR"/>
+        <result property="blueTeethSecret" column="blueTeethSecret" jdbcType="VARCHAR"/>
+        <result property="productId" column="productId" jdbcType="VARCHAR"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+</mapper>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectDeviceRelMapper">
+
+    <select id="listByDeviceId" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceRelVo">
+        SELECT
+            project_device_rel.*,
+            project_device_info.deviceType
+        FROM
+            project_device_rel
+                LEFT JOIN project_device_info ON project_device_rel.deviceId = project_device_info.deviceId
+        WHERE project_device_rel.parDeviceId = #{deviceId}
+    </select>
+
+    <select id="listByDeviceIdAndDeviceType" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceRelVo">
+        SELECT
+            project_device_rel.*,
+            project_device_info.deviceType
+        FROM
+            project_device_rel
+                LEFT JOIN project_device_info ON project_device_rel.deviceId = project_device_info.deviceId
+        WHERE project_device_rel.parDeviceId = #{deviceId} AND project_device_info.deviceType = #{deviceType}
+    </select>
+
+</mapper>

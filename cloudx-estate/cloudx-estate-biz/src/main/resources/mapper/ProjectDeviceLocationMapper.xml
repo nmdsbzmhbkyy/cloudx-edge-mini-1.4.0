@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectDeviceLocationMapper">
+    <select id="select" parameterType="com.aurine.cloudx.estate.vo.ProjectEventSearchCondition" resultType="com.aurine.cloudx.estate.vo.ProjectEventVo">
+        SELECT
+        p_event.*,
+        CONCAT(IfNULL(p_person.personName,''),IfNULL(p_visitor.personName,''),IfNULL(p_staff.staffName,'')) AS personName,
+        p_device.deviceName,
+        p_device.sn,
+        p_device_r.regionName
+        FROM project_entrance_event p_event
+        LEFT JOIN project_person_info p_person ON p_event.personId = p_person.personId
+        LEFT JOIN project_device_info p_device ON p_event.deviceId = p_device.deviceId
+        LEFT JOIN project_device_region p_device_r ON p_device.deviceRegionId = p_device_r.regionId
+        LEFT JOIN project_visitor p_visitor ON p_event.personId = p_visitor.visitorId
+        LEFT JOIN project_staff p_staff on p_event.personId = p_staff.staffId
+        <where>
+            <if test="param.personName != null and param.personName != ''">
+                AND (p_person.personName LIKE concat('%',#{param.personName},'%')
+                OR p_visitor.personName LIKE concat('%',#{param.personName},'%')
+                OR p_staff.staffName LIKE concat('%',#{param.personName},'%'))
+            </if>
+            <if test="param.eventType != null and param.eventType != ''">
+                AND p_event.eventType LIKE concat('%',#{param.eventType},'%')
+            </if>
+            <if test="param.regionName != null and param.regionName != ''">
+                AND p_device_r.regionName LIKE concat('%',#{param.regionName},'%')
+            </if>
+            <if test="param.deviceName != null and param.deviceName != ''">
+                AND p_device.deviceName LIKE concat('%',#{param.deviceName},'%')
+            </if>
+            <if test="param.effTime != null">
+                AND date(p_event.eventTime) <![CDATA[>=]]>
+                #{param.effTime,jdbcType=DATE}
+            </if>
+            <if test="param.expTime != null">
+                AND date(p_event.eventTime) <![CDATA[<=]]>
+                #{param.expTime,jdbcType=DATE}
+            </if>
+        </where>
+        ORDER BY p_event.eventTime
+    </select>
+    
+    <select id="getPoints" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceLocationVo">
+        SELECT
+			b.*,
+			a.deviceName,
+			a.deviceType,
+			a.dStatus AS status,
+			a.deviceFeature 
+		FROM
+			project_device_info a
+			RIGHT JOIN project_device_location b ON a.deviceId = b.deviceId
+		WHERE
+			picId = #{picId}
+			and a.dStatus != '4'
+    </select>
+</mapper>

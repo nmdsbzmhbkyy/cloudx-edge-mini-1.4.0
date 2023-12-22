@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.wjy.mapper.RoomMapper">
+
+    <resultMap id="projectMap" type="com.aurine.cloudx.wjy.entity.Room">
+        <id property="seq" column="seq"/>
+        <result property="projectId" column="projectId"/>
+        <result property="roomId" column="roomId"/>
+        <result property="wjyRoomId" column="wjyRoomId"/>
+        <result property="unitId" column="unitId"/>
+        <result property="roomName" column="roomName"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <sql id="selectSql">
+        i.seq,
+        i.projectId,
+        i.roomId,
+        i.wjyRoomId,
+        i.unitId,
+        i.roomName,
+        i.createTime,
+        i.updateTime
+    </sql>
+
+</mapper>

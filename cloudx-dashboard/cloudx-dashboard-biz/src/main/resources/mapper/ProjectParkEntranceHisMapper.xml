@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.dashboard.mapper.ProjectParkEntranceHisMapper">
+
+    <select id="selectParkEntranceHis"   resultType="com.aurine.cloudx.dashboard.entity.ProjectParkEntranceHis">
+
+
+        SELECT *
+        FROM (SELECT rownum,
+                     parkOrderNo,
+                     parkOrderCode,
+                     plateNumber,
+                     parkId,
+                     enterTime,
+                     enterGateName,
+                     enterOperatorName,
+                     projectId,
+                     TENANT_ID AS tenantId,
+                     enterPicUrl,
+                     outTime,
+                     outGateName,
+                     outOperatorName,
+                     outPicUrl,
+                     createTime,
+                     updateTime
+              FROM project_park_entrance_his
+              WHERE (
+                            projectId IN
+
+                                <foreach collection="projectIdArray" item="id" index="index" open="(" close=")" separator=",">
+                                    #{id}
+                                </foreach>
+
+                            AND enterPicUrl IS NOT NULL
+                        )
+
+              ORDER BY createtime DESC
+             )
+        where rownum <![CDATA[<=]]> 10
+
+    </select>
+</mapper>

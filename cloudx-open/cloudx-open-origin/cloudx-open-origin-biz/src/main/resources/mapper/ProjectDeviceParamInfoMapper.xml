@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectDeviceParamInfoMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectDeviceParamInfo" id="ProjectDeviceParamInfoMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="deviceId" column="deviceId" jdbcType="VARCHAR"/>
+        <result property="deviceParam" column="deviceParam" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="listValidDeviceParamInfo" resultType="com.aurine.cloudx.open.origin.entity.ProjectDeviceParamInfo">
+        SELECT * FROM (
+        SELECT
+            any_value(param_info.serviceId) serviceId,
+            any_value(param_info.deviceParam) deviceParam,
+            COUNT( param_conf.serviceId ) paramConfNum,
+            COUNT( product_service.serviceId ) productServiceNum
+        FROM
+            project_device_param_info param_info
+            LEFT JOIN sys_service_param_conf param_conf ON param_info.serviceId = param_conf.serviceId
+		LEFT JOIN sys_product_service product_service ON product_service.serviceId = param_info.serviceId
+        where param_info.deviceId = #{deviceId} and product_service.productId = #{productId}
+        GROUP BY
+            param_info.serviceId
+	) cusTable WHERE cusTable.paramConfNum != 0 AND cusTable.productServiceNum != 0
+    </select>
+
+</mapper>

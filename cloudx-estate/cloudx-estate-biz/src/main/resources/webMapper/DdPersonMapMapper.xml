@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, lengleng All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: lengleng (wangiegie@gmail.com)
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.thirdparty.module.intercom.platform.dongdong.business.mapper.DdPersonMapMapper">
+
+    <resultMap id="ddPersonMapMap" type="com.aurine.cloudx.estate.thirdparty.module.intercom.platform.dongdong.business.entity.DdPersonMap">
+        <id property="seq" column="seq"/>
+        <result property="deviceId" column="deviceId"/>
+        <result property="romNumber" column="romNumber"/>
+        <result property="personName" column="personName"/>
+        <result property="idNumber" column="idNumber"/>
+        <result property="mobilePhone" column="mobilePhone"/>
+        <result property="roomId" column="roomId"/>
+        <result property="memberId" column="memberId"/>
+        <result property="personId" column="personId"/>
+        <result property="houseId" column="houseId"/>
+        <result property="projectId" column="projectId"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="listOriginByFrame" resultType="com.aurine.cloudx.estate.thirdparty.module.intercom.platform.dongdong.business.entity.DdPersonMap">
+        SELECT DISTINCT
+        houseInfo.houseId,
+        <if test="useHouseName">
+            houseInfo.houseName romNumber,
+        </if>
+
+        <if test="!useHouseName">
+            houseInfo.houseCode romNumber,
+        </if>
+        person.personName,
+        person.personId,
+        person.credentialNo idNumber,
+        person.telephone mobilePhone,
+        houseInfo.projectId,
+        houseInfo.tenant_id
+        FROM
+        project_frame_info group4
+        RIGHT JOIN project_frame_info building ON group4.entityId = building.puid
+        JOIN project_frame_info unit ON building.entityId = unit.puid
+        JOIN project_frame_info house ON house.puid = unit.entityId
+        JOIN project_house_info houseInfo ON house.entityId = houseInfo.houseId
+        -- 已启用云对讲服务的房屋
+        JOIN project_house_service houseService ON house.entityId = houseService.houseId
+        JOIN sys_service_cfg serviceCfg ON houseService.serviceId = serviceCfg.serviceId
+
+        JOIN project_house_person_rel personRel ON house.entityId = personRel.houseId
+        JOIN project_person_info person ON person.personId = personRel.personId
+        WHERE
+        1 = 1
+        AND house.projectId = #{projectId}
+        AND houseInfo.houseCode IS NOT NULL
+        AND houseInfo.houseCode  <![CDATA[<>]]> ''
+        -- 增值服务为云对讲
+        AND serviceCfg.serviceType = 'YDJ'
+        -- 只获取审核通过的住户
+        and personRel.auditStatus = 2
+
+        <if test="groupId != null and groupId != ''">
+            -- 组团所在区域
+            AND group4.entityId = #{groupId}
+        </if>
+        <if test="buildingId != null and buildingId != ''">
+            -- 所在楼栋
+            AND building.entityId = #{buildingId}
+        </if>
+        <if test="unitId != null and unitId != ''">
+            -- 梯口机
+            AND unit.entityId = #{unitId}
+        </if>
+
+        ORDER BY
+        -- houseInfo.houseCode
+        <if test="useHouseName">
+            houseInfo.houseName
+        </if>
+
+        <if test="!useHouseName">
+            houseInfo.houseCode
+        </if>
+
+    </select>
+
+
+    <select id="listOriginByHousePerson" resultType="com.aurine.cloudx.estate.thirdparty.module.intercom.platform.dongdong.business.entity.DdPersonMap">
+        -- 一个房间可以访问哪些设备
+
+        with personMap as (
+        -- 住户房屋数据
+        SELECT DISTINCT
+        houseInfo.houseId,
+        unit.entityId unitId,
+        building.entityId buildingId,
+        group4.entityId groupId,
+        houseInfo.houseCode romNumber,
+        houseInfo.houseName,
+        person.personName,
+        person.personId,
+        person.credentialNo idNumber,
+        person.telephone mobilePhone,
+        houseInfo.projectId,
+        houseInfo.tenant_id
+        FROM
+        project_frame_info group4
+        RIGHT JOIN project_frame_info building ON group4.entityId = building.puid
+        JOIN project_frame_info unit ON building.entityId = unit.puid
+        JOIN project_frame_info house ON house.puid = unit.entityId
+        JOIN project_house_info houseInfo ON house.entityId = houseInfo.houseId
+        -- 已启用云对讲服务的房屋
+        JOIN project_house_service houseService ON house.entityId = houseService.houseId
+        JOIN sys_service_cfg serviceCfg ON houseService.serviceId = serviceCfg.serviceId
+
+        JOIN project_house_person_rel personRel ON house.entityId = personRel.houseId
+        JOIN project_person_info person ON person.personId = personRel.personId
+        WHERE
+        1 = 1
+
+        AND houseInfo.houseCode IS NOT NULL
+        AND houseInfo.houseCode <![CDATA[<>]]> ''
+        AND serviceCfg.serviceType = 'YDJ'
+        -- 只获取审核通过的住户
+        and personRel.auditStatus = 2
+
+        <if test="personId!=null and personId != ''">
+
+            AND personRel.personId = #{personId}
+        </if>
+
+        and personRel.houseId = #{houseId}
+
+        ORDER BY
+        houseInfo.houseCode
+        )
+
+        -- 大门公共区口机 获取框架号
+        select personMap.houseId,
+        personMap.unitId,
+        personMap.buildingId,
+        personMap.groupId,
+        personMap.romNumber,
+        personMap.personName,
+        personMap.personId,
+        personMap.idNumber,
+        personMap.mobilePhone,
+        personMap.projectId,
+        personMap.tenant_id,device.sn,deviceMap.deviceId from personMap join project_device_info device on personMap.projectId = device.projectId join dd_device_map deviceMap on device.deviceId =
+        deviceMap.platDeviceId where device.deviceType = '3' and device.dStatus != '4' and (device.deviceEntityId is null or device.deviceEntityId = '')
+        UNION
+
+        -- 所属楼栋区口机 获取框架号
+        select personMap.houseId,
+        personMap.unitId,
+        personMap.buildingId,
+        personMap.groupId,
+        personMap.romNumber,
+        personMap.personName,
+        personMap.personId,
+        personMap.idNumber,
+        personMap.mobilePhone,
+        personMap.projectId,
+        personMap.tenant_id,device.sn,deviceMap.deviceId from personMap join project_device_info device on personMap.groupId = device.deviceEntityId join dd_device_map deviceMap on device.deviceId =
+        deviceMap.platDeviceId where device.deviceType = '3' and device.dStatus != '4'
+        UNION
+        -- 所属楼栋单元口机，直接获取房间号
+        select personMap.houseId,
+        personMap.unitId,
+        personMap.buildingId,
+        personMap.groupId,
+        personMap.houseName romNumber,
+        personMap.personName,
+        personMap.personId,
+        personMap.idNumber,
+        personMap.mobilePhone,
+        personMap.projectId,
+        personMap.tenant_id,device.sn,deviceMap.deviceId from personMap join project_device_info device on personMap.unitId = device.unitId join dd_device_map deviceMap on device.deviceId =
+        deviceMap.platDeviceId where device.deviceType = '2' and device.dStatus != '4'
+
+
+    </select>
+</mapper>

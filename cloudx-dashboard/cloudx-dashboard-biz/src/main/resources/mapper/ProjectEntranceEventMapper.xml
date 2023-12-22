@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.dashboard.mapper.ProjectEntranceEventMapper">
+
+    <select id="selectEntranceEvent"   resultType="com.aurine.cloudx.dashboard.entity.ProjectEntranceEvent">
+
+
+        SELECT *
+        FROM (SELECT rownum,
+        seq,
+        projectId,
+        personType,
+        personId,
+        personName,
+        eventTime,
+        deviceId,
+        deviceName,
+        deviceRegionName,
+        entranceType,
+        eventType,
+        certMedia,
+        picUrl,
+        eventDesc,
+        operator,
+        createTime,
+        updateTime,
+        TENANT_ID AS tenantId
+              FROM PROJECT_ENTRANCE_EVENT
+              WHERE (
+                            projectId IN
+
+                                <foreach collection="projectIdArray" item="id" index="index" open="(" close=")" separator=",">
+                                    #{id}
+                                </foreach>
+
+                            AND picUrl IS NOT NULL
+                        )
+
+              ORDER BY eventtime DESC
+             )
+        where rownum <![CDATA[<=]]> 10
+
+    </select>
+</mapper>

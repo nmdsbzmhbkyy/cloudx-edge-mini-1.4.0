@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectVisitorMapper">
+
+    <resultMap id="projectVisitorMap" type="com.aurine.cloudx.estate.entity.ProjectVisitor">
+        <id property="visitorId" column="visitorId"/>
+        <result property="personName" column="personName"/>
+        <result property="credentialType" column="credentialType"/>
+        <result property="credentialNo" column="credentialNo"/>
+        <result property="mobileNo" column="mobileNo"/>
+        <result property="picUrl" column="picUrl"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <update id="updatePhoneByUserId">
+        update project_visitor v
+        set v.mobileNo = #{phone}
+        where v.userId = #{userId}
+    </update>
+    <update id="updateUserIdByPhone">
+        update project_visitor v
+        set v.userId=#{userId}
+        where v.mobileNo = #{phone}
+    </update>
+
+    <select id="selectPage" resultType="com.aurine.cloudx.estate.vo.ProjectVisitorRecordVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectVisitorSearchConditionVo">
+        SELECT * FROM (
+        SELECT *,str_to_date(startTime, '%Y-%m-%d %H:%i') 'startDate' , str_to_date(endTime, '%Y-%m-%d %H:%i') 'endDate'
+        FROM
+        (
+        SELECT
+        date_format(his.passBeginTime, '%Y-%m-%d %H:%i') 'startTime',
+        date_format(his.passEndTime, '%Y-%m-%d %H:%i') 'endTime',
+        v.personName,
+        (
+        with recursive r as
+        (
+        select pfi.entityName,pfi.puid,pfi.level,pfi.projectId from project_frame_info pfi where pfi.entityId =
+        house.entityId
+        union all
+        select pfi.entityName,pfi.puid,pfi.level,pfi.projectId from project_frame_info pfi, r where pfi.entityId =
+        r.puid
+        ) select group_concat(r.entityName order by level desc SEPARATOR '-') from r GROUP BY projectId ORDER BY level
+        ) houseName,
+        info.personName AS beVisitorName,
+        v.mobileNo AS mobileNo,
+        his.*
+        FROM
+        project_visitor_his his
+        JOIN project_visitor v ON his.visitorId = v.visitorId
+        LEFT JOIN project_frame_info house ON his.visitHouseId = house.entityId
+        LEFT JOIN project_person_info info ON his.visitPersonId = info.personId
+        <where>
+            and his.auditStatus != '0'
+            <if test="query.visitorName != null and query.visitorName != ''">
+                and his.visitorName like concat('%',#{query.visitorName},'%')
+            </if>
+            <if test="query.beVisitorName != null and query.beVisitorName != ''">
+                and info.personName like concat('%',#{query.beVisitorName},'%')
+            </if>
+            <if test="query.visitorType != null and query.visitorType != ''">
+                and his.visitorType = #{query.visitorType}
+            </if>
+            <if test="query.isLeave != null and query.isLeave != ''">
+                and his.isLeave = #{query.isLeave}
+            </if>
+            <if test="query.auditStatus != null and query.auditStatus != ''">
+                and his.auditStatus = #{query.auditStatus}
+            </if>
+            <!--<if test="query.isAuditPage != 0">
+                and his.registerType != '1'
+            </if>-->
+        </where>
+        ) his) his
+        <where>
+            <if test="query.dateRange!=null and query.dateRange.length > 0">
+                (startDate BETWEEN #{query.dateRange[0]} AND #{query.dateRange[1]})
+                OR (endDate BETWEEN #{query.dateRange[0]} AND #{query.dateRange[1]})
+                OR (startDate <![CDATA[<=]]> #{query.dateRange[0]} AND endDate <![CDATA[>=]]> #{query.dateRange[0]})
+                OR (startDate <![CDATA[<=]]> #{query.dateRange[1]} AND endDate <![CDATA[>=]]> #{query.dateRange[1]})
+            </if>
+            <if test="query.isAuditPage == 1">
+                AND registerType != 1
+            </if>
+            <if test="query.isAuditPage == 0">
+                AND auditStatus = 2
+            </if>
+        </where>
+        ORDER BY /*(
+            case auditStatus
+            when '1' then 1
+            when '0' then 2
+            when '2' then 3
+            when '9' then 4
+            else '' end
+        ),*/
+        createTime DESC
+    </select>
+
+
+    <!--<select id="selectPage" resultType="com.aurine.cloudx.estate.vo.ProjectVisitorRecordVo" parameterType="com.aurine.cloudx.estate.vo.ProjectVisitorSearchConditionVo">
+            SELECT * FROM (
+            SELECT *,str_to_date(CONCAT(startTime,' ',cycleStartTime), '%Y-%m-%d %H:%i:%s') 'startDate' , str_to_date(CONCAT(endTime,' ',cycleEndTime), '%Y-%m-%d %H:%i:%s') 'endDate'
+            FROM
+            (
+            /*后面要改*/
+            SELECT
+            GET_CYCLE_TIME(frequency, 1) as `startTime`,
+            GET_CYCLE_TIME(frequency, 2) as `endTime`,
+            GET_CYCLE_TIME(frequency, 3) as `cycleStartTime`,
+            GET_CYCLE_TIME(frequency, 4) as `cycleEndTime`,
+            v.personName AS visitorName,
+            (
+            with recursive r as
+            (
+            select * from project_frame_info pfi where pfi.entityId = house.entityId
+            union all
+            select pfi.* from project_frame_info pfi, r where pfi.entityId = r.puid
+            ) select  group_concat(r.entityName  order by level desc SEPARATOR '-') from r GROUP BY projectId  ORDER BY level
+            ) houseName,
+            info.personName AS beVisitorName,
+            v.mobileNo AS mobileNo,
+            his.*
+            FROM
+            project_visitor_his his
+            JOIN project_visitor v ON his.visitorId = v.visitorId
+            LEFT JOIN project_frame_info house ON his.visitHouseId = house.entityId
+            LEFT JOIN project_person_info info ON his.visitPersonId = info.personId
+            <where>
+                <if test="query.visitorName != null and query.visitorName != ''">
+                    and v.personName like concat('%',#{query.visitorName},'%')
+                </if>
+                <if test="query.beVisitorName != null and query.beVisitorName != ''">
+                    and info.personName like concat('%',#{query.beVisitorName},'%')
+                </if>
+                <if test="query.visitorType != null and query.visitorType != ''">
+                    and his.visitorType = #{query.visitorType}
+                </if>
+                <if test="query.isLeave != null and query.isLeave != ''">
+                    and his.isLeave = #{query.isLeave}
+                </if>
+            </where>
+            ) his) his
+            <where>
+                <if test="query.dateRange!=null and query.dateRange.length > 0">
+                    (startDate BETWEEN #{query.dateRange[0]} AND #{query.dateRange[1]})
+                    OR (endDate BETWEEN #{query.dateRange[0]} AND #{query.dateRange[1]})
+                    OR (startDate <![CDATA[<=]]> #{query.dateRange[0]} AND endDate <![CDATA[>=]]> #{query.dateRange[0]})
+                    OR (startDate <![CDATA[<=]]> #{query.dateRange[1]} AND endDate <![CDATA[>=]]> #{query.dateRange[1]})
+                </if>
+            </where>
+        ORDER BY createTime
+    </select>-->
+
+    <select id="getAllUnLeaveList" resultType="com.aurine.cloudx.estate.vo.ProjectVisitorRecordVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectVisitorSearchConditionVo">
+        SELECT *
+        FROM (
+                 SELECT *,
+                        str_to_date(CONCAT(startTime), '%Y-%m-%d %H:%i') 'startDate',
+                        str_to_date(CONCAT(endTime), '%Y-%m-%d %H:%i')   'endDate'
+                 FROM (
+                          SELECT his.passBeginTime      'startTime',
+                                 his.passEndTime        'endTime',
+                                 v.personName,
+                                 building.entityName AS buildingName,
+                                 unit.entityName     AS unitName,
+                                 house.entityName    AS houseName,
+                                 info.personName     AS beVisitorName,
+                                 his.*
+                          FROM project_visitor_his his
+                                   JOIN project_visitor v ON his.visitorId = v.visitorId
+                                   LEFT JOIN project_frame_info house ON his.visitHouseId = house.entityId
+                                   LEFT JOIN project_frame_info unit ON house.puid = unit.entityId
+                                   LEFT JOIN project_frame_info building ON unit.puid = building.entityId
+                                   LEFT JOIN project_person_info info ON his.visitPersonId = info.personId
+                      ) his) his
+        where isLeave = 0
+          AND endDate <![CDATA[<=]]> ADDDATE(now(),interval 45 second)
+        ORDER BY createTime
+    </select>
+
+    <select id="getAllUnLeaveListToday" resultType="com.aurine.cloudx.estate.vo.ProjectVisitorRecordVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectVisitorSearchConditionVo">
+        SELECT *
+        FROM (
+                 SELECT *,
+                        str_to_date(CONCAT(startTime), '%Y-%m-%d %H:%i') 'startDate',
+                        str_to_date(CONCAT(endTime), '%Y-%m-%d %H:%i')   'endDate'
+                 FROM (
+                          SELECT his.passBeginTime      'startTime',
+                                 his.passEndTime        'endTime',
+                                 v.personName,
+                                 building.entityName AS buildingName,
+                                 unit.entityName     AS unitName,
+                                 house.entityName    AS houseName,
+                                 info.personName     AS beVisitorName,
+                                 his.*
+                          FROM project_visitor_his his
+                                   JOIN project_visitor v ON his.visitorId = v.visitorId
+                                   LEFT JOIN project_frame_info house ON his.visitHouseId = house.entityId
+                                   LEFT JOIN project_frame_info unit ON house.puid = unit.entityId
+                                   LEFT JOIN project_frame_info building ON unit.puid = building.entityId
+                                   LEFT JOIN project_person_info info ON his.visitPersonId = info.personId
+                      ) his
+             ) his
+        WHERE isLeave = 0
+          AND str_to_date(NOW(), '%Y-%m-%d') = str_to_date(CONCAT(endTime), '%Y-%m-%d')
+        ORDER BY createTime;
+    </select>
+
+    <!--
+        不使用了可能以后还会改回来
+
+        <select id="getAllUnLeaveList" resultType="com.aurine.cloudx.estate.vo.ProjectVisitorRecordVo" parameterType="com.aurine.cloudx.estate.vo.ProjectVisitorSearchConditionVo">
+            SELECT * FROM (
+                SELECT *,str_to_date(CONCAT(startTime,' ',cycleStartTime), '%Y-%m-%d %H:%i:%s') 'startDate' , str_to_date(CONCAT(endTime,' ',cycleEndTime), '%Y-%m-%d %H:%i:%s') 'endDate'
+                FROM
+                (
+                SELECT
+                GET_CYCLE_TIME(frequency, 1) as `startTime`,
+                GET_CYCLE_TIME(frequency, 2) as `endTime`,
+                GET_CYCLE_TIME(frequency, 3) as `cycleStartTime`,
+                GET_CYCLE_TIME(frequency, 4) as `cycleEndTime`,
+                v.personName AS visitorName,
+                building.entityName AS buildingName,
+                unit.entityName AS unitName,
+                house.entityName AS houseName,
+                info.personName AS beVisitorName,
+                his.*
+                FROM
+                project_visitor_his his
+                JOIN project_visitor v ON his.visitorId = v.visitorId
+                LEFT JOIN project_frame_info house ON his.visitHouseId = house.entityId
+                LEFT JOIN project_frame_info unit ON house.puid = unit.entityId
+                LEFT JOIN project_frame_info building ON unit.puid = building.entityId
+                LEFT JOIN project_person_info info ON his.visitPersonId = info.personId
+                ) his) his
+                where isLeave = 0  AND endDate <![CDATA[<]]> now()
+                ORDER BY createTime
+        </select>
+    -->
+
+
+    <select id="getDataById" resultType="com.aurine.cloudx.estate.vo.ProjectVisitorVo">
+        SELECT project_person_info.personName 'beVisitorName',
+               project_person_info.telephone visitPersonPhone,
+               v.*,
+               pvs.*,
+               pi.projectName,
+               g.projectGroupId,
+               g.projectGroupName,
+               sc.companyId,
+               sc.companyName
+        FROM project_visitor_his pvs
+                 LEFT JOIN project_visitor v ON pvs.visitorId = v.visitorId
+                 LEFT JOIN project_person_info ON project_person_info.personId = pvs.visitPersonId
+                 left join project_info pi on pvs.projectId = pi.projectId
+                 left join sys_project_group g on g.projectGroupId = pi.projectGroupId
+                 left join sys_company sc on pi.companyId = sc.companyId
+        where pvs.visitId = #{visitId}
+    </select>
+    <select id="getPageByPerson" resultType="com.aurine.cloudx.estate.vo.ProjectVisitorRecordVo">
+
+        SELECT
+        his.passBeginTime 'startTime',
+        his.passEndTime 'endTime',
+        his.visitorName,
+        str_to_date(CONCAT(his.passBeginTime), '%Y-%m-%d %H:%i') 'startDate' ,
+        str_to_date(CONCAT(his.passEndTime), '%Y-%m-%d %H:%i') 'endDate',
+        v.personName,
+        house.entityName houseName,
+        house.entityId houseId,
+        unit.entityId unitId,
+        unit.entityName unitName,
+        building.entityId buildingId,
+        (
+        with recursive r as
+        (
+        select pfi.entityName,pfi.puid,pfi.level,pfi.projectId
+        from project_frame_info pfi
+        where pfi.entityId = building.entityId
+        union all
+        select pfi.entityName,pfi.puid,pfi.level,pfi.projectId
+        from project_frame_info pfi,
+        r
+        where pfi.entityId = r.puid
+        )
+        select group_concat(r.entityName order by level desc SEPARATOR '-')
+        from r
+        GROUP BY projectId
+        ORDER BY level
+        )
+        buildingName,
+        info.personName AS beVisitorName,
+        v.mobileNo AS mobileNo,
+        his.projectId, his.visitId, his.visitorId, his.visitHouseId, his.visitPersonId, his.personCount,
+        his.plateNumber, his.visitorType, his.passBeginTime, his.passEndTime, his.frequency, his.registerType,
+        his.reason, his.visitTime, his.leaveTime, his.isLeave, his.auditStatus, his.rejectReason, v.projectId,
+        his.operator, his.createTime, his.updateTime,his.isFace
+        FROM
+        project_visitor_his his
+        JOIN project_visitor v ON his.visitorId = v.visitorId
+        left JOIN project_frame_info house ON his.visitHouseId = house.entityId and house.isHouse=1 and
+        v.projectId=house.projectId
+        left JOIN project_frame_info AS unit ON unit.entityId = house.puid and unit.isUnit=1 and
+        v.projectId=unit.projectId
+        left JOIN project_frame_info AS building ON building.entityId = unit.puid and building.isBuilding=1 and
+        v.projectId=building.projectId
+        LEFT JOIN project_person_info info ON his.visitPersonId = info.personId
+        <where>
+
+            <if test="status != null and status != ''">
+                and his.auditStatus = #{status}
+            </if>
+            <if test="personId != null and personId != ''">
+                and his.visitPersonId =#{personId}
+            </if>
+            <if test="isOperator">
+                and his.originEx='2'
+            </if>
+            <if test="!isOperator">
+                and his.originEx='3'
+            </if>
+        </where>
+        order by his.createTime desc
+    </select>
+
+    <select id="getPageByVisitor" resultType="com.aurine.cloudx.estate.vo.ProjectVisitorRecordVo">
+        SELECT
+        his.passBeginTime 'startTime',
+        his.passEndTime 'endTime',
+        his.visitorName,
+        str_to_date(CONCAT(his.passBeginTime), '%Y-%m-%d %H:%i') 'startDate' ,
+        str_to_date(CONCAT(his.passEndTime), '%Y-%m-%d %H:%i') 'endDate',
+        v.personName,
+        house.entityName houseName,
+        house.entityId houseId,
+        unit.entityId unitId,
+        unit.entityName unitName,
+        building.entityId buildingId,
+        (
+        with recursive r as
+        (
+        select pfi.entityName,pfi.puid,pfi.level,pfi.projectId
+        from project_frame_info pfi
+        where pfi.entityId = building.entityId
+        union all
+        select pfi.entityName,pfi.puid,pfi.level,pfi.projectId
+        from project_frame_info pfi,
+        r
+        where pfi.entityId = r.puid
+        )
+        select group_concat(r.entityName order by level desc SEPARATOR '-')
+        from r
+        GROUP BY projectId
+        ORDER BY level
+        )
+        buildingName,
+        (
+        SELECT group_concat(pdi.deviceName) from project_device_info pdi
+        where
+        (pdi.unitId = unit.entityId and pdi.deviceType = '2' or pdi.deviceType = '3')
+        and pdi.dStatus = 1 and pdi.projectId = his.projectId
+        ) deviceName,
+        info.personName AS beVisitorName,
+        v.mobileNo AS mobileNo,
+        his.projectId, his.visitId, his.visitorId, his.visitHouseId, his.visitPersonId, his.personCount,
+        his.plateNumber, his.visitorType, his.passBeginTime, his.passEndTime, his.frequency, his.registerType,
+        his.reason, his.visitTime, his.leaveTime, his.isLeave, his.auditStatus, his.rejectReason, v.projectId,
+        his.operator, his.createTime,his.rejectReason,
+        his.updateTime,pi.projectName,pi.provinceCode,pi.cityCode,pi.countyCode,pi.streetCode,pi.address
+        FROM project_visitor v inner join
+        project_visitor_his his on v.visitorId =his.visitorId
+        left JOIN project_frame_info house ON his.visitHouseId = house.entityId and house.isHouse=1 and
+        v.projectId=house.projectId
+        left JOIN project_frame_info AS unit ON unit.entityId = house.puid and unit.isUnit=1 and
+        v.projectId=unit.projectId
+        left JOIN project_frame_info AS building ON building.entityId = unit.puid and building.isBuilding=1 and
+        v.projectId=building.projectId
+        LEFT JOIN project_person_info info ON his.visitPersonId = info.personId
+        left join project_info pi on v.projectId=pi.projectId
+        <where>
+
+            <if test="status != null and status != ''">
+                and his.auditStatus = #{status}
+            </if>
+            <if test="userId != null  ">
+                and v.userId=#{userId}
+            </if>
+            <if test="date != null">
+                and str_to_date(date_format(his.passBeginTime ,'%Y-%m-%d'),'%Y-%m-%d') &lt;= #{date,jdbcType=DATE}
+                and DATE_ADD( str_to_date(date_format(his.passEndTime ,'%Y-%m-%d'),'%Y-%m-%d'),INTERVAL 1 DAY ) &gt;=
+                #{date,jdbcType=DATE}
+            </if>
+        </where>
+        order by his.createTime desc
+    </select>
+    <select id="getSendCertHisList" resultType="com.aurine.cloudx.estate.entity.ProjectVisitorHis">
+        SELECT *
+        FROM (
+                 SELECT his.*,
+                        (COUNT(card.cardId) + COUNT(face.faceId))             certNum,
+                        (COUNT(right_device1.uid) + COUNT(right_device2.uid)) validCertNum
+                 FROM project_visitor_his his
+                          LEFT JOIN project_card card ON card.personId = his.visitId
+                          LEFT JOIN project_face_resources face ON face.personId = his.visitId
+                          LEFT JOIN project_right_device right_device1 ON card.cardId = right_device1.certMediaId
+                          LEFT JOIN project_right_device right_device2 ON face.faceId = right_device2.certMediaId
+                 WHERE STR_TO_DATE((DATE_FORMAT(passBeginTime, '%Y-%m-%d %h:%i')), '%Y-%m-%d %h:%i') &lt;
+                       STR_TO_DATE((DATE_FORMAT(NOW(), '%Y-%m-%d %h:%i')), '%Y-%m-%d %h:%i')
+                   AND auditStatus = '2'
+                   AND isLeave = '0'
+                 GROUP BY his.visitId
+             ) his_cert_right
+        WHERE validCertNum = 0
+          AND certNum != 0
+    </select>
+
+    <select id="getSendCertHisListToday" resultType="com.aurine.cloudx.estate.entity.ProjectVisitorHis">
+        SELECT *
+        FROM project_visitor_his visitor_his
+        WHERE str_to_date(NOW(), '%Y-%m-%d') = str_to_date(visitor_his.passBeginTime, '%Y-%m-%d')
+          AND auditStatus = '2'
+    </select>
+
+
+    <select id="select" resultType="com.aurine.cloudx.estate.entity.ProjectVisitor">
+        select * from project_visitor
+    </select>
+
+
+</mapper>
+

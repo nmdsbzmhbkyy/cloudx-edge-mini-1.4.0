@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPatrolPointConfMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectPatrolPointConf" id="ProjectPatrolPointConfMap">
+        <result property="seq" column="seq" jdbcType="OTHER"/>
+        <result property="pointid" column="pointId" jdbcType="VARCHAR"/>
+        <result property="pointname" column="pointName" jdbcType="VARCHAR"/>
+        <result property="deviceid" column="deviceId" jdbcType="VARCHAR"/>
+        <result property="remark" column="remark" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="projectid" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenantId" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createtime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updatetime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectAll" resultType="com.aurine.cloudx.estate.vo.ProjectPatrolPointConfVo">
+        SELECT
+        p_point.*,
+        user.`true_name` operatorName,
+        DATE_FORMAT(p_point.createTime, '%Y-%m-%d% %H:%m') pointCreateTime,
+        (select count(1) from aurine.project_patrol_route_point_conf route where route.patrolPointId = p_point.pointId) routeCouunt
+        FROM
+        aurine.project_patrol_point_conf p_point
+        LEFT JOIN pigxx.sys_user user
+        ON user.user_id = p_point.operator
+        <where>
+            AND  p_point.projectId = #{param.projectId}
+            <if test="param.dateRange!=null and param.dateRange.length > 0">
+                AND STR_TO_DATE((DATE_FORMAT(p_point.createTime,'%Y-%m-%d %H:%m')),'%Y-%m-%d %H:%m') BETWEEN #{param.dateRange[0]} AND
+                #{param.dateRange[1]}
+            </if>
+            <!--        <if test="param.effTime != null">
+                        AND DATE_FORMAT(p_point.createTime, '%Y-%m-%d %H:%m') <![CDATA[>=]]> DATE_FORMAT(#{param.dateRange[1]}, '%Y-%m-%d %H:%m')
+                    </if>
+                    <if test="param.expTime != null">
+                        AND DATE_FORMAT(p_point.createTime, '%Y-%m-%d %H:%m') <![CDATA[<=]]> DATE_FORMAT(#{param.dateRange[0]}, '%Y-%m-%d %H:%m')
+                    </if>-->
+            <if test='param.status != null and param.status != ""'>
+                AND p_point.status = #{param.status}
+            </if>
+            <if test='param.pointName != null and param.pointName != ""'>
+                AND p_point.pointName LIKE concat('%',#{param.pointName},'%')
+            </if>
+        </where>
+        order by p_point.createTime desc
+    </select>
+
+</mapper>

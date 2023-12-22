@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectHouseBatchAddTemplateMapper">
+
+  <resultMap id="projectHouseBatchAddTemplateMap" type="com.aurine.cloudx.open.origin.entity.ProjectHouseBatchAddTemplate">
+
+      <id property="unitTemplateId" column="unitTemplateId"/>
+      <result property="houseNo" column="houseNo"/>
+      <result property="houseDesignId" column="houseDesignId"/>
+      <result property="operator" column="operator"/>
+      <result property="createTime" column="createTime"/>
+      <result property="updateTime" column="updateTime"/>
+  </resultMap>
+</mapper>

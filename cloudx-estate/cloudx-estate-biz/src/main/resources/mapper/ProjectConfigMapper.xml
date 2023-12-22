@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectConfigMapper">
+
+    <resultMap id="projectConfigMap" type="com.aurine.cloudx.estate.entity.ProjectConfig">
+        <result property="alarmTimeLimit" column="alarmTimeLimit"/>
+        <result property="serviceInitalStatus" column="serviceInitalStatus"/>
+        <result property="projectId" column="projectId"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <insert id="init">
+        INSERT into project_config (projectId, tenant_id, operator, alarmTimeLimit, serviceInitalStatus, visitorAudit,
+                                    authAudit,floorNoLen)
+        VALUES (#{entity.projectId}, 1, #{entity.operator},
+                #{entity.alarmTimeLimit}, #{entity.serviceInitalStatus}
+                   , #{entity.visitorAudit}, #{entity.authAudit},#{entity.floorNoLen})
+
+    </insert>
+    <select id="getByProjectId" parameterType="java.lang.Integer"
+            resultType="com.aurine.cloudx.estate.entity.ProjectConfig">
+        select * from project_config where projectId = #{projectId} limit 1
+    </select>
+
+    <update id="updateServiceExpTime">
+        update project_config set serviceExpTime = str_to_date(#{serviceExpTime}, '%Y-%m-%d %H:%i:%s') where projectId = #{projectId}
+    </update>
+
+    <update id="updateAliProjectCode">
+        update project_config set aliProjectCode = #{aliProjectCode} where projectId = #{projectId}
+    </update>
+
+    <update id="updateTotalMonitorDevNo">
+        update project_config set totalMonitorDevNo = #{totalMonitorDevNo} where projectId = #{projectId}
+    </update>
+
+    <update id="updateOpen">
+        update project_config set clientId = #{clientId}, clientSecret = #{clientSecret} where projectId = #{projectId}
+    </update>
+
+    <update id="updateLiftEnable">
+        update project_config set  projectId = #{projectId},liftEnable= #{value} where projectId= #{projectId}
+    </update>
+</mapper>

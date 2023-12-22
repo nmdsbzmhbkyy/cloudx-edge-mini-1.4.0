@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.push.mapper.OpenPushSubscribeCallbackMapper">
+
+    <select
+            id="getList"
+            parameterType="com.aurine.cloudx.open.common.entity.entity.OpenPushSubscribeCallback"
+            resultType="com.aurine.cloudx.open.common.entity.vo.OpenPushSubscribeCallbackVo"
+    >
+        SELECT *
+        FROM open_push_subscribe_callback opsc
+        <where>
+            <if test="query.tenantId != null">
+                AND prd.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.appId != null and query.appId != ''">
+                AND opsc.appId = #{query.appId}
+            </if>
+            <if test="query.callbackId != null and query.callbackId != ''">
+                AND opsc.callbackId = #{query.callbackId}
+            </if>
+            <if test="query.callbackUrl != null and query.callbackUrl != ''">
+                AND opsc.callbackUrl LIKE concat('%', #{query.callbackUrl}, '%')
+            </if>
+            <if test="query.callbackType != null and query.callbackType != ''">
+                AND opsc.callbackType = #{query.callbackType}
+            </if>
+            <if test="query.projectUUID != null and query.projectUUID != ''">
+                AND opsc.projectUUID = #{query.projectUUID}
+            </if>
+            <if test="query.projectType != null and query.projectType != ''">
+                AND opsc.projectType = #{query.projectType}
+            </if>
+        </where>
+        ORDER BY opsc.createTime DESC
+    </select>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.common.entity.entity.OpenPushSubscribeCallback"
+            resultType="com.aurine.cloudx.open.common.entity.vo.OpenPushSubscribeCallbackVo"
+    >
+        SELECT *
+        FROM open_push_subscribe_callback opsc
+        <where>
+            <if test="query.tenantId != null">
+                AND prd.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.appId != null and query.appId != ''">
+                AND opsc.appId = #{query.appId}
+            </if>
+            <if test="query.callbackId != null and query.callbackId != ''">
+                AND opsc.callbackId = #{query.callbackId}
+            </if>
+            <if test="query.callbackUrl != null and query.callbackUrl != ''">
+                AND opsc.callbackUrl LIKE concat('%', #{query.callbackUrl}, '%')
+            </if>
+            <if test="query.callbackType != null and query.callbackType != ''">
+                AND opsc.callbackType = #{query.callbackType}
+            </if>
+            <if test="query.projectUUID != null and query.projectUUID != ''">
+                AND opsc.projectUUID = #{query.projectUUID}
+            </if>
+            <if test="query.projectType != null and query.projectType != ''">
+                AND opsc.projectType = #{query.projectType}
+            </if>
+        </where>
+        ORDER BY opsc.createTime DESC
+    </select>
+
+    <delete id="delete">
+        DELETE FROM
+            open_push_subscribe_callback opsc
+        <where>
+            <if test="appId != null and appId != ''">
+                AND opsc.appId = #{appId}
+            </if>
+            <if test="callbackType != null and callbackType != ''">
+                AND opsc.callbackType = #{callbackType}
+            </if>
+            <if test="projectUUID != null and projectUUID != ''">
+                AND opsc.projectUUID = #{projectUUID}
+            </if>
+        </where>
+    </delete>
+
+</mapper>

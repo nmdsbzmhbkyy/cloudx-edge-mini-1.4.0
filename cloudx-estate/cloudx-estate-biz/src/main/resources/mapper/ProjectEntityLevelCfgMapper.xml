@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//codeRule.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectEntityLevelCfgMapper">
+
+    <resultMap id="buildingEntityLevelCfgMap" type="com.aurine.cloudx.estate.entity.ProjectEntityLevelCfg">
+        <id property="seq" column="seq"/>
+        <result property="projectId" column="projectId"/>
+        <result property="level" column="level"/>
+        <result property="codeRule" column="codeRule"/>
+        <result property="levelDesc" column="levelDesc"/>
+        <result property="isDisable" column="isDisable"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="getProjectSubSection" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceNoRule">
+        SELECT
+            REPLACE(GROUP_CONCAT(codeRule ORDER BY `level` DESC) ,',','') 'subSection',
+               GROUP_CONCAT( levelDesc ORDER BY `level` DESC ) `subSectionDesc`
+        FROM
+            project_entity_level_cfg
+        WHERE
+            projectId = #{projectId} AND isDisable = '0'
+    </select>
+    <select id="getPolicyIdList" resultType="java.lang.String">
+        SELECT
+            policyId
+        FROM
+            project_logic_pass_policy
+        WHERE
+                policyId IN (
+                SELECT
+                    policyId
+                FROM
+                    project_pass_plan_policy_rel
+                WHERE
+                    projectId = #{projectId} ) AND macroId = 'FRAME_GATE'
+    </select>
+</mapper>

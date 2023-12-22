@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectPassPlanMapper">
+
+    <resultMap id="projectPassPlanMap" type="com.aurine.cloudx.open.origin.entity.ProjectPassPlan">
+        <id property="planId" column="planId"/>
+        <result property="planName" column="planName"/>
+        <result property="planObject" column="planObject"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectPassPlan"
+            resultType="com.aurine.cloudx.open.common.entity.vo.PassPlanVo"
+    >
+        SELECT
+        *
+        FROM project_pass_plan ppp
+        <where>
+            <if test="query.projectId != null">
+                AND ppp.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND ppp.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.planId != null and query.planId != ''">
+                AND ppp.planId = #{query.planId}
+            </if>
+            <if test="query.planName != null and query.planName != ''">
+                AND ppp.planName LIKE concat('%', #{query.planName}, '%')
+            </if>
+            <if test="query.planObject != null and query.planObject != ''">
+                AND ppp.planObject = #{query.planObject}
+            </if>
+            <if test="query.buildingId != null and query.buildingId != ''">
+                AND ppp.buildingId = #{query.buildingId}
+            </if>
+            <if test="query.unitId != null and query.unitId != ''">
+                AND ppp.unitId = #{query.unitId}
+            </if>
+            <if test="query.isDefault != null and query.isDefault != ''">
+                AND ppp.isDefault = #{query.isDefault}
+            </if>
+        </where>
+    </select>
+
+</mapper>

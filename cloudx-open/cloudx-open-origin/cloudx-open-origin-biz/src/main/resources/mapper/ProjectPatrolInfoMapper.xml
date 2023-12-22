@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectPatrolInfoMapper">
+
+    <select id="page" resultType="com.aurine.cloudx.open.origin.vo.ProjectPatrolInfoVo">
+        SELECT
+        p_info.*,
+        (
+        SELECT
+        COUNT(*)
+        FROM
+        project_patrol_detail p_detail
+        left join project_patrol_person_point pp
+        on pp.patrolDetailId=p_detail.patrolDetailId
+        WHERE
+        p_detail.patrolId = p_info.patrolId
+        ) AS shouldPatrolled,
+        ( select GROUP_CONCAT(distinct p.staffId) from aurine.project_patrol_person p where
+        p.patrolId = p_info.patrolId and p.staffType='2' ) 'personIds',
+        ( select GROUP_CONCAT(distinct p.staffName) from aurine.project_patrol_person p where
+        p.patrolId = p_info.patrolId and p.staffType='2' ) 'personListName',
+        ( select GROUP_CONCAT(distinct p.staffId) from aurine.project_patrol_person p where
+        p.patrolId = p_info.patrolId and p.staffType='1' ) 'planPersonIds',
+        ( select GROUP_CONCAT(distinct p.staffName) from aurine.project_patrol_person p where
+        p.patrolId = p_info.patrolId and p.staffType='1' ) 'planPersonListName',
+        conf.assignType
+        FROM
+        project_patrol_info p_info
+        left join project_patrol_route_conf conf on p_info.patrolRouteId=conf.patrolRouteId
+        <where>
+            <if test='param.status != null and param.status != ""'>
+                AND p_info.status = #{param.status}
+            </if>
+            <if test="param.result != null and param.result != ''">
+                AND p_info.result = #{param.result}
+            </if>
+            <if test='param.checkInStatus != null and param.checkInStatus != ""'>
+                AND p_info.checkInStatus = #{param.checkInStatus}
+            </if>
+            <if test='param.patrolDate != null and param.patrolDate != ""'>
+                AND p_info.patrolDate = STR_TO_DATE(#{param.patrolDate},'%Y-%m-%d')
+            </if>
+            <if test='param.patrolRouteName != null and param.patrolRouteName != ""'>
+                AND p_info.patrolRouteName LIKE CONCAT('%',#{param.patrolRouteName},'%')
+            </if>
+            <if test='param.date != null'>
+                AND date_format(p_info.patrolDate, '%Y-%m') = #{param.date}
+            </if>
+        </where>
+        order by (
+            case p_info.status
+            when '0' then 1
+            when '1' then 2
+            when '2' then 3
+            when '3' then 4
+            when '4' then 5
+            else '' end
+        ),
+        p_info.patrolDate desc,
+        p_info.patrolStartTime desc
+    </select>
+    <select id="selectByVoId" resultType="com.aurine.cloudx.open.origin.vo.ProjectPatrolInfoVo">
+        SELECT
+        p_info.*,
+        (
+        SELECT
+        COUNT(*)
+        FROM
+        project_patrol_detail p_detail
+        WHERE
+        p_detail.patrolId = p_info.patrolId
+        ) AS shouldPatrolled
+        FROM
+        project_patrol_info p_info
+        <where>
+            <if test='patrolId != null and patrolId != ""'>
+                AND p_info.patrolId = #{patrolId}
+            </if>
+        </where>
+    </select>
+    <select id="pageByPatrolInfoToDo" resultType="com.aurine.cloudx.open.origin.vo.ProjectPatrolInfoVo">
+
+        SELECT DISTINCT patrol.*,
+                        (select GROUP_CONCAT(distinct p.staffId)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '2') 'personIds',
+                        (select GROUP_CONCAT(distinct p.staffName)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '2') 'personListName',
+                        (select GROUP_CONCAT(distinct p.staffId)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '1') 'planPersonIds',
+                        (select GROUP_CONCAT(distinct p.staffName)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '1') 'planPersonListName'
+        FROM project_patrol_info patrol
+                 JOIN project_patrol_person person ON patrol.patrolId = person.patrolId
+        WHERE person.staffType = '2'
+          and person.staffId = #{staffId}
+          and patrol.status != '2'
+        order by (
+            case patrol.status
+            when '0' then 1
+            when '1' then 2
+            when '2' then 3
+            when '3' then 4
+            when '4' then 5
+            else '' end
+        ),
+        patrol.patrolDate desc,
+        patrol.patrolStartTime desc
+    </select>
+
+    <select id="selectDateToDo" resultType="com.aurine.cloudx.open.origin.vo.ProjectPatrolInfoVo">
+
+        SELECT DISTINCT patrol.*,
+                        (select GROUP_CONCAT(distinct p.staffId)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '2') 'personIds',
+                        (select GROUP_CONCAT(distinct p.staffName)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '2') 'personListName',
+                        (select GROUP_CONCAT(distinct p.staffId)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '1') 'planPersonIds',
+                        (select GROUP_CONCAT(distinct p.staffName)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '1') 'planPersonListName',
+                        (SELECT MAX(pppp.updateTime) FROM project_patrol_detail ppd
+                        LEFT JOIN project_patrol_person_point pppp on ppd.patrolDetailId = pppp.patrolDetailId
+                        WHERE ppd.patrolId = patrol.patrolId) 'doneTime'
+        FROM project_patrol_info patrol
+                 JOIN project_patrol_person person ON patrol.patrolId = person.patrolId
+        WHERE person.staffType = '2'
+          and person.staffId = #{staffId}
+          and patrol.status = '2'
+          <if test='date != null'>
+            AND date_format(
+              (SELECT MAX(pppp.updateTime) FROM project_patrol_detail ppd
+              LEFT JOIN project_patrol_person_point pppp on ppd.patrolDetailId = pppp.patrolDetailId
+              WHERE ppd.patrolId = patrol.patrolId), '%Y-%m') = #{date}
+          </if>
+        order by doneTime desc
+    </select>
+
+    <select id="pageByPatrolInfoForMe" resultType="com.aurine.cloudx.open.origin.vo.ProjectPatrolInfoVo">
+
+
+        SELECT DISTINCT patrol.*,conf.assignType,
+                        (select GROUP_CONCAT(distinct p.staffId)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '2') 'personIds',
+                        (select GROUP_CONCAT(distinct p.staffName)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '2') 'personListName',
+                        (select GROUP_CONCAT(distinct p.staffId)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '1') 'planPersonIds',
+                        (select GROUP_CONCAT(distinct p.staffName)
+                         from aurine.project_patrol_person p
+                         where p.patrolId = person.patrolId
+                           and p.staffType = '1') 'planPersonListName'
+        FROM project_patrol_info patrol
+                 left join project_patrol_route_conf conf on conf.patrolRouteId = patrol.patrolRouteId
+                 JOIN project_patrol_person person ON patrol.patrolId = person.patrolId
+        WHERE #{staffId} not in(select p.staffId
+                 from aurine.project_patrol_person p
+                 where p.patrolId = person.patrolId
+                   and p.staffType = '2')
+            and (((
+                   person.staffType = '1'
+                   AND person.staffId = #{staffId}
+               )
+            and conf.assignType = '2'
+            and patrol.status = '0'
+            )
+           or (conf.assignType = '1' AND patrol.status = '0'))
+        ORDER BY patrol.patrolDate DESC,
+                 patrol.patrolStartTime DESC
+    </select>
+    <select id="getCount" resultType="java.lang.Integer">
+        select count(ppi.patrolId)
+        from project_patrol_info ppi
+        where ppi.patrolId in (
+            select patrolId
+            from aurine.project_patrol_person ppp
+            where ppp.staffId = #{staffId}
+             and ppp.staffType = '2'
+             and date_format(ppp.createTime, '%Y-%m') = #{date}
+        )
+        <if test="status != null">
+            and ppi.status = #{status}
+        </if>
+    </select>
+    <update id="updateAllTimeOut">
+        UPDATE project_patrol_info info
+        SET info.`status` = '3'
+        WHERE info.STATUS = 0
+          AND cast(
+                      CONCAT(
+                              info.patrolDate,
+                              ' ',
+                              info.patrolEndTime
+                          ) AS datetime
+                  ) <![CDATA[<]]> now()
+    </update>
+</mapper>

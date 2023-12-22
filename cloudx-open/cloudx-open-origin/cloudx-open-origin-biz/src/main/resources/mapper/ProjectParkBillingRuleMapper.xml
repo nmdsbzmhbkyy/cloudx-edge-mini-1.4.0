@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, lengleng All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: lengleng (wangiegie@gmail.com)
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectParkBillingRuleMapper">
+
+  <resultMap id="projectParkBillingRuleMap" type="com.aurine.cloudx.open.origin.entity.ProjectParkBillingRule">
+                        <id property="ruleId" column="ruleId"/>
+                        <result property="ruleCode" column="ruleCode"/>
+                        <result property="ruleName" column="ruleName"/>
+                        <result property="ruleType" column="ruleType"/>
+                        <result property="isDisable" column="isDisable"/>
+                        <result property="ruleTemplate" column="ruleTemplate"/>
+                        <result property="monthlyRent" column="MonthlyRent"/>
+                        <result property="operator" column="operator"/>
+                        <result property="createTime" column="createTime"/>
+                        <result property="updateTime" column="updateTime"/>
+            </resultMap>
+
+
+    <!-- 分页查询-->
+    <select id="pageBillRule" resultType="com.aurine.cloudx.open.origin.dto.ProjectParkBillingRuleDto">
+        select info.parkName,rule.*,car.typeName,car.carType from project_park_billing_rule rule right join project_parking_info info on rule.parkId = info.parkId
+        INNER JOIN project_park_car_type car on rule.carTypeId=car.typeId
+        <where>
+            info.projectId = #{projectId}
+            and rule.ruleType != '3'
+            <if test="query.parkId !=null and query.parkId != '' ">
+                and  rule.parkId = #{query.parkId}
+            </if>
+            <if test="query.isDisable !=null and query.isDisable != '' and query.isDisable != '-1'">
+                and  rule.isDisable = #{query.isDisable}
+            </if>
+        </where>
+        order by rule.ruleType
+    </select>
+
+    <!-- 分页查询-->
+    <select id="getRuleParkList" resultType="com.aurine.cloudx.open.origin.dto.ProjectParkRuleDto">
+        SELECT
+            CONCAT(parking.parkId, rule.ruleName) parkingRuleKey, rule.ruleId
+        FROM
+            project_park_billing_rule rule
+                LEFT JOIN project_parking_info parking ON parking.parkId = rule.parkId
+        WHERE rule.projectId = #{projectId} AND parking.parkId IS NOT NULL AND rule.ruleId IS NOT NULL
+    </select>
+
+    <select id="getById" resultType="com.aurine.cloudx.open.origin.dto.ProjectParkBillingRuleDto">
+       SELECT rule.*,car.typeName,car.carType,info.parkName FROM project_park_billing_rule rule RIGHT JOIN project_park_car_type car ON rule.carTypeId = car.typeId
+       inner join project_parking_info info on rule.parkId = info.parkId
+       WHERE rule.ruleId=#{ruleId}
+    </select>
+
+</mapper>

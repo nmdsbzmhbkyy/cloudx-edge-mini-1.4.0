@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectInspectCheckinDetailMapper">
+
+
+    <select id="countUnCheckin" resultType="java.lang.Integer">
+        SELECT
+            COUNT(*)
+        FROM
+            project_inspect_task_detail task_detail
+        LEFT JOIN
+            project_inspect_checkin_detail checkin_detail ON task_detail.detailId = checkin_detail.detailId
+        WHERE checkin_detail.checkInDetailId IS NULL AND task_detail.taskId = #{taskId}
+        GROUP BY task_detail.taskId
+    </select>
+</mapper>

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.SzztMapper">
+    <select id="findTable6193" resultType="com.aurine.cloudx.open.origin.entity.Szzt6193">
+        WITH cte AS (
+            SELECT
+                count( 0 ) BUILDINGSUM,
+                projectId
+            FROM
+                project_building_info
+            GROUP BY
+                projectId
+            HAVING
+                projectId = #{projectId}
+        )
+        SELECT
+            a.projectname VILLAGENAME,
+            a.projectId VILLAGENO,-- + 271154
+            a.address ADDRESS,
+            b.BUILDINGSUM,
+            a.propertyCompany PROPERTY,
+--             a.countyCode DISTRICTNAME,
+--             a.streetCode STREETNAME,
+--             a.projectname COMMUNITYNAME,
+            a.lon LONGITUDE,
+            a.lat LATITUDE
+        FROM
+            project_info a
+            LEFT JOIN cte b
+            ON a.projectId = b.projectId
+        WHERE
+            a.projectId = #{projectId}
+    </select>
+
+    <select id="findTable6194" resultType="com.aurine.cloudx.open.origin.entity.Szzt6194">
+        SELECT
+            a.buildingName BUILDINGNAME,
+            a.buildingId BUILDINGNO,-- + 271154
+            a.projectId VILLAGENO,
+            a.unitTotal BUILDINGSUM,
+            a.floorTotal STOREYSUM,
+            a.houseTotal HOUSESUM,
+            a.lon LONGITUDE,
+            a.lat LATITUDE
+--             b.countyCode DISTRICTNAME,
+--             b.streetCode STREETNAME,
+--             b.projectname COMMUNITYNAME,
+--             '271154' HUMAN_ID
+        FROM
+            project_building_info a
+            LEFT JOIN project_info b ON
+            a.projectId = b.projectId
+        WHERE
+            a.projectId = #{projectId}
+    </select>
+
+    <select id="findTable6195" resultType="com.aurine.cloudx.open.origin.entity.Szzt6195">
+        WITH cc AS (
+            SELECT
+                *
+            FROM
+                project_house_info
+            WHERE
+                floor = 1
+        ),
+        cte AS (
+            SELECT
+                count( 0 ) UNITSUM,
+                buildingUnit
+            FROM
+                cc
+            GROUP BY
+                buildingUnit
+
+        )
+        SELECT
+            a.unitName UNITNAME,
+            a.unitId UNITNO,
+            a.frameNo UNITNUM,
+            frame.puid BUILDINGNO,
+            cte.UNITSUM UNITSUM
+--             b.countyCode DISTRICTNAME,
+--             b.streetCode STREETNAME,
+--             b.projectname COMMUNITYNAME,
+--             '271154' HUMAN_ID
+        FROM
+            project_unit_info a
+            LEFT JOIN project_frame_info frame ON a.unitId = frame.entityId
+            LEFT JOIN project_info b ON a.projectId = b.projectId
+            LEFT JOIN cte ON a.unitId = cte.buildingUnit
+        WHERE
+            a.projectId = #{projectId}
+    </select>
+
+    <select id="findTable6196" resultType="com.aurine.cloudx.open.origin.entity.Szzt6196">
+        SELECT
+            a.houseName HOUSENAME,
+            a.houseName HOUSENUM,
+            a.floor STOREY,
+            a.houseId HOUSENO,
+            a.buildingUnit UNITNO,
+            info.personName HOUSEHOLDER,
+            info.credentialNo IDENTITYID,
+            info.telephone HOUSEID,
+            ROUND( DATEDIFF( CURDATE( ), info.birth ) / 365.2422 ) AGE,
+            info.gender GENDER,
+            left(info.credentialNo, 6) NATIVEPLACE
+--             info.nationCode NATIONCODE,
+--             info.politicalStatus POLITICALCODE,
+--             rel.housePeopleRel HOUSETYPE
+--             b.countyCode DISTRICTNAME,
+--             b.streetCode STREETNAME,
+--             b.projectname COMMUNITYNAME,
+--             '271154' HUMAN_ID
+        FROM
+            project_house_info a
+            LEFT JOIN project_info b ON a.projectId = b.projectId
+            LEFT JOIN project_house_person_rel rel ON rel.houseId = a.houseId
+            LEFT JOIN project_person_info info ON info.personId = rel.personId
+        WHERE
+            a.projectId = #{projectId}
+            AND rel.householdType = '1'
+    </select>
+
+    <select id="findTable6197" resultType="com.aurine.cloudx.open.origin.entity.Szzt6197">
+        SELECT
+            a.personName NAME,
+            a.credentialNo IDENTITYID,
+            rel.houseId HOUSENO,
+            rel.householdType RELNATION,
+            a.telephone TEL,
+            ROUND( DATEDIFF( CURDATE( ), a.birth ) / 365.2422 ) AGE,
+            a.gender GENDER,
+            left(a.credentialNo, 6) NATIVEPLACE,
+--             a.nationCode NATIONCODE,
+--             a.politicalStatus POLITICALCODE,
+            a.createTime CREATETIME
+--             b.countyCode DISTRICTNAME,
+--             b.streetCode STREETNAME,
+--             b.projectname COMMUNITYNAME,
+--             '271154' HUMAN_ID
+        FROM
+            project_person_info a
+            LEFT JOIN project_info b ON a.projectId = b.projectId
+            LEFT JOIN project_house_person_rel rel ON rel.personId = a.personId
+        WHERE
+            a.projectId = #{projectId}
+    </select>
+
+    <select id="findTable6198" resultType="com.aurine.cloudx.open.origin.entity.Szzt6198">
+        SELECT
+            a.plateNumber CARMODEL,
+            a.plateNumber CARNO,
+            c.personName CARNAME,
+            c.telephone CARTEL,
+            c.credentialNo IDENTITYID,
+            a.plateColor CARCOLOR,
+            a.vehicleType CARTYPE,
+            a.createTime CREATETIME
+--             b.countyCode DISTRICTNAME,
+--             b.streetCode STREETNAME,
+--             b.projectname COMMUNITYNAME,
+--             '271154' HUMAN_ID
+        FROM
+            project_car_info a
+            LEFT JOIN project_info b ON a.projectId = b.projectId
+            LEFT JOIN project_person_info c ON c.personId = a.personId
+        WHERE
+            a.projectId = #{projectId}
+    </select>
+
+    <select id="findTable6199" resultType="com.aurine.cloudx.open.origin.entity.Szzt6199">
+        SELECT
+            c.personName OPENNAME,
+            a.seq RECORDNO,
+            c.credentialNo IDENTITYID,
+            rel.houseId HOUSENO,
+            rel.householdType IDENTITYTYPE,
+            a.certMedia ENTERTYPE,
+            a.eventTime OPENTIME,
+            a.entranceType DIRECTION,
+            '01' OPENSTATUS
+--             b.countyCode DISTRICTNAME,
+--             b.streetCode STREETNAME,
+--             b.projectname COMMUNITYNAME,
+--             '271154' HUMAN_ID
+        FROM
+            project_entrance_event a
+            LEFT JOIN project_info b ON a.projectId = b.projectId
+            LEFT JOIN project_person_info c ON c.personId = a.personId
+            LEFT JOIN project_house_person_rel rel ON rel.personId = a.personId
+        WHERE
+            a.projectId = #{projectId}
+    </select>
+</mapper>

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectStaffMapper">
+    <update id="updatePhoneByUserId">
+        update aurine.project_staff s
+        set s.mobile=#{phone}
+        where s.userId = #{userId}
+    </update>
+    <update id="updateUserIdByPhone">
+        update aurine.project_staff s
+        set s.userId= #{userId}
+        where s.mobile = #{phone}
+    </update>
+
+    <!--查询当前项目下的所有员工-->
+    <select id="pageAll" resultType="com.aurine.cloudx.estate.vo.ProjectStaffListVo">
+        select staff.staffName,
+        staff.staffId,
+        spd.deptName,
+        staff.staffPost,
+        staff.grade,
+        staff.mobile,
+        staff.employerPhone,
+        spd.deptId
+        from project_staff staff
+        left join sys_project_dept spd on staff.departmentId = spd.deptId
+        <where>
+            <!--数据库没配置默认值故这里假设存在空值情况-->
+            and (staff.staffStatus ='1' or staff.staffStatus is null)
+            and staff.projectId=#{projectId}
+            <if test="name!=null and name!=''">
+                and staff.staffName like concat('%',#{name},'%')
+            </if>
+        </where>
+        order by spd.deptName
+    </select>
+    <select id="getManagerRegionStaffIdList" resultType="com.aurine.cloudx.estate.vo.StaffRegionVo">
+        -- SELECT
+        -- *
+        -- FROM
+        -- (
+        SELECT
+        staff.staffId, staff.staffName, staff.departmentId, COUNT( staff_region.seq ) regionNum
+        FROM
+        project_staff staff
+        LEFT JOIN project_staff_region staff_region ON staff_region.staffId = staff.staffId
+        WHERE staff.projectId = #{projectId}
+        GROUP BY
+        staff.staffId
+        -- ) staff_manager_region_num
+        <!--<if test="unManagerRegion">
+        WHERE regionNum != 0 || staffId IN
+            <foreach collection="staffIdLIst" item="id" index="index" open="(" close=")" separator=",">
+                #{id}
+            </foreach>
+        </if>-->
+    </select>
+
+    <select id="getStaffIdByRegionId" resultType="java.lang.String">
+        SELECT staff.staffId
+        FROM project_staff staff
+                 LEFT JOIN project_staff_region staff_region ON staff_region.staffId = staff.staffId
+        WHERE staff_region.regionId = #{regionId}
+        GROUP BY staff.staffId
+    </select>
+    <select id="getStaffPage" resultType="com.aurine.cloudx.estate.vo.ProjectStaffListVo">
+        select staff.staffName,
+        staff.staffId,
+        spd.deptName,
+        staff.staffPost,
+        staff.grade,
+        staff.mobile,
+        staff.employerPhone,
+        spd.deptId
+        from project_staff staff
+        left join sys_project_dept spd on staff.departmentId = spd.deptId
+        <where>
+            <if test="grade>2">
+                and staff.grade <![CDATA[<=]]> #{grade}
+            </if>
+            <if test="grade==2">
+                and staff.staffId = #{staffId}
+                or (staff.grade &lt; #{grade}
+                and staff.departmentId = #{departmentId})
+            </if>
+            <if test="name!=null and name!=''">
+                and staff.staffName like concat('%',#{name},'%')
+            </if>
+        </where>
+        order by spd.deptName
+    </select>
+
+    <delete id="removeByUserId">
+        delete
+        from project_staff staff
+        where staff.userId = #{userId}
+          and staff.projectId = #{projectId}
+    </delete>
+    <select id="getStaffByUserId" resultType="com.aurine.cloudx.estate.entity.ProjectStaff">
+        select *
+        from project_staff staff
+        where staff.userId = #{userId}
+          and staff.projectId = #{projectId}
+    </select>
+
+    <select id="getStaffListByUserId" resultType="com.aurine.cloudx.estate.entity.ProjectStaff">
+        select *
+        from project_staff staff
+        where staff.userId = #{userId}
+
+    </select>
+
+
+    <select id="getUserVosByDeptId" resultType="com.aurine.cloudx.estate.vo.SysUserVo">
+        select u.user_id       userId,
+               u.username,
+               staff.staffName trueName,
+               u.phone,
+               staff.staffId,
+               staff.credentialNo,
+               staff.sex,
+               r.dept_id       deptId,
+               null oldRoleId,
+               ur.role_id      roleId,
+               staff.picUrl    avatar,
+               null deptTypeId
+        from pigxx.sys_user u
+                 left join pigxx.sys_user_role ur on ur.user_id = u.user_id
+                 left join pigxx.sys_role r on r.role_id = ur.role_id
+                 left join aurine.project_staff staff on ur.user_id = staff.userId and staff.projectId = r.dept_id
+        where r.dept_id = #{projectId}
+          and r.role_name like #{roleName}
+    </select>
+
+    <select id="getStaffIdListByMenuId" resultType="String">
+        SELECT
+            staff.staffId
+        FROM
+            pigxx.sys_menu menu
+                LEFT JOIN pigxx.sys_role_menu role_menu ON role_menu.menu_id = menu.menu_id
+                LEFT JOIN project_staff staff ON staff.roleId = role_menu.role_id
+        WHERE
+            menu.menu_id = #{menuId} AND staffId IS NOT NULL AND staff.projectId = #{projectId}
+    </select>
+
+    <update id="updatePhoneById">
+
+    </update>
+
+    <select id="getDeptName" resultType="java.lang.String">
+        select name from pigxx.sys_dept where dept_id = #{departmentId}
+    </select>
+
+    <select id="getProjectAdministrator" resultType="java.lang.String">
+        SELECT
+            s.staffId
+        FROM
+            pigxx.sys_dept d
+                left join pigxx.sys_role r on d.dept_id = r.dept_id
+                left join aurine.project_staff s on r.role_id = s.roleId
+        WHERE
+            d.dept_id = #{projectId}
+          and r.role_name = '项目管理员' or r.role_name = '工程人员' or r.role_name = '运维管理员'
+    </select>
+</mapper>

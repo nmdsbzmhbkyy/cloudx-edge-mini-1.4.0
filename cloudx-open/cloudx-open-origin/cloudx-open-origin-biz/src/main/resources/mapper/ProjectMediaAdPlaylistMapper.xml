@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectMediaAdPlaylistMapper">
+
+    <resultMap id="projectMediaAdPlaylistMap" type="com.aurine.cloudx.open.origin.entity.ProjectMediaAdPlaylist">
+
+        <result property="adId" column="adId"/>
+        <result property="repoId" column="repoId"/>
+        <result property="duration" column="duration"/>
+        <result property="gapTime" column="gapTime"/>
+        <result property="appId" column="appId"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+</mapper>

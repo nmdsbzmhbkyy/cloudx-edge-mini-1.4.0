@@ -1,0 +1,24 @@
+server:
+  port: 4005
+
+spring:
+  application:
+    name: '@artifactId@'
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS-HOST:pigx-register}:${NACOS-PORT:8848}
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        file-extension: yml
+        shared-configs:
+          - application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+  autoconfigure:
+    exclude: org.springframework.cloud.gateway.config.GatewayAutoConfiguration,org.springframework.cloud.gateway.config.GatewayClassPathWarningAutoConfiguration
+  profiles:
+    active: '@profiles.active@'
+
+wx:
+  app-id: wxc5f837fc4d236da5
+  app-secret: ad52bafcccaf0c68aa1da7a99441fc81
+  server-token: a97f3f7fedc641c5a05fcca1741b1a2a

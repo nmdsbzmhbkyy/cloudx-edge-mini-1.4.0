@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectFocusPersonAttrMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectFocusPersonAttr" id="ProjectFocusPersonAttrMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="personId" column="personId" jdbcType="VARCHAR"/>
+        <result property="focusCategory" column="focusCategory" jdbcType="VARCHAR"/>
+        <result property="province1" column="province1" jdbcType="VARCHAR"/>
+        <result property="city1" column="city1" jdbcType="VARCHAR"/>
+        <result property="county1" column="county1" jdbcType="VARCHAR"/>
+        <result property="street1" column="street1" jdbcType="VARCHAR"/>
+        <result property="address1" column="address1" jdbcType="VARCHAR"/>
+        <result property="focusCategory1" column="focusCategory1" jdbcType="VARCHAR"/>
+        <result property="status1" column="status1" jdbcType="VARCHAR"/>
+        <result property="phone1" column="phone1" jdbcType="VARCHAR"/>
+        <result property="reason1" column="reason1" jdbcType="VARCHAR"/>
+        <result property="policeName1" column="policeName1" jdbcType="VARCHAR"/>
+        <result property="policePhone1" column="policePhone1" jdbcType="VARCHAR"/>
+        <result property="policeIdType1" column="policeIdType1" jdbcType="VARCHAR"/>
+        <result property="policeIdNo1" column="policeIdNo1" jdbcType="VARCHAR"/>
+        <result property="province2" column="province2" jdbcType="VARCHAR"/>
+        <result property="city2" column="city2" jdbcType="VARCHAR"/>
+        <result property="county2" column="county2" jdbcType="VARCHAR"/>
+        <result property="street2" column="street2" jdbcType="VARCHAR"/>
+        <result property="address2" column="address2" jdbcType="VARCHAR"/>
+        <result property="focusCategory2" column="focusCategory2" jdbcType="VARCHAR"/>
+        <result property="status2" column="status2" jdbcType="VARCHAR"/>
+        <result property="phone2" column="phone2" jdbcType="VARCHAR"/>
+        <result property="reason2" column="reason2" jdbcType="VARCHAR"/>
+        <result property="policeName2" column="policeName2" jdbcType="VARCHAR"/>
+        <result property="policePhone2" column="policePhone2" jdbcType="VARCHAR"/>
+        <result property="policeIdType2" column="policeIdType2" jdbcType="VARCHAR"/>
+        <result property="policeIdNo2" column="policeIdNo2" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+</mapper>

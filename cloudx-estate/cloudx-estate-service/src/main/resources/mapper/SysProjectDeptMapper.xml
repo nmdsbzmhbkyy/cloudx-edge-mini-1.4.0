@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.SysProjectDeptMapper">
+
+    <select id="selectByTemplate" resultType="com.aurine.cloudx.estate.entity.SysProjectDept">
+        SELECT
+        deptName,
+        deptDesc
+        FROM
+        sys_project_dept
+        <where>
+            projectId = 0
+        </where>
+    </select>
+
+    <select id="defaultDept" resultType="com.aurine.cloudx.estate.entity.SysProjectDept">
+        SELECT
+        *
+        FROM
+        sys_project_dept
+        <where>
+        projectId = #{projectId}
+        AND deptName IN (#{office},#{finance},#{comprehensive},#{securityStaff},#{repair},#{environment})
+        </where>
+    </select>
+
+</mapper>

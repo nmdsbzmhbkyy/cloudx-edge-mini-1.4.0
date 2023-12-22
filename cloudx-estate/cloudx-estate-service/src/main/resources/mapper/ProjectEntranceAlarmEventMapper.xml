@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectEntranceAlarmEventMapper">
+
+    <resultMap id="projectEntranceAlarmEventMap" type="com.aurine.cloudx.estate.entity.ProjectEntranceAlarmEvent">
+
+        <id property="eventId" column="eventId"/>
+        <result property="personType" column="personType"/>
+        <result property="personName" column="personName"/>
+        <result property="deviceId" column="deviceId"/>
+        <result property="eventDesc" column="eventDesc"/>
+        <result property="eventTime" column="eventTime"/>
+        <result property="picUrl" column="picUrl"/>
+        <result property="status" column="status"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <select id="select" parameterType="com.aurine.cloudx.estate.vo.ProjectEntranceAlarmEventVo"
+            resultType="com.aurine.cloudx.estate.vo.ProjectEntranceAlarmEventVo">
+<!--        SELECT-->
+<!--        p_a_event.*,-->
+<!--        p_a_event.deviceRegionName AS regionName,-->
+<!--        p_a_handle.*,-->
+<!--        p_a_handle.seq AS handleSeq,-->
+<!--        p_config.alarmTimeLimit-->
+<!--        FROM project_entrance_alarm_event p_a_event-->
+<!--        LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId-->
+<!--        LEFT JOIN project_config p_config ON  p_config.projectId=p_a_event.projectId-->
+<!--        <where>-->
+<!--        AND p_a_event.projectId = #{param.projectId}-->
+<!--        AND p_a_event.tenant_id = #{param.tenantId}-->
+<!--            <if test="param.personName != null and param.personName != ''">-->
+<!--                AND p_a_event.personName LIKE concat('%',#{param.personName},'%')-->
+<!--            </if>-->
+<!--            <if test="param.deviceName != null and param.deviceName != ''">-->
+<!--                AND p_a_event.deviceName LIKE concat('%',#{param.deviceName},'%')-->
+<!--            </if>-->
+<!--            <if test="param.status != null and param.status != ''">-->
+<!--                AND p_a_event.status = #{param.status}-->
+<!--            </if>-->
+<!--            <if test="param.notStatus != null and param.notStatus != ''">-->
+<!--                AND p_a_event.status != #{param.notStatus}-->
+<!--            </if>-->
+<!--            <if test="param.timeLeave != null and param.timeLeave != ''">-->
+<!--                AND (p_a_handle.timeLeave LIKE concat('%',#{param.timeLeave},'%')-->
+<!--                <if test='param.timeLeave == "未超限"'>-->
+<!--                    OR (p_a_handle.timeLeave IS NULL AND timestampdiff(second,p_a_event.eventTime,NOW())  <![CDATA[<=]]>p_config.alarmTimeLimit * 60)-->
+<!--                </if>-->
+<!--                <if test='param.timeLeave == "超限处理"'>-->
+<!--                    OR (p_a_handle.timeLeave IS NULL AND timestampdiff(second,p_a_event.eventTime,NOW())  <![CDATA[>]]>p_config.alarmTimeLimit * 60)-->
+<!--                </if>-->
+<!--                )-->
+<!--            </if>-->
+<!--            <if test="param.effTime != null">-->
+<!--                AND p_a_handle.dealDuration <![CDATA[>=]]>-->
+<!--                #{param.effTime}-->
+<!--            </if>-->
+<!--            <if test="param.expTime != null">-->
+<!--                AND p_a_handle.dealDuration <![CDATA[<=]]>-->
+<!--                #{param.expTime}-->
+<!--            </if>-->
+<!--        </where>-->
+<!--        ORDER BY p_a_event.eventTime DESC-->
+        SELECT
+        p_a_event.*,
+        p_a_event.deviceRegionName AS regionName,
+        p_a_handle.*,
+        p_a_handle.seq AS handleSeq,
+        p_config.alarmTimeLimit,
+        p_d_info.deviceRegionId,
+        s_e_t_conf.eventTypeName,
+        s_e_t_conf.eventCategory
+        FROM project_entrance_alarm_event p_a_event
+        LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId
+        LEFT JOIN project_config p_config ON p_config.projectId=p_a_event.projectId
+        LEFT JOIN project_device_info p_d_info ON p_a_event.deviceId = p_d_info.deviceId
+        LEFT Join sys_event_type_conf s_e_t_conf ON p_a_event.eventTypeId = s_e_t_conf.eventTypeId
+        <where>
+            AND p_a_event.projectId = #{param.projectId}
+            AND p_a_event.tenant_id = #{param.tenantId}
+            <if test="param.operator != null and param.operator != ''">
+                AND p_a_handle.operator =  #{param.operator}
+            </if>
+            <if test="param.personName != null and param.personName != ''">
+                AND p_a_event.personName LIKE concat('%',#{param.personName},'%')
+            </if>
+            <if test="param.deviceTypeName != null and param.deviceTypeName != ''">
+                AND p_a_event.deviceTypeName = #{param.deviceTypeName}
+            </if>
+            <if test="param.deviceName != null and param.deviceName != ''">
+                AND p_a_event.deviceName LIKE concat('%',#{param.deviceName},'%')
+            </if>
+            <if test="param.status != null and param.status != ''">
+                AND p_a_event.status = #{param.status}
+            </if>
+            <if test="param.notStatus != null and param.notStatus != ''">
+                AND p_a_event.status != #{param.notStatus}
+            </if>
+            <if test="param.timeLeave != null and param.timeLeave != ''">
+                AND (p_a_handle.timeLeave LIKE concat('%',#{param.timeLeave},'%')
+                <if test='param.timeLeave == "未超限"'>
+                    OR (p_a_handle.timeLeave IS NULL AND timestampdiff(second,p_a_event.eventTime,NOW())  <![CDATA[<=]]>
+                    p_config.alarmTimeLimit * 60)
+                </if>
+                <if test='param.timeLeave == "超限处理"'>
+                    OR (p_a_handle.timeLeave IS NULL AND timestampdiff(second,p_a_event.eventTime,NOW())  <![CDATA[>]]>
+                    p_config.alarmTimeLimit * 60)
+                </if>
+                )
+            </if>
+            <if test="param.effTime != null">
+                AND p_a_handle.dealDuration <![CDATA[>=]]>
+                #{param.effTime}
+            </if>
+            <if test="param.expTime != null">
+                AND p_a_handle.dealDuration <![CDATA[<=]]>
+                #{param.expTime}
+            </if>
+            <if test="param.startTime != null">
+                AND
+                DATE_FORMAT(p_a_event.eventTime, '%Y-%m-%d %H:%i:%s')
+                <![CDATA[>=]]>
+                DATE_FORMAT(#{param.startTime}, '%Y-%m-%d %H:%i:%s')
+            </if>
+            <if test="param.endTime != null">
+                AND
+                DATE_FORMAT(p_a_event.eventTime, '%Y-%m-%d %H:%i:%s')
+                <![CDATA[<=]]>
+                DATE_FORMAT(#{param.endTime}, '%Y-%m-%d %H:%i:%s')
+            </if>
+        </where>
+        ORDER BY p_a_event.eventTime DESC
+    </select>
+    <select id="findNum" resultType="com.aurine.cloudx.estate.vo.ProjectEntranceAlarmEventVo">
+        SELECT
+        COUNT(*) AS monthNum,
+        p_config.alarmTimeLimit AS alarmTimeLimit,
+        (
+            SELECT COUNT(p_a_event.eventId)
+            FROM project_entrance_alarm_event p_a_event
+            LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId
+            <where>
+                (
+                    (p_a_handle.timeLeave LIKE '%超限处理%')
+                    OR
+                    (p_a_handle.timeLeave IS NULL AND timestampdiff(second,p_a_event.eventTime,NOW()) > p_config.alarmTimeLimit * 60)
+                )
+                AND EXTRACT(YEAR FROM eventTime) = EXTRACT(YEAR FROM now())
+                AND EXTRACT(MONTH FROM eventTime) = EXTRACT(MONTH FROM now())
+                AND p_a_event.projectId = #{projectId}
+                AND p_a_event.tenant_id = #{tenantId}
+            </where>
+        ) AS timeLeaveNum
+
+        FROM project_entrance_alarm_event p_a_event
+        LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId
+        LEFT JOIN project_config p_config ON p_config.projectId=p_a_event.projectId
+        <where>
+            AND p_a_event.projectId = #{projectId}
+            AND p_a_event.tenant_id = #{tenantId}
+            AND EXTRACT(YEAR FROM eventTime) = EXTRACT(YEAR FROM now())
+            AND
+            EXTRACT(MONTH FROM eventTime) = EXTRACT(MONTH FROM now())
+        </where>
+        GROUP BY
+        p_config.alarmTimeLimit
+    </select>
+    <select id="findById" resultType="com.aurine.cloudx.estate.vo.ProjectEntranceAlarmEventVo">
+        SELECT
+        p_a_event.*,
+        p_a_handle.*,
+        p_a_handle.seq AS handleSeq,
+        p_a_handle.picUrl AS livePic
+        FROM
+        project_entrance_alarm_event p_a_event
+        LEFT JOIN project_alarm_handle p_a_handle ON p_a_handle.eventId = p_a_event.eventId
+        WHERE
+        p_a_event.eventId = #{eventId}
+        AND p_a_event.projectId = #{projectId}
+        AND p_a_event.tenant_id = #{tenantId}
+    </select>
+    <select id="findAllEventId" resultType="java.lang.String">
+        SELECT
+        eventId
+        FROM
+        project_entrance_alarm_event p_a_event
+        <where>
+            AND p_a_event.status !=2
+            AND p_a_event.projectId = #{projectId}
+            AND p_a_event.tenant_id = #{tenantId}
+        </where>
+    </select>
+
+    <select id="countCurrDayEvent" resultType="java.lang.Integer">
+        SELECT
+        count(1)
+        FROM
+        project_entrance_alarm_event alert
+        WHERE
+        alert.eventTime BETWEEN DATE_FORMAT(NOW(), '%Y-%m-%d 00:00:00')
+        AND DATE_FORMAT(NOW(), '%Y-%m-%d 23:59:59')
+        AND alert.projectId = #{projectId}
+        AND alert.tenant_id = #{tenantId}
+
+    </select>
+
+    <select id="countByMonth" resultType="java.lang.Integer">
+        SELECT
+        count( 0 ) AS c
+        FROM
+        project_entrance_alarm_event
+        WHERE
+        date_format( eventTime, '%Y-%m' ) =  #{date}
+        AND projectId = #{projectId}
+        AND tenant_id = #{tenantId}
+    </select>
+
+    <select id="countByMonthOff" resultType="java.lang.Integer">
+        SELECT
+        count( 0 ) AS c
+        FROM
+        project_entrance_alarm_event
+        WHERE
+        date_format( eventTime, '%Y-%m' ) =  #{date}
+        AND status = '0'
+        AND projectId = #{projectId}
+        AND tenant_id = #{tenantId}
+    </select>
+</mapper>

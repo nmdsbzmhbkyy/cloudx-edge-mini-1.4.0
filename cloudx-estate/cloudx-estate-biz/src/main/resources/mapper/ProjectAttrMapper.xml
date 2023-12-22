@@ -1,0 +1,70 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectAttrMapper">
+
+
+    <select id="page" resultType="com.aurine.cloudx.estate.vo.ProjectAttrVo">
+        select conf1.attrId,'1' style,conf1.deviceTypeId type,
+        conf1.attrCode,conf1.attrName,conf1.remark from project_device_attr_conf conf1
+        <where>
+                AND conf1.projectId=#{query.projectId}
+            <if test="query.attrId != null and query.attrId != ''">
+                AND conf1.attrId = #{query.attrId}
+            </if>
+            <if test="query.style !=null and query.style!=''">
+                AND '1' = #{query.style}
+            </if>
+            <if test="query.type != null and query.type != ''">
+                AND conf1.deviceTypeId = #{query.type}
+            </if>
+            <if test="query.attrName != null and query.attrName != ''">
+                AND conf1.attrName like concat('%', #{query.attrName},'%')
+            </if>
+            <if test="query.attrCode != null and query.attrCode != ''">
+                AND conf1.attrCode like concat('%', #{query.attrCode},'%')
+            </if>
+        </where>
+        union all
+        select conf2.attrId,'2' style,conf2.deviceType type,
+        conf2.attrCode,attrName,conf2.remark from project_device_collect_cfg conf2
+        <where>
+            AND conf2.projectId=#{query.projectId}
+            <if test="query.attrId != null and query.attrId != ''">
+                AND conf2.attrId = #{query.attrId}
+            </if>
+            <if test="query.style !=null and query.style!=''">
+                AND '2' = #{query.style}
+            </if>
+            <if test="query.type != null and query.type != ''">
+                AND conf2.deviceType = #{query.type}
+            </if>
+            <if test="query.attrName != null and query.attrName != ''">
+                AND conf2.attrName like concat('%', #{query.attrName},'%')
+            </if>
+            <if test="query.attrCode != null and query.attrCode != ''">
+                AND conf2.attrCode like concat('%', #{query.attrCode},'%')
+            </if>
+        </where>
+        union all
+        select conf3.attrId,'3' style,conf3.personType type,
+        conf3.attrCode,conf3.attrName,conf3.remark from project_person_attr_conf conf3
+        <where>
+            AND  conf3.projectId=#{query.projectId}
+            <if test="query.attrId != null and query.attrId != ''">
+                AND conf3.attrId = #{query.attrId}
+            </if>
+            <if test="query.style !=null and query.style!=''">
+                AND '3'= #{query.style}
+            </if>
+            <if test="query.type != null and query.type != ''">
+                AND conf3.personType = #{query.type}
+            </if>
+            <if test="query.attrName != null and query.attrName != ''">
+                AND conf3.attrName like concat('%', #{query.attrName},'%')
+            </if>
+            <if test="query.attrCode != null and query.attrCode != ''">
+                AND conf3.attrCode like concat('%', #{query.attrCode},'%')
+            </if>
+        </where>
+    </select>
+</mapper>

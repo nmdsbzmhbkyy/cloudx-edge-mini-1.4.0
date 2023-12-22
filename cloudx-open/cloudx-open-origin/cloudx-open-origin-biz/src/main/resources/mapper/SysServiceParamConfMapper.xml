@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.SysServiceParamConfMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.SysServiceParamConf" id="SysDeviceParamConfMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="paramCategoryId" column="paramCategoryId" jdbcType="VARCHAR"/>
+        <result property="paramCateoryName" column="paramCateoryName" jdbcType="VARCHAR"/>
+        <result property="paramId" column="paramId" jdbcType="VARCHAR"/>
+        <result property="paramName" column="paramName" jdbcType="VARCHAR"/>
+        <result property="isMandatory" column="isMandatory" jdbcType="VARCHAR"/>
+        <result property="columnType" column="columnType" jdbcType="VARCHAR"/>
+        <result property="valueRange" column="valueRange" jdbcType="VARCHAR"/>
+        <result property="remark" column="remark" jdbcType="VARCHAR"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="listParamConf" resultType="com.aurine.cloudx.open.origin.vo.SysServiceParamConfVo">
+	SELECT
+	(
+		WITH recursive r AS (
+		SELECT
+			*,
+			'groupField'
+		FROM
+			sys_service_param_conf pc1
+		WHERE
+			pc1.paramId = sys_service_param_conf.paramId UNION ALL
+		SELECT
+			pc2.*,
+			'groupField'
+		FROM
+			sys_service_param_conf pc2,
+			r
+		WHERE
+			pc2.paramId = r.parParamId
+		) SELECT
+			GROUP_CONCAT( paramId ) fieldNames
+		FROM r
+	) AS props,sys_service_param_conf.*  FROM sys_service_param_conf
+	WHERE
+		sys_service_param_conf.serviceId IN
+        <foreach collection="serviceIdList" item="serviceId" index="index" open="(" close=")" separator=",">
+            #{serviceId}
+        </foreach>
+    </select>
+
+    <select id="listParamConfV2" resultType="com.aurine.cloudx.open.origin.vo.SysServiceParamConfVo">
+
+		SELECT CONCAT(rootServiceId,parParamIds) props, cusTable.* FROM (
+		SELECT
+		(
+		WITH recursive r AS (
+		SELECT
+		*
+		FROM
+		sys_service_param_conf pc1
+		WHERE
+		pc1.serviceId = sys_service_param_conf.serviceId UNION ALL
+		SELECT
+		pc2.*
+		FROM
+		sys_service_param_conf pc2,
+		r
+		WHERE
+		pc2.serviceId = r.parServId
+		) SELECT
+		serviceId
+		FROM r
+		ORDER BY servLevel
+		LIMIT 1
+		) AS rootServiceId,
+		(
+		WITH recursive r AS (
+		SELECT
+		*
+		FROM
+		sys_service_param_conf pc1
+		WHERE
+		pc1.paramId = sys_service_param_conf.paramId UNION ALL
+		SELECT
+		pc2.*
+		FROM
+		sys_service_param_conf pc2,
+		r
+		WHERE
+		pc2.paramId = r.parParamId
+		) SELECT
+		REPLACE(CONCAT('/',GROUP_CONCAT(DISTINCT paramId ORDER BY servLevel)),',','/') fieldNames
+		FROM r
+		) AS parParamIds,sys_service_param_conf.*
+		FROM sys_service_param_conf
+		) cusTable
+		WHERE
+		cusTable.rootServiceId IN
+		<foreach collection="serviceIdList" item="serviceId" index="index" open="(" close=")" separator=",">
+			#{serviceId}
+		</foreach>
+		AND parServId IN (
+		  	'0',
+			<foreach collection="serviceIdList" item="serviceId" index="index" separator=",">
+				#{serviceId}
+			</foreach>
+		 )
+		AND cusTable.isVisible = 1
+		ORDER by servLevel, seq
+    </select>
+
+
+	<select id="listServiceIdByParServiceId" resultType="com.aurine.cloudx.open.origin.vo.SysServiceParamConfVo">
+		with recursive r as
+		(
+			select sspc1.serviceId, sspc1.parServId, sspc1.paramId  from sys_service_param_conf sspc1 where sspc1.serviceId in
+			<foreach collection="serviceIdList" item="serviceId" index="index" open="(" close=")" separator=",">
+				#{serviceId}
+			</foreach>
+			union all
+			select sspc2.serviceId, sspc2.parServId, sspc2.paramId from sys_service_param_conf sspc2, r where sspc2.parParamId = r.paramId
+		)select DISTINCTROW serviceId,parServId from r;
+	</select>
+
+    <select id="getRebootServiceIdList" resultType="java.lang.String">
+		SELECT
+			rootServiceId
+		FROM
+			(
+			SELECT
+				(
+					WITH recursive r AS (
+					SELECT
+						*
+					FROM
+						sys_service_param_conf pc1
+					WHERE
+						pc1.serviceId = sys_service_param_conf.serviceId UNION ALL
+					SELECT
+						pc2.*
+					FROM
+						sys_service_param_conf pc2,
+						r
+					WHERE
+						pc2.serviceId = r.parServId
+					) SELECT
+					serviceId
+				FROM
+					r
+				ORDER BY
+					servLevel
+					LIMIT 1
+				) AS rootServiceId,
+				sys_service_param_conf.*
+			FROM
+				sys_service_param_conf
+			) rootServiceInfoTable
+			WHERE isReboot != 0
+			GROUP BY rootServiceId
+	</select>
+
+
+</mapper>

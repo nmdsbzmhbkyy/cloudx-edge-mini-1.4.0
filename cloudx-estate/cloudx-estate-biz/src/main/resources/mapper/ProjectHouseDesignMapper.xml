@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectHouseDesignMapper">
+
+    <resultMap id="projectHouseDesignMap" type="com.aurine.cloudx.estate.entity.ProjectHouseDesign">
+        <id property="seq" column="seq"/>
+        <result property="projectId" column="projectId"/>
+        <result property="designId" column="designId"/>
+        <result property="roomTotal" column="roomTotal"/>
+        <result property="hallTotal" column="hallTotal"/>
+        <result property="bathroomTotal" column="bathroomTotal"/>
+        <result property="kitchenTotal" column="kitchenTotal"/>
+        <result property="desginDesc" column="desginDesc"/>
+        <result property="area" column="area"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="getTopOne" resultType="com.aurine.cloudx.estate.entity.ProjectHouseDesign">
+        SELECT *
+        FROM project_house_design
+        WHERE projectId = #{projectId}
+        limit 1
+    </select>
+</mapper>

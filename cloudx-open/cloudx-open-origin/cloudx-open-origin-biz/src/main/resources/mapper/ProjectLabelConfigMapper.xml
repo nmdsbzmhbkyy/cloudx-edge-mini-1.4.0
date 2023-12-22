@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectLabelConfigMapper">
+
+    <resultMap id="labelConfigMap" type="com.aurine.cloudx.open.origin.entity.ProjectLabelConfig">
+        <id property="labelId" column="labelId"/>
+        <result property="labelCode" column="labelCode"/>
+        <result property="labelName" column="labelName"/>
+        <result property="labelColor" column="labelColor"/>
+        <result property="remark" column="remark"/>
+        <result property="useCount" column="useCount"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="select" resultType="com.aurine.cloudx.open.origin.vo.ProjectLabelConfigVo">
+        select * from (SELECT
+        c.labelId,
+        c.labelCode,
+        c.labelName,
+        c.labelColor,
+        c.remark,
+        c.projectId,
+        c.createTime,
+        c.operator,
+        IFNULL(co.num,0) AS useCount,
+        if(c.projectId=1,
+        <choose>
+            <when test="query.projectId!=null and  query.projectId==1">
+                ps.staffName
+            </when>
+            <otherwise>
+                '系统'
+            </otherwise>
+        </choose>,ps.staffName) as creatorName
+        FROM
+        project_label_config c
+        LEFT JOIN (
+        SELECT
+        cfg.labelId id,
+        count(1) num
+        FROM
+        project_label_config cfg
+        JOIN project_person_label lab ON cfg.labelId = lab.labelId
+        GROUP BY
+        cfg.labelId
+        ) AS co ON c.labelId = co.id
+        left join project_staff ps on ps.userId=c.operator
+        AND ps.projectId = #{query.projectId}
+        <where>
+            <if test="query.labelName != null and query.labelName != ''">
+                AND c.labelName like concat('%', #{query.labelName},'%')
+            </if>
+            <if test="query.tenantId != null">
+                AND c.tenant_id = #{query.tenantId}
+            </if>
+            <if test="query.projectId != null">
+                AND (c.projectId = #{query.projectId} or c.projectId=1)
+            </if>
+        </where>
+       <!-- <if test="query.projectId!=1">
+            UNION ALL
+            SELECT
+            c.labelId,
+            c.labelCode,
+            c.labelName,
+            c.labelColor,
+            c.remark,
+            c.projectId,
+            c.createTime,
+            c.operator,
+            IFNULL(co.num,0) AS useCount,
+            if(c.projectId=1,
+            <choose>
+                <when test="query.projectId!=null and  query.projectId==1">
+                    ps.staffName
+                </when>
+                <otherwise>
+                    '系统'
+                </otherwise>
+            </choose>,ps.staffName) as creatorName
+            FROM
+            project_label_config c
+            LEFT JOIN (
+            SELECT
+            cfg.labelId id,
+            count(1) num
+            FROM
+            project_label_config cfg
+            JOIN project_person_label lab ON cfg.labelId = lab.labelId
+            GROUP BY
+            cfg.labelId
+            ) AS co ON c.labelId = co.id
+            left join project_staff ps on ps.userId=c.operator
+            AND ps.projectId = #{query.projectId}
+            <where>
+                <if test="query.labelName != null and query.labelName != ''">
+                    AND c.labelName like concat('%', #{query.labelName},'%')
+                </if>
+                <if test="query.tenantId != null">
+                    AND c.tenant_id = 1
+                </if>
+                <if test="query.projectId != null">
+                    AND c.projectId = 1
+                </if>
+            </where>
+        </if-->
+        )a
+       order by a.createTime desc
+    </select>
+
+    <insert id="initInsert">
+        INSERT
+        INTO
+        project_label_config
+        (labelId, labelName, projectId, tenant_id)
+        VALUES
+        (#{param.labelId}, #{param.labelName}, #{projectId}, #{tenantId})
+    </insert>
+
+    <select id="selectByDefault" resultType="com.aurine.cloudx.open.origin.entity.ProjectLabelConfig">
+        SELECT
+        *
+        FROM
+        project_label_config
+        <where>
+            projectId = #{projectId}
+            AND labelName IN (#{oldMan},#{arrears},#{difficulty})
+        </where>
+    </select>
+
+    <select id="selectByTemplate" resultType="com.aurine.cloudx.open.origin.entity.ProjectLabelConfig">
+        SELECT
+        labelId,
+        labelName
+        FROM
+        project_label_config
+        <where>
+            AND projectId = 0
+        </where>
+    </select>
+
+    <select id="selectByLabelId" resultType="com.aurine.cloudx.open.origin.vo.ProjectLabelConfigVo">
+        SELECT
+        *
+        FROM
+        project_label_config
+        <where>
+            labelId =#{labelId}
+        </where>
+    </select>
+    <select id="selectProjectTemplate" resultType="com.aurine.cloudx.open.origin.vo.ProjectLabelConfigVo">
+        SELECT
+        *
+        FROM
+        project_label_config
+        <where>
+             projectId != 1
+            and  labelName = #{labelName}
+            and  projectId = #{projectId}
+        </where>
+    </select>
+</mapper>

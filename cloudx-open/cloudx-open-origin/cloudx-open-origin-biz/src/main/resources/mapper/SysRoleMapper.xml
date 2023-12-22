@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.SysRoleMapper">
+
+    <select id="getFirstByProjectId" resultMap="sysRoleMap" resultType="com.pig4cloud.pigx.admin.api.entity.SysRole">
+        SELECT
+            sr.*
+        FROM
+            pigxx.sys_role sr
+        WHERE
+            sr.dept_id = #{projectId} AND sr.ds_type = '0' AND sr.del_flag = '0'
+            LIMIT 0,1
+    </select>
+
+    <resultMap id="sysRoleMap" type="com.pig4cloud.pigx.admin.api.entity.SysRole">
+        <id property="roleId" column="role_id"/>
+        <result property="roleName" column="role_name"/>
+        <result property="roleCode" column="role_code"/>
+        <result property="roleDesc" column="role_desc"/>
+        <result property="dsType" column="ds_type"/>
+        <result property="dsScope" column="ds_scope"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="deptId" column="dept_id"/>
+    </resultMap>
+</mapper>

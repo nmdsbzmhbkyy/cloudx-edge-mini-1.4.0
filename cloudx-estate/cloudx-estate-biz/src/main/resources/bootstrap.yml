@@ -1,0 +1,31 @@
+server:
+  port: 4001
+
+spring:
+  application:
+    name: '@artifactId@'
+  cloud:
+    nacos:
+      discovery:
+        #        server-addr: ${NACOS_HOST:10.110.18.201}:${NACOS_PORT:30848}
+        server-addr: ${NACOS_HOST:pigx-register}:${NACOS_PORT:8848}
+      #        server-addr: ${NACOS_HOST:10.110.22.2}:${NACOS_PORT:8849}
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        file-extension: yml
+        shared-configs:
+          - application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+  autoconfigure:
+    exclude: org.springframework.cloud.gateway.config.GatewayAutoConfiguration,org.springframework.cloud.gateway.config.GatewayClassPathWarningAutoConfiguration
+  profiles:
+    #    在 Spring 的配置文件中，我们可以通过 spring.profiles.active 属性来指定当前激活的配置文件。在配置中，spring.profiles.active 的值为 '@profiles.active@'，表示使用 @profiles.active@ 占位符来引用激活的配置文件名。
+    #    在 Spring 启动时，它会根据激活的配置文件来加载相应的配置。例如，如果当前激活的配置文件是 dev，那么 spring.profiles.active 的值将被替换为 dev，从而加载 application-dev.yml 文件中的配置。
+    #    使用占位符可以方便地实现配置的动态切换，而不需要手动修改配置文件。当需要切换到其他配置文件时，只需修改 spring.profiles.active 的值即可。例如，将 active 属性设置为 prod 将会加载 application-prod.yml 文件中的配置。
+    active: '@profiles.active@'
+logging:
+  config: classpath:logback-@profiles.active@.xml
+
+thirdparty:
+  intercom:
+    tencent:
+      version: v1

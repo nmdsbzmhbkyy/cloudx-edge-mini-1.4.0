@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPersonPlanRelMapper">
+
+    <resultMap id="projectPersonPlanRelMap" type="com.aurine.cloudx.estate.entity.ProjectPersonPlanRel">
+
+        <result property="personType" column="personType"/>
+        <result property="personId" column="personId"/>
+        <result property="planId" column="planId"/>
+        <result property="effTime" column="effTime"/>
+        <result property="expTime" column="expTime"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <select id="getTodayExpList" resultType="com.aurine.cloudx.estate.entity.ProjectPersonPlanRel">
+        SELECT
+        	*
+        FROM
+        	project_person_plan_rel
+        WHERE
+        DATE_FORMAT(expTime, '%Y-%m-%d') = DATE_FORMAT(NOW(), '%Y-%m-%d')
+    </select>
+
+    <select id="getExpList" resultType="com.aurine.cloudx.estate.entity.ProjectPersonPlanRel">
+        select * from project_person_plan_rel rel where rel.expTime <![CDATA[<=]]> curdate() and rel.isActive =1
+
+    </select>
+
+
+    <select id="getAllTimeOutRightPerson" resultType="java.lang.String">
+        SELECT
+            personId
+        FROM
+        (
+            SELECT
+                person_plan_rel.personId,
+                (IFNULL( cardInfo.cardNum, 0 ) + IFNULL( faceInfo.faceNum, 0 ) + IFNULL( PasswdInfo.passwdNum, 0 )) certNum
+            FROM
+                project_person_plan_rel person_plan_rel
+            LEFT JOIN (
+                SELECT
+                person.personId,
+                COUNT( * ) cardNum
+                FROM
+                project_person_info person
+                LEFT JOIN project_card card ON card.personId = person.personId
+                LEFT JOIN project_right_device right_device ON right_device.certMediaId = card.cardId
+                WHERE
+                right_device.seq IS NOT NULL
+                AND right_device.dlStatus IN ( 0, 1, 3 )
+                GROUP BY
+                person.personId
+            ) cardInfo ON cardInfo.personId = person_plan_rel.personId
+            LEFT JOIN (
+                SELECT
+                person.personId,
+                COUNT( * ) faceNum
+                FROM
+                project_person_info person
+                LEFT JOIN project_face_resources face ON face.personId = person.personId
+                LEFT JOIN project_right_device right_device ON right_device.certMediaId = face.faceId
+                WHERE
+                right_device.seq IS NOT NULL
+                AND right_device.dlStatus IN ( 0, 1, 3 )
+                GROUP BY
+                person.personId
+            ) faceInfo ON faceInfo.personId = person_plan_rel.personId
+            LEFT JOIN (
+                SELECT
+                person.personId,
+                COUNT( * ) passwdNum
+                FROM
+                project_person_info person
+                LEFT JOIN project_passwd passwd ON passwd.personId = person.personId
+                LEFT JOIN project_right_device right_device ON right_device.certMediaId = passwd.passId
+                WHERE
+                right_device.seq IS NOT NULL
+                AND right_device.dlStatus IN ( 0, 1, 3 )
+                GROUP BY
+                person.personId
+            ) passwdInfo ON passwdInfo.personId = person_plan_rel.personId
+            WHERE
+                expTime &lt;= ADDDATE(STR_TO_DATE( #{timeStr}, '%Y-%m-%d %H:%i' ), interval 60 second)
+--                 expTime &lt;= STR_TO_DATE( '2021-02-07 11:30', '%Y-%m-%d %H:%i' )
+            GROUP BY person_plan_rel.personId
+        ) personPlan
+        WHERE certNum != 0
+    </select>
+
+
+    <select id="getAllTimeOutRightStaff" resultType="java.lang.String">
+        SELECT
+            personId
+        FROM
+            (
+            SELECT
+            person_plan_rel.personId,
+            (
+            IFNULL( cardInfo.cardNum, 0 ) + IFNULL( faceInfo.faceNum, 0 ) + IFNULL( PasswdInfo.passwdNum, 0 )
+            ) certNum
+            FROM
+            project_person_plan_rel person_plan_rel
+        LEFT JOIN (
+            SELECT
+            staff.staffId,
+            COUNT( * ) cardNum
+            FROM
+            project_staff staff
+            LEFT JOIN project_card card ON card.personId = staff.staffId
+            LEFT JOIN project_right_device right_device ON right_device.certMediaId = card.cardId
+            WHERE
+            right_device.seq IS NOT NULL
+            AND right_device.dlStatus IN ( 0, 1, 3 )
+            GROUP BY
+            staff.staffId
+        ) cardInfo ON cardInfo.staffId = person_plan_rel.personId
+        LEFT JOIN (
+            SELECT
+            staff.staffId,
+            COUNT( * ) faceNum
+            FROM
+            project_staff staff
+            LEFT JOIN project_face_resources face ON face.personId = staff.staffId
+            LEFT JOIN project_right_device right_device ON right_device.certMediaId = face.faceId
+            WHERE
+            right_device.seq IS NOT NULL
+            AND right_device.dlStatus IN ( 0, 1, 3 )
+            GROUP BY
+            staff.staffId
+        ) faceInfo ON faceInfo.staffId = person_plan_rel.personId
+        LEFT JOIN (
+            SELECT
+            staff.staffId,
+            COUNT( * ) passwdNum
+            FROM
+            project_staff staff
+            LEFT JOIN project_passwd passwd ON passwd.personId = staff.staffId
+            LEFT JOIN project_right_device right_device ON right_device.certMediaId = passwd.passId
+            WHERE
+            right_device.seq IS NOT NULL
+            AND right_device.dlStatus IN ( 0, 1, 3 )
+            GROUP BY
+            staff.staffId
+        ) passwdInfo ON passwdInfo.staffId = person_plan_rel.personId
+        WHERE
+              expTime &lt;= ADDDATE(STR_TO_DATE( #{timeStr}, '%Y-%m-%d %H:%i' ), interval 60 second)
+        GROUP BY
+        person_plan_rel.personId
+        ) personPlan
+        WHERE certNum != 0
+
+    </select>
+
+</mapper>

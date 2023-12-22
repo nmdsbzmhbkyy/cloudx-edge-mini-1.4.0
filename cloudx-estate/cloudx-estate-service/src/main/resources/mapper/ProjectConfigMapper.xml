@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectConfigMapper">
+
+    <resultMap id="projectConfigMap" type="com.aurine.cloudx.estate.entity.ProjectConfig">
+        <result property="alarmTimeLimit" column="alarmTimeLimit"/>
+        <result property="serviceInitalStatus" column="serviceInitalStatus"/>
+        <result property="projectId" column="projectId"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <insert id="init">
+        INSERT into project_config (projectId, tenant_id, operator, alarmTimeLimit, serviceInitalStatus, visitorAudit,
+                                    authAudit)
+        VALUES (#{entity.projectId}, 1, #{entity.operator},
+                #{entity.alarmTimeLimit}, #{entity.serviceInitalStatus}
+                   , #{entity.visitorAudit}, #{entity.authAudit})
+
+    </insert>
+</mapper>

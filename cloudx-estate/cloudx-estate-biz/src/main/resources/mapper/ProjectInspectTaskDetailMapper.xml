@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectInspectTaskDetailMapper">
+
+    <select id="listByTaskId" resultType="com.aurine.cloudx.estate.vo.ProjectInspectTaskDetailVo">
+        SELECT task_detail.*,
+               (SELECT COUNT(*)
+                FROM project_inspect_point_device_rel device
+                WHERE device.pointId = task_detail.pointId)           'deviceNum',
+               (
+                   SELECT COUNT(*)
+                   FROM project_inspect_detail_device
+                            LEFT JOIN project_inspect_detail_check_item
+                                      ON project_inspect_detail_device.deviceDetailId =
+                                         project_inspect_detail_check_item.deviceDetailId
+                   WHERE project_inspect_detail_device.detailId = task_detail.detailId
+                     AND project_inspect_detail_device.projectId = task_detail.projectId
+               )                                                        'checkItemNum',
+               (SELECT checkInTime
+                FROM project_inspect_checkin_detail checkin_detail
+                WHERE checkin_detail.detailId = task_detail.detailId
+                  AND checkin_detail.projectId = task_detail.projectId
+                LIMIT 1)                                                'checkInTime',
+               (SELECT GROUP_CONCAT(checkInType)
+                FROM project_inspect_checkin_detail checkin_detail
+                WHERE checkin_detail.detailId = task_detail.detailId
+                  AND checkin_detail.projectId = task_detail.projectId) 'checkInTypes'
+        FROM project_inspect_task_detail task_detail
+        WHERE task_detail.taskId = #{taskId}
+        order by task_detail.seq
+    </select>
+    <select id="listCheckInDetailById" resultType="java.lang.String">
+        select pip.checkInType
+        from aurine.project_inspect_task_detail d
+                 left join project_inspect_task pit on d.taskId = pit.taskId
+                 left join project_inspect_plan pip on pit.inspectPlanId = pip.planId
+        where d.detailId = #{detailId}
+    </select>
+
+</mapper>

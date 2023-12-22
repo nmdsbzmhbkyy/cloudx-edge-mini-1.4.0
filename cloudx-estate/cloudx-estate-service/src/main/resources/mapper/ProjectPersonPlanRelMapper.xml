@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPersonPlanRelMapper">
+
+    <resultMap id="projectPersonPlanRelMap" type="com.aurine.cloudx.estate.entity.ProjectPersonPlanRel">
+
+        <result property="personType" column="personType"/>
+        <result property="personId" column="personId"/>
+        <result property="planId" column="planId"/>
+        <result property="effTime" column="effTime"/>
+        <result property="expTime" column="expTime"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <select id="getTodayExpList" resultType="com.aurine.cloudx.estate.entity.ProjectPersonPlanRel">
+        SELECT
+        	*
+        FROM
+        	project_person_plan_rel
+        WHERE
+        DATE_FORMAT(expTime, '%Y-%m-%d') = DATE_FORMAT(NOW(), '%Y-%m-%d')
+    </select>
+
+    <select id="getAllTimeOutRight" resultType="java.lang.String">
+        SELECT
+        personId
+        FROM
+        (
+            SELECT
+            person_plan_rel.personId,
+            ( COUNT( DISTINCT cardId ) + COUNT( DISTINCT faceId ) + COUNT( DISTINCT passId ) ) num
+            FROM
+            project_person_plan_rel person_plan_rel
+            LEFT JOIN project_card card ON card.personId = person_plan_rel.personId
+            LEFT JOIN project_face_resources face ON face.personId = person_plan_rel.personId
+            LEFT JOIN project_passwd passwd ON passwd.personId = person_plan_rel.personId
+            WHERE
+            expTime &lt;= STR_TO_DATE( '2020-12-18 17:00', '%Y-%m-%d %H:%i' )
+            GROUP BY person_plan_rel.personId
+        ) personPlan
+        WHERE
+        num != 0
+    </select>
+</mapper>

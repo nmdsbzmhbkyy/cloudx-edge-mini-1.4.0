@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectBillingInfoMapper">
+    <update id="updateListByBillMonth">
+        update project_billing_info
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="payStatus =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.payStatus!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.payStatus}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="paidBy =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.paidBy!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.paidBy}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="payTime =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.payTime!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.payTime}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="payOrderNO =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.payOrderNO!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.payOrderNO}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="promotionAmount =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.promotionAmount!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.promotionAmount}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix="actAmount =case" suffix="end,">
+                <foreach collection="list" item="item" index="index">
+                    <if test="item.actAmount!=null">
+                        when houseId=#{item.houseId} and feeId=#{item.feeId}
+                        and date(feeCycleStart) &gt;= #{item.feeCycleStart,jdbcType=DATE}
+                        and date(feeCycleEnd) &lt;= #{item.feeCycleEnd,jdbcType=DATE}
+                        then #{item.actAmount}
+                    </if>
+                </foreach>
+            </trim>
+        </trim>
+        where houseId in
+        <foreach collection="list" item="item" index="index" separator="," open="(" close=")">
+            #{item.houseId}
+        </foreach>
+        and payStatus = '1'
+    </update>
+
+
+    <select id="pageBillTotal" resultType="com.aurine.cloudx.estate.vo.ProjectHouseFeeTotalVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectHouseFeeTotalFormVo">
+        SELECT building.projectId,
+        building.entityId buildingId,
+        (with recursive r as
+        (
+        select *
+        from project_frame_info pfi
+        where pfi.entityId = building.entityId
+        union all
+        select pfi.*
+        from project_frame_info pfi,
+        r
+        where pfi.entityId = r.puid
+        )
+        select group_concat(r.entityName order by level desc SEPARATOR '-')
+        from r
+        GROUP BY projectId
+        ) as buildingName,
+        unit.entityId unitId,
+        unit.entityName unitName,
+        house.entityId houseId,
+        house.entityName houseName,
+        info. totalPayableAmount,
+        info. totalActAmount,
+        info. totalPromotionAmount,
+        info. totalRefundAmount,
+        rel.checkInTime,
+        IF(info.uncollected is null, 0, info.uncollected) uncollected,
+        if(info.uncollectedNum is null, 0, info.uncollectedNum) uncollectedNum,
+        if(item.feeCout is null or item.feeCout = 0, '0', '1') haveSetFee,
+        if(info.uncollectedNum is null or info.uncollectedNum = 0, '1', '0') havePayUp
+        FROM project_frame_info building
+        left JOIN project_frame_info unit ON building.entityId = unit.puid and unit.isUnit=1
+        left JOIN project_frame_info house ON unit.entityId = house.puid and house.isHouse=1
+        left join (select houseId, min(checkInTime) checkInTime
+        from project_house_person_rel
+        where householdType = '1'
+        and status = '1'
+        group by houseId) rel
+        on rel.houseId = house.entityId
+        left join (
+        select houseId,
+        sum(if(payStatus = '1', payAbleAmount, 0)) uncollected,
+        sum(if(payStatus = '1',1,0)) uncollectedNum,
+        sum(if(payStatus in ('1','2','4'),payableAmount,0)) totalPayableAmount,
+        sum(if(payStatus in ('1','2','4'),actAmount,0)) totalActAmount,
+        sum(if(payStatus in ('1','2','4'),promotionAmount,0)) totalPromotionAmount,
+        sum(if(payStatus in ('3'),payableAmount,0)) totalRefundAmount
+        from project_billing_info
+        <where>
+            <if test="query!=null and  query.feeIds!=null and query.feeIds.size>0">
+                and feeId in
+                <foreach collection="query.feeIds" item="feeId" open="(" close=")" separator=",">
+                    #{feeId}
+                </foreach>
+            </if>
+        </where>
+        group by houseId
+        ) info on info.houseId = house.entityId
+        left join (select houseId, count(feeId) feeCout
+        from project_house_fee_item
+        group by houseId) item
+        on house.entityId = item.houseId
+        <where>
+            and house.entityId is not null and building.isBuilding=1
+            <if test="query!=null and query.haveSetFee!=null and query.haveSetFee!=''">
+                and if(item.feeCout is null or item.feeCout = 0, '0', '1')=#{query.haveSetFee}
+            </if>
+            <if test="query!=null and query.havePayUp!=null and query.havePayUp!=''">
+                and if(info.uncollectedNum is null or info.uncollectedNum = 0, '1', '0')=#{query.havePayUp}
+            </if>
+            <if test="query!=null and query.buildingName!=null and query.buildingName!=''">
+                and building.entityName like concat('%',#{query.buildingName},'%')
+            </if>
+            <if test="query!=null and query.unitName!=null and query.unitName!=''">
+                and unit.entityName like concat('%', #{query.unitName},'%')
+            </if>
+            <if test="query!=null and query.houseName!=null and query.houseName!=''">
+                and house.entityName like concat('%', #{query.houseName},'%')
+            </if>
+        </where>
+    </select>
+    <select id="pageBill" resultType="com.aurine.cloudx.estate.vo.ProjectBillingInfoVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectBillingInfoFormVo">
+        select info.* ,
+        IF(pfc.isFixAmount = '0', concat('单价: ', pfc.unitPrice, '元'),
+        concat('金额: ', pfc.fixAmount, '元')) unitString
+        from project_billing_info info
+        left join project_fee_conf pfc on info.feeId = pfc.feeId
+        <where>
+            and info.houseId = #{query.houseId}
+            <if test="query.beginDateString!=null and query.beginDateString !=''">
+                and info.billMonth &gt;= #{query.beginDateString}
+            </if>
+            <if test="query.endDateString!=null and query.endDateString !=''">
+                and info.billMonth &lt;= #{query.endDateString}
+            </if>
+            <if test="query.havePayUp!=null and query.havePayUp !=''">
+                and info.isPrestore = #{query.havePayUp}
+            </if>
+            <if test="query.feeName!=null and query.feeName !=''">
+                and info.feeName like concat('%',#{query.feeName},'%')
+            </if>
+            <if test="query.payOrderNo !=null and query.payOrderNo !=''">
+                and info.payOrderNo = #{query.payOrderNo}
+            </if>
+        </where>
+        order by info.payTime desc
+    </select>
+    <select id="listVo" resultType="com.aurine.cloudx.estate.vo.ProjectBillingInfoVo">
+        select
+        info.billingNo,
+        info.feeName,
+        info.isPrestore prestore,
+        info.billMonth,
+        info.houseId,
+        info.houseArea,
+        info.feeId,
+        info.feeCycleStart,
+        info.feeCycleEnd,
+        info.paidBy,
+        info.payTime,
+        info.payAbleAmount,
+        info.promotionAmount,
+        info.actAmount,
+        info.payStatus,
+        info.payOrderNO,
+        info.unitPrice,
+        info.operator,
+        info.createTime,
+        info.updateTime,
+        IF(pfc.isFixAmount = '0', concat('单价: ', pfc.unitPrice, '元'),
+        concat('金额: ', pfc.fixAmount, '元')) unitString,
+        if((select count(pb.billingNo)
+        from project_billing_info pb
+        where pb.payStatus = '1' and pb.houseId=info.houseId
+        and STR_TO_DATE(pb.billMonth, '%Y%m') &lt; date_sub(now(), interval 1 MONTH)
+        ) &gt; 0, '1', '0') lastHave
+        from project_billing_info info left join project_fee_conf pfc on info.feeId = pfc.feeId
+        <where>
+            and info.houseId = #{houseId}
+            <if test="payStatusList!=null and payStatusList.size>0">
+                and info.payStatus in
+                <foreach collection="payStatusList" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="billIds!=null and billIds.size>0">
+                and info.billingNo in
+                <foreach collection="billIds" item="billingNo" open="(" close=")" separator=",">
+                    #{billingNo}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <select id="listOnDeposit" resultType="com.aurine.cloudx.estate.vo.ProjectBillingInfoVo">
+        select a.*,
+        IF(pfc.isFixAmount = '0', concat('单价: ', pfc.unitPrice, '元'),
+        concat('金额: ', pfc.fixAmount, '元')) unitString
+        from project_billing_info a
+        left join project_fee_conf pfc on a.feeId = pfc.feeId
+        where a.houseId = #{id}
+        and a.payStatus = '2'
+        and pfc.feeType = '4'
+    </select>
+
+
+</mapper>

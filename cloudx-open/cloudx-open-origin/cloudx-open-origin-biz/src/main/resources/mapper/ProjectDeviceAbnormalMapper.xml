@@ -1,0 +1,33 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectDeviceAbnormalMapper">
+
+
+    <select id="fetchList" resultType="com.aurine.cloudx.open.origin.entity.ProjectDeviceAbnormal">
+        SELECT
+            *
+        FROM
+            project_device_abnormal
+        <where>
+            <if test="query.abnormalCode != null and query.abnormalCode != ''">
+                AND FIND_IN_SET( #{query.abnormalCode}, abnormalCode )
+            </if>
+            <if test="query.accessMethod != null and query.accessMethod != ''">
+                AND accessMethod = #{query.accessMethod}
+            </if>
+            <if test="query.deviceType != null and query.deviceType != ''">
+                AND deviceType = #{query.deviceType}
+            </if>
+            <if test="query.dStatus != null and query.dStatus != ''">
+                AND dStatus = #{query.dStatus}
+            </if>
+            <if test="query.sn != null and query.sn != ''">
+                AND sn LIKE CONCAT('%', #{query.sn}, '%')
+            </if>
+            <if test="query.deviceName != null and query.deviceName != ''">
+                AND deviceDesc LIKE CONCAT('%', #{query.deviceName}, '%')
+            </if>
+        </where>
+        ORDER BY seq DESC
+    </select>
+</mapper>

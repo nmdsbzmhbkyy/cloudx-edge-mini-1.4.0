@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectPersonLabelMapper">
+
+  <resultMap id="projectPersonLabelMap" type="com.aurine.cloudx.open.origin.entity.ProjectPersonLabel">
+                  <id property="seq" column="seq"/>
+                        <result property="personId" column="personId"/>
+                        <result property="credentialType" column="credentialType"/>
+                        <result property="credentialNo" column="credentialNo"/>
+                        <result property="labelId" column="labelId"/>
+                        <result property="infoFrom" column="infoFrom"/>
+                        <result property="infoLv" column="infoLv"/>
+            </resultMap>
+</mapper>

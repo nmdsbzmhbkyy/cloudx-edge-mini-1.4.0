@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPaymentRecordMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectPaymentRecord" id="ProjectPaymentRecordMap">
+        <result property="payOrderNo" column="payOrderNo" jdbcType="VARCHAR"/>
+        <result property="houseId" column="houseId" jdbcType="VARCHAR"/>
+        <result property="houseName" column="houseName" jdbcType="VARCHAR"/>
+        <result property="paidBy" column="paidBy" jdbcType="VARCHAR"/>
+        <result property="payableAmount" column="payableAmount" jdbcType="NUMERIC"/>
+        <result property="promotionAmount" column="promotionAmount" jdbcType="NUMERIC"/>
+        <result property="actAmount" column="actAmount" jdbcType="NUMERIC"/>
+        <result property="payType" column="payType" jdbcType="VARCHAR"/>
+        <result property="payTime" column="payTime" jdbcType="TIMESTAMP"/>
+        <result property="orderStatus" column="orderStatus" jdbcType="VARCHAR"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <select id="pageAll" resultType="com.aurine.cloudx.estate.entity.ProjectPaymentRecord">
+        select pcr.*
+        from project_payment_record pcr
+        <where>
+            <if test="query.orderStatus != null and query.orderStatus != ''">
+                and pcr.orderStatus = #{query.orderStatus}
+            </if>
+            <if test="query.houseName != null and query.houseName != ''">
+                and pcr.houseName LIKE concat('%', #{query.houseName},'%')
+            </if>
+            <if test="query.payType != null and query.payType != ''">
+                and pcr.payType = #{query.payType}
+            </if>
+            <if test="query.startTime != null">
+                AND date(pcr.payTime) <![CDATA[>=]]>
+                #{query.startTime,jdbcType=DATE}
+            </if>
+            <if test="query.endTime != null">
+                AND date(pcr.payTime) <![CDATA[<=]]>
+                #{query.endTime,jdbcType=DATE}
+            </if>
+            <if test="query.paidType != null and query.paidType !='' and query.paidType == '0'.toString() ">
+                and pcr.actAmount <![CDATA[>=]]> 0
+            </if>
+            <if test="query.paidType != null and query.paidType !='' and query.paidType == '1'.toString() ">
+                and pcr.actAmount <![CDATA[<]]> 0
+            </if>
+            <if test="query.accountId != null and query.accountId!= ''" >
+               and pcr.accountId =#{query.accountId,jdbcType=VARCHAR}
+            </if>
+            <if test="query.payOrderNo != null and query.payOrderNo!= ''" >
+                and pcr.payOrderNo LIKE concat('%', #{query.payOrderNo},'%')
+            </if>
+            <if test="query.billingNo != null and query.billingNo!= ''" >
+                and pcr.billingNo =#{query.billingNo,jdbcType=VARCHAR}
+            </if>
+        </where>
+        order by pcr.createTime desc
+    </select>
+
+    <select id="selectAllApp" resultType="com.aurine.cloudx.estate.vo.AppProjectPaymentRecordVo">
+
+        SELECT
+            t1.*,
+            t2.roomNumber
+        FROM
+            project_payment_record t1
+                LEFT JOIN (
+                SELECT
+                    m1.houseId,
+                    concat(m5.entityName,m4.entityName, m1.houseName ) roomNumber
+                FROM
+                    project_house_info m1
+                        LEFT JOIN project_frame_info m2 ON m1.houseId = m2.entityId
+                        LEFT JOIN project_frame_info m3 ON m3.entityId = m2.puid
+                        LEFT JOIN project_frame_info m4 ON m4.entityId = m3.puid
+                        left join project_frame_info m5 on m5.entityId = m4.puid
+            ) t2 ON t2.houseId = t1.houseId
+           where 1=1
+<!--        <if test="query.textString!=null and query.textString !=''">-->
+<!--            and t2.roomNumber like concat('%',#{query.textString},'%')-->
+<!--        </if>-->
+        <if test="query.textString != null and query.textString != ''">
+            and t1.houseName LIKE concat('%', #{query.textString},'%')
+        </if>
+        <if test="query.orderStatus!=null and query.orderStatus !=''">
+            and t1.orderStatus = #{query.orderStatus}
+        </if>
+        <if test="query.payDateString!=null and query.payDateString !=''">
+            and DATE_FORMAT(t1.payTime,'%Y-%m') =DATE_FORMAT(#{query.payDateString},'%Y-%m')
+        </if>
+        order by t1.payTime desc
+    </select>
+
+
+
+    <select id="getSumFeeByDate" resultType="java.lang.Double">
+        select sum(actAmount) from project_payment_record
+        where date(payTime) <![CDATA[>=]]> #{beginDate,jdbcType=DATE}
+        and date(payTime) <![CDATA[<=]]> #{endDate,jdbcType=DATE}
+    </select>
+    <select id="selectByPayOrderNo" resultMap="ProjectPaymentRecordMap">
+        select * from project_payment_record where payOrderNo = #{payOrderNo,jdbcType=VARCHAR}
+
+    </select>
+</mapper>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.aurine</groupId>
+	<artifactId>cert-adown-common-bom</artifactId>
+	<version>2107.0.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<properties>
+		<common.version>2107.0.0-SNAPSHOT</common.version>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.aurine</groupId>
+				<artifactId>cert-adown-common-data</artifactId>
+				<version>${common.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	<distributionManagement>
+		<!--发行仓库 -->
+		<repository>
+			<id>aurine-releases</id>
+			<name>Nexus Release Repository</name>
+			<url>http://10.110.18.202:8081/repository/aurine-release/</url>
+		</repository>
+		<!--快照仓库 -->
+		<snapshotRepository>
+			<id>aurine-snapshots</id>
+			<name>Nexus Snapshot Repository</name>
+			<url>http://10.110.18.202:8081/repository/aurine-snapshot/</url>
+		</snapshotRepository>
+	</distributionManagement>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>aliyun-plugin</id>
+			<url>https://maven.aliyun.com/repository/public</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+	<repositories>
+		<repository>
+			<id>aliyun</id>
+			<name>aliyun</name>
+			<url>http://maven.aliyun.com/nexus/content/groups/public</url>
+		</repository>
+		<repository>
+			<id>aurine-releases</id>
+			<name>Nexus Release Repository</name>
+			<url>http://10.110.18.202:8081/repository/aurine-release/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>aurine-snapshots</id>
+			<name>Nexus Snapshot Repository</name>
+			<url>http://10.110.18.202:8081/repository/aurine-snapshot/</url>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+			</snapshots>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</repository>
+	</repositories>
+</project>

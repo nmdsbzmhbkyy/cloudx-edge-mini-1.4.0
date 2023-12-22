@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectEntryExitLaneMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectEntryExitLane" id="ProjectEntryExitLaneMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="laneId" column="laneId" jdbcType="VARCHAR"/>
+        <result property="laneCode" column="laneCode" jdbcType="VARCHAR"/>
+        <result property="laneName" column="laneName" jdbcType="VARCHAR"/>
+        <result property="entryId" column="entryId" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="direction" column="direction" jdbcType="VARCHAR"/>
+        <result property="remark" column="remark" jdbcType="VARCHAR"/>
+        <result property="picUrl" column="picUrl" jdbcType="VARCHAR"/>
+        <result property="floor" column="floor" jdbcType="INTEGER"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="pageLane" resultType="com.aurine.cloudx.open.origin.dto.ProjectEntryExitLaneDto">
+        SELECT lane.* ,info.deviceName FROM project_entry_exit_lane lane left join aurine.project_device_info info on
+        lane.deviceId=info.deviceId where lane.parkId = #{parkId}
+        <if test="query.direction!='' and query.direction!=null">
+            and lane.direction = #{query.direction}
+        </if>
+        <if test="query.laneName!=null and query.laneName!=''">
+            and lane.laneName like concat('%', #{query.laneName},'%')
+        </if>
+    </select>
+
+    <select id="getLaneById" resultType="com.aurine.cloudx.open.origin.dto.ProjectEntryExitLaneDto">
+        SELECT lane.*, info.deviceName
+        FROM project_entry_exit_lane lane
+                 left join aurine.project_device_info info on lane.deviceId = info.deviceId
+        where lane.laneId = #{laneId}
+    </select>
+
+    <select id="listLaneById" resultType="com.aurine.cloudx.open.origin.dto.ProjectEntryExitLaneDto">
+        SELECT lane.* ,info.deviceName FROM project_entry_exit_lane lane
+            left join aurine.project_device_info info on lane.deviceId=info.deviceId
+        where lane.laneId in
+        <foreach collection="laneIdList" item="laneId" open="(" close=")" separator=",">
+            #{laneId}
+        </foreach>
+    </select>
+
+    <select id="getByParkId" resultType="com.aurine.cloudx.open.origin.dto.ProjectEntryExitLaneDto">
+        select *
+        from project_entry_exit_lane
+        where parkId = #{parkId}
+    </select>
+    <select id="getDeviceList" resultType="com.aurine.cloudx.open.origin.entity.ProjectDeviceInfo">
+        SELECT
+        device.deviceId,
+        device.thirdpartyCode
+        FROM
+        project_entry_exit_lane lane
+        LEFT JOIN aurine.project_device_info device ON lane.deviceId = device.deviceId
+        where lane.laneId in
+        <foreach item="item" collection="checkedLanes" separator="," open="(" close=")" index="">
+            #{item}
+        </foreach>
+    </select>
+    <select id="getParkingList" resultType="com.aurine.cloudx.open.origin.dto.ProjectParkingInfoDto">
+        SELECT
+        parking.company,
+        device.thirdpartyCode
+        FROM
+        project_entry_exit_lane lane
+        LEFT JOIN project_parking_info parking ON lane.parkId = parking.parkId
+        LEFT JOIN aurine.project_device_info device ON device.deviceId = lane.deviceId
+        where lane.deviceId in
+        <foreach item="item" collection="checkedLanes" separator="," open="(" close=")" index="">
+            #{item}
+        </foreach>
+    </select>
+    <select id="listVideoUrlByParkId" resultType="com.aurine.cloudx.open.origin.dto.ProjectEntryExitLaneDto">
+        SELECT
+            lane.*,
+            attr.attrValue videoUrl
+        FROM project_entry_exit_lane lane
+        LEFT JOIN aurine.project_device_attr attr ON (attr.deviceId = lane.deviceId and attr.attrCode = 'videoUrl')
+        where lane.parkId = #{parkId}
+
+    </select>
+
+    <select id="listPlateNumberInfoByLaneId" resultType="com.aurine.cloudx.open.origin.vo.PlateNumberInfo">
+        SELECT register.plateNumber, '0' AS plateNumberStatus
+        FROM project_entry_exit_lane lane LEFT JOIN project_par_car_register register ON register.laneList LIKE CONCAT('%', lane.laneId, '%')
+        WHERE register.plateNumber IS NOT NULL AND laneId = #{laneId} AND register.isCancelled = '0'
+        UNION ALL
+        SELECT black.plateNumber, '1' AS plateNumberStatus
+        FROM project_entry_exit_lane lane LEFT JOIN project_blacklist black ON black.parkId = lane.parkId
+        WHERE black.plateNumber IS NOT NULL AND laneId = #{laneId}
+    </select>
+
+</mapper>

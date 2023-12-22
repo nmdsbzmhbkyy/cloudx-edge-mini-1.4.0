@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectNoticeDeviceMapper">
+    <resultMap id="projectNoticeDeviceMap" type="com.aurine.cloudx.estate.entity.ProjectNoticeDevice">
+        <result property="projectId" column="projectId"/>
+        <result property="noticeId" column="noticeId"/>
+        <result property="deviceId" column="deviceId"/>
+        <result property="dlStatus" column="dlStatus"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+
+    <select id="pageNoticeDevice" resultType="com.aurine.cloudx.estate.vo.ProjectNoticeDeviceVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectNoticeDeviceVo">
+        select pnd.*,pdi.deviceName,pbi.entityName buildingName,pbi.entityId buildingId,pui.entityName
+        unitName,pui.entityId unitId from
+        aurine.project_notice_device pnd
+        left join aurine.project_device_info pdi on pdi.deviceId=pnd.deviceId
+        left join aurine.project_frame_info pbi on pbi.entityId=pdi.buildingId
+        left join aurine.project_frame_info pui on pui.entityId=pdi.unitId
+        <where>
+            and pnd.noticeId= #{query.noticeId}
+            <if test="query.dlStatus !=null and query.dlStatus!=''">
+                and pnd.dlStatus= #{query.dlStatus}
+            </if>
+            <if test="query.deviceName!=null and query.deviceName!=''">
+                and pdi.deviceName like concat('%',#{query.deviceName},'%')
+            </if>
+            <if test="query.buildingName!=null and query.buildingName!=''">
+                and pbi.entityName like concat('%',#{query.buildingName},'%')
+            </if>
+            <if test="query.unitName!=null and query.unitName!=''">
+                and pui.entityName like concat('%',#{query.unitName},'%')
+            </if>
+        </where>
+    </select>
+
+
+</mapper>

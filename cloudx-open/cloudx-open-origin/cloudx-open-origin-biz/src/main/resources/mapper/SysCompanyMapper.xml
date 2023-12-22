@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.SysCompanyMapper">
+    <resultMap id="companyMap" type="com.aurine.cloudx.open.origin.entity.SysCompany">
+        <id property="companyId" column="companyId"/>
+        <result property="companyName" column="companyName"/>
+        <result property="contactPerson" column="contactPerson"/>
+        <result property="contactPhone" column="contactPhone"/>
+        <result property="email" column="email"/>
+        <result property="provinceCode" column="provinceCode"/>
+        <result property="cityCode" column="cityCode"/>
+        <result property="districtCode" column="districtCode"/>
+        <result property="addr" column="addr"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <!--    平台管理员分页查询集团-->
+    <select id="pageCompany" resultType="com.aurine.cloudx.open.origin.entity.SysCompany"
+            parameterType="com.aurine.cloudx.open.origin.entity.SysCompany">
+        select * from aurine.sys_company c
+        <where>
+            <if test="query.companyId!=null ">
+                and c.companyId = #{query.companyId}
+            </if>
+            <if test="query.companyName!=null and query.companyName != '' ">
+                and c.companyName like concat('%',#{query.companyName},'%')
+            </if>
+            <if test="query.contactPerson!=null and query.contactPerson != '' ">
+                and c.contactPerson like concat('%',#{query.contactPerson},'%')
+            </if>
+            <if test="query.contactPhone!=null and query.contactPhone != '' ">
+                and c.contactPhone like concat(#{query.contactPhone},'%')
+            </if>
+            <if test="query.email!=null and query.email != '' ">
+                and c.email like concat(#{query.email},'%')
+            </if>
+            <if test="query.provinceCode!=null and query.provinceCode != '' ">
+                and c.provinceCode = #{query.provinceCode}
+            </if>
+            <if test="query.cityCode!=null and query.cityCode != '' ">
+                and c.cityCode = #{query.cityCode}
+            </if>
+            <if test="query.districtCode!=null and query.districtCode != '' ">
+                and c.districtCode = #{query.districtCode}
+            </if>
+            <if test="query.addr!=null and query.addr != '' ">
+                and c.addr like concat(#{query.addr},'%')
+            </if>
+            <if test="query.operator!=null  ">
+                and c.operator = #{query.operator}
+            </if>
+        </where>
+        order by c.createTime desc
+    </select>
+    <select id="findByGroupOrProjectId" resultType="com.aurine.cloudx.open.origin.entity.SysCompany">
+        select c.*
+        from aurine.sys_company c
+                 inner join pigxx.sys_dept_relation r on r.ancestor = c.companyId
+                 inner join pigxx.sys_dept d on d.dept_id = c.companyId and d.dept_type_id = '1'
+        where d.del_flag = '0'
+          and r.descendant = #{id}
+        order by c.createTime desc
+    </select>
+
+</mapper>

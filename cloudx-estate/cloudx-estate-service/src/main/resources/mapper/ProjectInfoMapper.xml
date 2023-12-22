@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectInfoMapper">
+
+    <resultMap id="projectInfoMap" type="com.aurine.cloudx.estate.entity.ProjectInfo">
+        <id property="projectId" column="projectId"/>
+        <result property="projectName" column="projectName"/>
+        <result property="shortName" column="shortName"/>
+        <result property="projectType" column="projectType"/>
+        <result property="contactPerson" column="contactPerson"/>
+        <result property="contactPhone" column="contactPhone"/>
+        <result property="provinceCode" column="provinceCode"/>
+        <result property="cityCode" column="cityCode"/>
+        <result property="countyCode" column="countyCode"/>
+        <result property="streetCode" column="streetCode"/>
+        <result property="address" column="address"/>
+        <result property="acreage" column="acreage"/>
+        <result property="picPath" column="picPath"/>
+        <result property="lon" column="lon"/>
+        <result property="lat" column="lat"/>
+        <result property="alt" column="alt"/>
+        <result property="gisArea" column="gisArea"/>
+        <result property="gisType" column="gisType"/>
+        <result property="policeStation" column="policeStation"/>
+        <result property="propertyCompany" column="propertyCompany"/>
+        <result property="propertyPrincipal" column="propertyPrincipal"/>
+        <result property="propertyOrgCode" column="propertyOrgCode"/>
+        <result property="propertyPhone" column="propertyPhone"/>
+        <result property="propertyAddress" column="propertyAddress"/>
+        <result property="policeCode" column="policeCode"/>
+        <result property="auditStatus" column="auditStatus"/>
+        <result property="thirdPartyNo" column="thirdPartyNo"/>
+        <result property="appVersion" column="appVersion"/>
+        <result property="remark" column="remark"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <sql id="selectSql">
+        i.projectUUID,
+        i.projectCode,
+        i.projectName,
+        i.shortName,
+        i.projectType,
+        i.companyId,
+        i.projectGroupId,
+        i.contactPerson,
+        i.contactPhone,
+        i.fixPhone,
+        i.provinceCode,
+        i.cityCode,
+        i.countyCode,
+        i.streetCode,
+        i.address,
+        i.locationCode,
+        i.acreage,
+        i.picPath,
+        i.lon,
+        i.lat,
+        i.alt,
+        i.projectId,
+        i.gisArea,
+        i.gisType,
+        i.policeStation,
+        i.propertyCompany,
+        i.propertyPrincipal,
+        i.propertyOrgCode,
+        i.propertyPhone,
+        i.propertyAddress,
+        i.policeCode,
+        i.auditStatus,
+        i.auditReason,
+        i.thirdPartyNo,
+        i.appVersion,
+        i.remark,
+        i.effTime,
+        i.expTime,
+        i.`status`,
+        i.entraExitNum,
+        i.operator,
+        i.createTime,
+        i.updateTime
+    </sql>
+    <!--    项目组管理员查询下级项目及子项目组项目方法-->
+    <select id="pageProject" resultType="com.aurine.cloudx.estate.vo.ProjectInfoPageVo"
+            parameterType="com.aurine.cloudx.estate.entity.ProjectInfo">
+        select distinct<include refid="selectSql"/>,g.projectGroupName,c.companyName from pigxx.sys_dept_relation d
+        inner join aurine.project_info i on d.descendant=i.projectId
+        left join aurine.sys_project_group g on i.projectGroupId=g.projectGroupId
+        left join aurine.sys_company c on i.companyId= c.companyId
+        <where>
+            <if test="query.projectName!=null and query.projectName != '' ">
+                and i.projectName like concat('%', #{query.projectName}, '%')
+            </if>
+            <!--         TODO:    暂时设置parentId可以为空 后期不同用户角色登录根据部门来过滤必须设值 xull@aurine.cn 2020年5月9日 16点34分 -->
+            <if test="query.projectGroupId!=null ">
+                and d.ancestor =#{query.projectGroupId}
+            </if>
+        </where>
+        ORDER BY i.auditStatus ,i.createTime DESC
+    </select>
+    <!--    集团管理查询审核项目-->
+    <select id="pageByAdmin" resultType="com.aurine.cloudx.estate.vo.ProjectInfoPageVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectInfoByAdminFormVo">
+        select distinct<include refid="selectSql"/>,g.projectGroupName,c.companyName from pigxx.sys_dept_relation d
+        inner join aurine.project_info i on d.descendant=i.projectId
+        left join aurine.sys_project_group g on i.projectGroupId=g.projectGroupId
+        left join aurine.sys_company c on i.companyId= c.companyId
+        <where>
+            <if test="query.companyName!=null and query.companyName != '' ">
+                and c.companyName like concat('%', #{query.companyName}, '%')
+            </if>
+            <if test="query.auditStatus!=null and query.auditStatus != '' ">
+                and i.auditStatus =#{query.auditStatus}
+            </if>
+            <if test="query.platformId!=null ">
+                and d.ancestor = #{query.platformId}
+            </if>
+        </where>
+        order by i.createTime desc
+    </select>
+
+    <select id="getProjectInfoVoById" resultType="com.aurine.cloudx.estate.vo.ProjectInfoPageVo">
+        select distinct<include refid="selectSql"/>,g.projectGroupName,c.companyName,p.liftEnable
+        from aurine.project_info i
+        left join aurine.sys_project_group g on i.projectGroupId=g.projectGroupId
+        left join aurine.sys_company c on i.companyId= c.companyId
+        left join aurine.project_config p on i.projectId= p.projectId
+        <where>
+            and i.projectId=#{projectId}
+        </where>
+        ORDER BY i.auditStatus ,i.createTime DESC
+    </select>
+    <select id="pageByConfig" resultType="com.aurine.cloudx.estate.vo.ProjectInfoPageVo">
+        select distinct<include refid="selectSql"/>,g.projectGroupName,c.companyName from pigxx.sys_dept_relation d
+        inner join aurine.project_info i on d.descendant=i.projectId
+        left join aurine.sys_project_group g on i.projectGroupId=g.projectGroupId
+        left join aurine.sys_company c on i.companyId= c.companyId
+        <where>
+            <if test="query.auditStatusList!=null and query.auditStatusList.size >0">
+                and i.auditStatus in
+                <foreach collection="query.auditStatusList" item="auditStatus" open="(" close=")" separator=",">
+                    #{auditStatus}
+                </foreach>
+            </if>
+            <if test="query.companyName!=null and query.companyName != '' ">
+                and c.companyName like concat('%', #{query.companyName}, '%')
+            </if>
+            <if test="query.projectGroupName!=null and query.projectGroupName != '' ">
+                and g.projectGroupName like concat('%', #{query.projectGroupName}, '%')
+            </if>
+            <if test="query.projectName!=null and query.projectName != '' ">
+                and i.projectName like concat('%', #{query.projectName}, '%')
+            </if>
+            <if test="query.auditStatus!=null and query.auditStatus != '' ">
+                and i.auditStatus =#{query.auditStatus}
+            </if>
+            <if test="query.platformId!=null ">
+                and d.ancestor = #{query.platformId}
+            </if>
+        </where>
+        ORDER BY i.auditStatus ,i.createTime DESC
+    </select>
+
+
+    <select id="pageProjectByStaff" resultType="com.aurine.cloudx.estate.vo.ProjectInfoPageVo">
+        select distinct<include refid="selectSql"/>, g.projectGroupName, c.companyName
+        from aurine.project_staff staff
+        inner join aurine.project_info i on staff.projectId = i.projectId
+        left join aurine.sys_project_group g on i.projectGroupId = g.projectGroupId
+        left join aurine.sys_company c on i.companyId = c.companyId
+        where staff.userId = #{userId} and i.status='1' and i.auditStatus='2'
+        <if test="projectId != null and projectId != ''">
+            and staff.projectId = #{projectId}
+        </if>
+    </select>
+
+    <select id="pageProjectByPerson" resultType="com.aurine.cloudx.estate.vo.ProjectInfoPageVo">
+        select distinct<include refid="selectSql"/>, g.projectGroupName, c.companyName
+        from aurine.project_person_info ppi
+        inner join aurine.project_info i on ppi.projectId = i.projectId
+        left join aurine.sys_project_group g on i.projectGroupId = g.projectGroupId
+        left join aurine.sys_company c on i.companyId = c.companyId
+        where ppi.userId = #{userId} and i.status='1' and i.auditStatus='2' and ppi.pStatus='1'
+    </select>
+
+    <select id="pageProjectByVisitor" resultType="com.aurine.cloudx.estate.vo.ProjectInfoPageVo">
+        select distinct<include refid="selectSql"/>,g.projectGroupName, c.companyName
+        from aurine.project_visitor ppi
+        inner join aurine.project_info i on ppi.projectId = i.projectId
+        left join aurine.sys_project_group g on i.projectGroupId = g.projectGroupId
+        left join aurine.sys_company c on i.companyId = c.companyId
+        where ppi.userId = #{userId} and i.status='1' and i.auditStatus='2'
+    </select>
+
+    <select id="pageAll" resultType="com.aurine.cloudx.estate.vo.ProjectInfoSimplePageVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectAddressParamVo">
+        select x.projectId,x. projectName, x.shortName, x.projectType,x. companyId, x.projectGroupId,x.
+        projectGroupName,x. companyName
+        ,x.provinceCode, x.cityCode, x.countyCode, x.streetCode, x.address, x.locationCode, x.acreage, x.picPath, x.
+        lon, x.lat, x.alt, x.distance,
+        x.enable
+        from(
+        select i.projectId, i.projectName, i.shortName, i.projectType, i.companyId, i.projectGroupId,i.provinceCode,
+        i.cityCode, i.countyCode,
+        i.streetCode, i.address, i.locationCode, i.acreage, i.picPath, i.lon, i.lat, i.alt,
+        <choose>
+            <when test="query!=null and query.lon !=null and query.lat !=null">
+                (st_distance(point(i.lon,i.lat) ,point(#{query.lon},#{query.lat}))*111195/1000 ) distance,
+            </when>
+            <otherwise>
+                0 distance,
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="type='2'">
+                case when s.userId is not null then '1' else '0' end enable,
+            </when>
+            <when test="type='1'">
+                case when pi.userId is not null then '1' else '0' end enable,
+            </when>
+            <when test="type='2'">
+                case when v.userId is not null then '1' else '0' end enable,
+            </when>
+            <otherwise>
+                '0' enable,
+            </otherwise>
+        </choose>
+        g.projectGroupName,
+        c.companyName
+        from project_info i
+        left join sys_project_group g on i.projectGroupId = g.projectGroupId
+        left join sys_company c on i.companyId = c.companyId
+        <choose>
+            <when test="type='3'">
+                left join project_staff s on s.projectId = i.projectId and s.userId=#{userId}
+            </when>
+            <when test="type='1'">
+                left join project_person_info pi on pi.projectId = i.projectId and pi.userId=#{userId}
+            </when>
+            <when test="type='2'">
+                left join project_visitor v on v.projectId = i.projectId and v.userId=#{userId}
+            </when>
+        </choose>
+        <where>
+            and i.status='1' and i.auditStatus='2' and i.isVisible='1' and (i.expTime <![CDATA[>=]]> now() or i.expTime is null)
+            <if test="query!=null and query.name!=null and query.name !=''">
+                and i.projectName like concat('%',#{query.name},'%')
+            </if>
+            <if test="query!=null and query.provinceCode !=null and query.provinceCode!=''">
+                and i.provinceCode = #{query.provinceCode}
+            </if>
+            <if test="query!=null and query.cityCode != null and query.cityCode !=''">
+                and (i.cityCode=#{query.cityCode} or i.provinceCode=#{query.cityCode})
+            </if>
+            <if test="query!=null and query.countyCode != null and query.countyCode !=''">
+                and i.countyCode=#{query.countyCode}
+            </if>
+            <if test="query!=null and query.streetCode != null and query.streetCode !=''">
+                and i.streetCode=#{query.streetCode}
+            </if>
+        </where>
+        ) x
+        order by x.enable
+        <if test="query.lon !=null and query.lat !=null">
+            , x.distance
+        </if>
+    </select>
+    <select id="listAll" resultType="com.aurine.cloudx.estate.vo.ProjectInfoSimplePageVo"
+            parameterType="com.aurine.cloudx.estate.vo.ProjectAddressParamVo">
+        select x.projectId,x. projectName, x.shortName, x.projectType,x. companyId, x.projectGroupId,x.
+        projectGroupName,x. companyName
+        ,x.provinceCode, x.cityCode, x.countyCode, x.streetCode, x.address, x.locationCode, x.acreage, x.picPath, x.
+        lon, x.lat, x.alt, x.distance,
+        x.enable
+        from(
+        select i.projectId, i.projectName, i.shortName, i.projectType, i.companyId, i.projectGroupId,i.provinceCode,
+        i.cityCode, i.countyCode,
+        i.streetCode, i.address, i.locationCode, i.acreage, i.picPath, i.lon, i.lat, i.alt,
+        <choose>
+            <when test="query!=null and query.lon !=null and query.lat !=null">
+                (st_distance(point(i.lon,i.lat) ,point(#{query.lon},#{query.lat}))*111195/1000 ) distance,
+            </when>
+            <otherwise>
+                0 distance,
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="type='3'">
+                case when s.userId is not null then '1' else '0' end enable,
+            </when>
+            <when test="type='1'">
+                case when pi.userId is not null then '1' else '0' end enable,
+            </when>
+            <when test="type='2'">
+                case when v.userId is not null then '1' else '0' end enable,
+            </when>
+            <otherwise>
+                '0' enable,
+            </otherwise>
+        </choose>
+        g.projectGroupName,
+        c.companyName
+        from project_info i
+        left join sys_project_group g on i.projectGroupId = g.projectGroupId
+        left join sys_company c on i.companyId = c.companyId
+        <choose>
+            <when test="type='3'">
+                left join project_staff s on s.projectId = i.projectId and s.userId=#{userId}
+            </when>
+            <when test="type='1'">
+                left join project_person_info pi on pi.projectId = i.projectId and pi.userId=#{userId}
+            </when>
+            <when test="type='2'">
+                left join project_visitor v on v.projectId = i.projectId and v.userId=#{userId}
+            </when>
+        </choose>
+        <where>
+            and i.status='1' and i.auditStatus='2' and i.isVisible='1' and (i.expTime <![CDATA[>=]]> now() or i.expTime is null)
+            <if test="query!=null and query.name!=null and query.name !=''">
+                and i.projectName like concat('%',#{query.name},'%')
+            </if>
+            <if test="query!=null and query.provinceCode !=null and query.provinceCode!=''">
+                and i.provinceCode = #{query.provinceCode}
+            </if>
+            <if test="query!=null and query.cityCode != null and query.cityCode !=''">
+                and i.cityCode=#{query.cityCode}
+            </if>
+            <if test="query!=null and query.countyCode != null and query.countyCode !=''">
+                and i.countyCode=#{query.countyCode}
+            </if>
+            <if test="query!=null and query.streetCode != null and query.streetCode !=''">
+                and i.streetCode=#{query.streetCode}
+            </if>
+        </where>
+        ) x
+        order by x.enable desc
+        <if test="query.lon !=null and query.lat !=null">
+            ,x.distance
+        </if>
+    </select>
+</mapper>

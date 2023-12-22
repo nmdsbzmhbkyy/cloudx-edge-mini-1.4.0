@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPersonInfoMapper">
+
+    <resultMap id="projectPersonInfoMap" type="com.aurine.cloudx.estate.entity.ProjectPersonInfo">
+        <id property="personId" column="personId"/>
+        <result property="personCode" column="personCode"/>
+        <result property="personName" column="personName"/>
+        <result property="credentialType" column="credentialType"/>
+        <result property="credentialNo" column="credentialNo"/>
+        <result property="source" column="source"/>
+        <result property="domiciile" column="domiciile"/>
+        <result property="nationCode" column="nationCode"/>
+        <result property="birth" column="birth"/>
+        <result property="gender" column="gender"/>
+        <result property="provinceCode" column="provinceCode"/>
+        <result property="cityCode" column="cityCode"/>
+        <result property="countyCode" column="countyCode"/>
+        <result property="streetCode" column="streetCode"/>
+        <result property="address" column="address"/>
+        <result property="picUrl" column="picUrl"/>
+        <result property="origin" column="origin"/>
+        <result property="peopleTypeCode" column="peopleTypeCode"/>
+        <result property="residence" column="residence"/>
+        <result property="educationCode" column="educationCode"/>
+        <result property="maritalStatusCode" column="maritalStatusCode"/>
+        <result property="spouseName" column="spouseName"/>
+        <result property="spouseIdType" column="spouseIdType"/>
+        <result property="spouseIdNo" column="spouseIdNo"/>
+        <result property="nationalityCode" column="nationalityCode"/>
+        <result property="entryTime" column="entryTime"/>
+        <result property="surnameEng" column="surnameEng"/>
+        <result property="nameEng" column="nameEng"/>
+        <result property="telephone" column="telephone"/>
+        <result property="ownName" column="ownName"/>
+        <result property="ownIdType" column="ownIdType"/>
+        <result property="ownIdNo" column="ownIdNo"/>
+        <result property="entranceTypeCode" column="entranceTypeCode"/>
+        <result property="tag" column="tag"/>
+        <result property="passBeginTime" column="passBeginTime"/>
+        <result property="passEndTime" column="passEndTime"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+    <update id="updatePhoneByUserId">
+        update aurine.project_person_info i
+        set i.telephone=#{phone}
+        where i.userId = #{userId}
+    </update>
+    <update id="updateUserIdByPhone">
+        update aurine.project_person_info i
+        set i.userId = #{userId}
+        where i.telephone = #{phone}
+    </update>
+    <!-- 统计住户类型 -->
+    <select id="groupByPersonType" resultType="java.util.Map">
+        SELECT householdType AS peopleTypeCode,
+               count(1)      AS c
+        FROM project_house_person_rel
+        WHERE auditStatus = '2'
+        GROUP BY householdType
+        HAVING householdType IN ('1', '2', '3');
+    </select>
+    <select id="getListPersonById" resultType="com.aurine.cloudx.estate.vo.ProjectHouseStatusVo">
+        select distinct ppi.projectId, phpr.auditStatus auditStatus
+        from project_person_info ppi, project_house_person_rel phpr
+        where ppi.userId = #{userId}
+        and ppi.pStatus = '1'
+        and ppi.projectId = phpr.projectId
+        and ppi.personId = phpr.personId
+    </select>
+    <select id="getListUserHouseInfoByUserId" resultType="com.aurine.cloudx.estate.vo.ProjectUserHouseInfoVo">
+        SELECT
+        phpr.houseId,
+        ppi.personName,
+        pfi.entityName houseName,
+        phpr.householdType,
+        phpr.auditStatus,
+        ( SELECT project_frame_info.entityName
+        FROM project_frame_info
+        WHERE project_frame_info.entityId = pfi.puid
+        ) unitName,
+        ( SELECT (
+            SELECT project_frame_info.entityName
+            FROM project_frame_info
+            WHERE project_frame_info.entityId = pfi1.puid)
+        FROM project_frame_info pfi1
+        WHERE pfi1.entityId = pfi.puid
+        ) buildingName,
+        ( SELECT COUNT(project_house_person_rel.houseId)
+        FROM project_house_person_rel
+        WHERE project_house_person_rel.houseId = phpr.houseId
+        AND project_house_person_rel.auditStatus = '2'
+        ) housePersonNum
+        FROM
+        project_house_person_rel phpr,
+        project_person_info ppi,
+        project_frame_info pfi
+        WHERE ppi.userId = #{userId}
+        AND ppi.pStatus = '1'
+        AND phpr.auditStatus = '2'
+        AND ppi.personId = phpr.personId
+        AND pfi.entityId = phpr.houseId
+    </select>
+
+    <select id="getAssetsNum" resultType="integer">
+        SELECT
+            (
+            IF(carNum IS NOT NULL AND carNum != '', carNum, 0) +
+            IF(houseNum IS NOT NULL AND houseNum != '', houseNum, 0) +
+            IF(placeNum IS NOT NULL AND placeNum != '', placeNum, 0) +
+            IF(placeNumParking IS NOT NULL AND placeNumParking != '', placeNumParking, 0)
+            ) assetsNum
+        FROM project_person_info
+        LEFT JOIN (
+            SELECT
+                person.personId, COUNT(*) carNum
+            FROM
+                project_person_info person
+                LEFT JOIN project_car_info car ON car.personId = person.personId
+                WHERE car.carUid IS NOT NULL AND car.carUid != '' AND person.personId = #{personId}
+                GROUP BY person.personId
+        ) car_info ON car_info.personId = project_person_info.personId
+        LEFT JOIN (
+            SELECT
+                person.personId, COUNT(*) houseNum
+            FROM
+                project_person_info person
+                LEFT JOIN project_house_person_rel house ON house.personId = person.personId
+                WHERE house.relaId IS NOT NULL AND house.relaId != '' AND person.personId = #{personId}
+                GROUP BY person.personId
+        ) house_info ON house_info.personId = project_person_info.personId
+        LEFT JOIN (
+            SELECT
+                person.personId, COUNT(*) placeNum
+            FROM
+                project_person_info person
+                LEFT JOIN project_parking_place place ON place.personId = person.personId
+                WHERE placeId IS NOT NULL AND placeId != '' AND person.personId = #{personId}
+                GROUP BY person.personId
+        ) place_info ON place_info.personId = project_person_info.personId
+        LEFT JOIN (
+            SELECT
+                person.personId, COUNT(*) placeNumParking
+            FROM
+                aurine.project_person_info person
+                    LEFT JOIN aurine_parking.project_parking_place place_parking ON place_parking.personId = person.personId
+            WHERE placeId IS NOT NULL AND placeId != '' AND person.personId = #{personId}
+            GROUP BY person.personId
+        ) place_info_parking ON place_info_parking.personId = project_person_info.personId
+        WHERE project_person_info.personId = #{personId}
+    </select>
+    <select id="getAssetsNumParking" resultType="integer">
+        SELECT
+            (
+                    IF(carNum IS NOT NULL AND carNum != '', carNum, 0) +
+                    IF(houseNum IS NOT NULL AND houseNum != '', houseNum, 0) +
+                    IF(placeNum IS NOT NULL AND placeNum != '', placeNum, 0)
+                ) assetsNum
+        FROM project_person_info
+                 LEFT JOIN (
+            SELECT
+                person.personId, COUNT(*) carNum
+            FROM
+                project_person_info person
+                    LEFT JOIN aurine_parking.project_car_info car ON car.personId = person.personId
+            WHERE car.carUid IS NOT NULL AND car.carUid != '' AND person.personId = #{personId}
+            GROUP BY person.personId
+        ) car_info ON car_info.personId = project_person_info.personId
+                 LEFT JOIN (
+            SELECT
+                person.personId, COUNT(*) houseNum
+            FROM
+                project_person_info person
+                    LEFT JOIN project_house_person_rel house ON house.personId = person.personId
+            WHERE house.relaId IS NOT NULL AND house.relaId != '' AND person.personId = #{personId}
+            GROUP BY person.personId
+        ) house_info ON house_info.personId = project_person_info.personId
+                 LEFT JOIN (
+            SELECT
+                person.personId, COUNT(*) placeNum
+            FROM
+                project_person_info person
+                    LEFT JOIN aurine_parking.project_parking_place place ON place.personId = person.personId
+            WHERE placeId IS NOT NULL AND placeId != '' AND person.personId = #{personId}
+            GROUP BY person.personId
+        ) place_info ON place_info.personId = project_person_info.personId
+        WHERE project_person_info.personId = #{personId}
+    </select>
+
+    <select id="selectPersonById" resultType="com.aurine.cloudx.estate.entity.ProjectPersonInfo">
+       select * from project_person_info WHERE personId = (select personId from project_house_person_rel where relaId=#{relaId})
+    </select>
+
+    <select id="getAssetsNumVoList" resultType="com.aurine.cloudx.estate.vo.PersonAssetsNumVo">
+        SELECT
+            project_person_info.personId,
+            (
+            IF(carNum IS NOT NULL AND carNum != '', carNum, 0) +
+            IF(houseNum IS NOT NULL AND houseNum != '', houseNum, 0) +
+            IF(placeNum IS NOT NULL AND placeNum != '', placeNum, 0)
+            ) assetsNum
+        FROM project_person_info
+        LEFT JOIN (
+            SELECT
+                person.personId, COUNT(*) carNum
+            FROM
+                project_person_info person
+                LEFT JOIN project_car_info car ON car.personId = person.personId
+                WHERE car.carUid IS NOT NULL AND car.carUid != '' AND person.personId IN
+                <foreach collection="personIdList" item="personId" open="(" close=")" separator=",">
+                #{personId}
+                </foreach>
+                GROUP BY person.personId
+        ) car_info ON car_info.personId = project_person_info.personId
+        LEFT JOIN (
+            SELECT
+                person.personId, COUNT(*) houseNum
+            FROM
+                project_person_info person
+                LEFT JOIN project_house_person_rel house ON house.personId = person.personId
+                WHERE house.relaId IS NOT NULL AND house.relaId != '' AND person.personId IN
+                <foreach collection="personIdList" item="personId" open="(" close=")" separator=",">
+                    #{personId}
+                </foreach>
+                GROUP BY person.personId
+        ) house_info ON house_info.personId = project_person_info.personId
+        LEFT JOIN (
+            SELECT
+                person.personId, COUNT(*) placeNum
+            FROM
+                project_person_info person
+                LEFT JOIN project_parking_place place ON place.personId = person.personId
+                WHERE placeId IS NOT NULL AND placeId != '' AND person.personId IN
+                <foreach collection="personIdList" item="personId" open="(" close=")" separator=",">
+                    #{personId}
+                </foreach>
+                GROUP BY person.personId
+        ) place_info ON place_info.personId = project_person_info.personId
+        WHERE project_person_info.personId IN
+        <foreach collection="personIdList" item="personId" open="(" close=")" separator=",">
+            #{personId}
+        </foreach>
+    </select>
+</mapper>

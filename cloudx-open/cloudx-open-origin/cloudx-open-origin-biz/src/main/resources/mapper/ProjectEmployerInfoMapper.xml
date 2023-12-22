@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectEmployerInfoMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectEmployerInfo" id="ProjectEmployerInfoMap">
+        <id property="employerId" column="employerId" jdbcType="VARCHAR"/>
+        <result property="employerCode" column="employerCode" jdbcType="VARCHAR"/>
+        <result property="employerName" column="employerName" jdbcType="VARCHAR"/>
+        <result property="englishName" column="englishName" jdbcType="VARCHAR"/>
+        <result property="shortName" column="shortName" jdbcType="VARCHAR"/>
+        <result property="legalRepresentative" column="legalRepresentative" jdbcType="VARCHAR"/>
+        <result property="socialCreditCode" column="socialCreditCode" jdbcType="VARCHAR"/>
+        <result property="contactPhone" column="contactPhone" jdbcType="VARCHAR"/>
+        <result property="mainBusiness" column="mainBusiness" jdbcType="VARCHAR"/>
+        <result property="sideBusiness" column="sideBusiness" jdbcType="VARCHAR"/>
+        <result property="businessMode" column="businessMode" jdbcType="VARCHAR"/>
+        <result property="licenseNo" column="licenseNo" jdbcType="VARCHAR"/>
+        <result property="economicType" column="economicType" jdbcType="VARCHAR"/>
+        <result property="industryCategory" column="industryCategory" jdbcType="VARCHAR"/>
+        <result property="effDate" column="effDate" jdbcType="OTHER"/>
+        <result property="expDate" column="expDate" jdbcType="OTHER"/>
+        <result property="proxyName" column="proxyName" jdbcType="VARCHAR"/>
+        <result property="proxyPhone" column="proxyPhone" jdbcType="VARCHAR"/>
+        <result property="proxyCredentialType" column="proxyCredentialType" jdbcType="VARCHAR"/>
+        <result property="proxyCredentialNo" column="proxyCredentialNo" jdbcType="VARCHAR"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="pageEmployer" resultType="com.aurine.cloudx.open.origin.vo.ProjectEmployerInfoPageVo">
+        select pei.*, house.houseName as houseName, unit.entityName as unitName, house.houseId as houseId,
+        (
+        with recursive r as
+        (
+        select * from project_frame_info pfi where pfi.entityId = building.entityId
+        union all
+        select pfi.* from project_frame_info pfi, r where pfi.entityId = r.puid
+        ) select  group_concat(r.entityName  order by level desc SEPARATOR '-') from r GROUP BY projectId  ORDER BY level
+        ) buildingName
+        from project_employer_info pei
+        inner join project_house_info house on house.employerId = pei.employerId
+        inner join project_frame_info unit on unit.entityId = house.buildingUnit
+        inner join project_frame_info building on building.entityId = unit.puid
+        <where>
+            <if test="query.buildingName!=null and query.buildingName!=''">
+                and building.entityName like concat('%',#{query.buildingName},'%')
+            </if>
+            <if test="query.unitName!=null and query.unitName!=''">
+                and unit.entityName like concat('%',#{query.unitName},'%')
+            </if>
+            <if test="query.houseName!=null and query.houseName!=''">
+                and house.houseName like concat('%',#{query.houseName},'%')
+            </if>
+            <if test="query.legalRepresentative!=null and query.legalRepresentative!=''">
+                and pei.legalRepresentative like concat('%',#{query.legalRepresentative},'%')
+            </if>
+        </where>
+        order by pei.createTime desc
+    </select>
+</mapper>

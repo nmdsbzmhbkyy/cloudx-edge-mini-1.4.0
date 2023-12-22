@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPersonLiftRelMapper">
+    <select id="liftListByPerson" resultType="com.aurine.cloudx.estate.vo.ProjectPassDeviceVo">
+        select device.deviceId,
+        device.deviceName,
+        device.deviceAlias,
+        device.deviceDesc,
+        device.deviceType,
+        device.buildingId,
+        device.unitId,
+        device.status,
+        IF(max(disabled) >= 1, true, false) disabled
+        from (
+        -- 所在单元电梯
+        <if test="isUnitLift">
+            SELECT
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            1 as disabled
+            FROM
+            project_house_person_rel housePerson
+            JOIN project_frame_info house ON housePerson.houseId = house.entityId
+            JOIN project_frame_info unit on house.puid = unit.entityId
+            join project_frame_info building on unit.puid = building.entityId
+            join project_device_info device on device.unitId = unit.entityId
+            where
+            housePerson.personId = #{personId}
+            and housePerson.auditStatus = 2
+            and device.deviceType = '23'
+            and device.dStatus <![CDATA[<>]]> '4'
+        </if>
+        <if test="!onlyPlan">
+            union all
+            -- 获取住户的所有自选设备
+            select
+            device.deviceId,
+            device.deviceName,
+            device.deviceAlias,
+            device.deviceDesc,
+            device.deviceType,
+            device.buildingId,
+            device.unitId,
+            device.dStatus as status,
+            0 as disabled
+            FROM
+            project_person_lift_rel selfDevice join project_device_info device on selfDevice.deviceId = device.deviceId
+            where selfDevice.personId = #{personId}
+        </if>
+        ) as device group by device.deviceId,
+        device.deviceName,
+        device.deviceAlias,
+        device.deviceDesc,
+        device.deviceType,
+        device.buildingId,
+        device.unitId,
+        device.status
+    </select>
+</mapper>

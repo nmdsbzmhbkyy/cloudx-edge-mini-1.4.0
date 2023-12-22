@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectParkingPlaceMapper">
+
+    <resultMap id="projectParkingPlaceMap" type="com.aurine.cloudx.estate.entity.ProjectParkingPlace">
+        <id property="placeId" column="placeId"/>
+        <result property="placeCode" column="placeCode"/>
+        <result property="placeName" column="placeName"/>
+        <result property="parkId" column="parkId"/>
+        <result property="personId" column="personId"/>
+        <result property="personName" column="personName"/>
+        <result property="relType" column="relType"/>
+        <result property="effTime" column="effTime"/>
+        <result property="expTime" column="expTime"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <resultMap id="projectParkingPlaceAssignmentVoMap"
+               type="com.aurine.cloudx.estate.vo.ProjectParkingPlaceAssignmentVo">
+        <result property="personName" column="personName"/>
+        <result property="relType" column="relType"/>
+        <result property="credentialNo" column="credentialNo"/>
+        <result property="gender" column="gender"/>
+        <result property="telephone" column="telephone"/>
+    </resultMap>
+
+    <resultMap id="projectParkingPlaceHisListMap"
+               type="com.aurine.cloudx.estate.vo.ProjectParkingPlaceHisVo">
+        <result property="personName" column="personName"/>
+        <result property="relType" column="relType"/>
+        <result property="action" column="action"/>
+        <result property="createTime" column="createTime"/>
+        <result property="checkInTime" column="checkInTime"/>
+    </resultMap>
+
+    <select id="select" resultType="com.aurine.cloudx.estate.vo.ProjectParkingPlaceVo">
+        select r.parkRegionName,
+        case when p.personId != '' then '已使用' else '空置' END isUseText,
+
+        case when p.personId != '' then 1 else 0 END isUse,
+
+        p.* from
+        project_park_region r join project_parking_place p on r.parkRegionId = p.parkRegionId
+        <where>
+            AND p.projectId = #{projectId}
+            AND r.isPublic != '1'
+            <if test="parkId != null and parkId != ''">
+                AND r.parkId = #{parkId}
+            </if>
+            <if test="placeName != null and placeName != ''">
+                AND p.placeName like concat('%', #{placeName},'%')
+            </if>
+            <if test="parkRegionName != null and parkRegionName != ''">
+                AND r.parkRegionName like concat('%', #{parkRegionName},'%')
+            </if>
+            <if test="isUse == 0">
+                AND (p.personId = '' OR p.personId IS NULL)
+            </if>
+            <if test="isUse == 1">
+                AND p.personId != ''
+            </if>
+        </where>
+        order  by p.parkId,r.parkRegionName,p.placeName
+    </select>
+
+    <select id="selectParkingPlaceManage"   resultType="com.aurine.cloudx.estate.vo.ProjectParkingPlaceManageRecordVo">
+
+        SELECT
+        CONCAT(region.parkRegionName,' ',place.placeName)as parkPlaceName,
+        region.parkRegionName,
+        place.placeName,
+        place.relType,
+        place.effTime,
+        place.expTime,
+        region.parkRegionId,
+        region.parkId,
+        person.gender,
+        person.personName,
+        person.telephone,
+        place.placeId,
+        person.personId,
+        car.plateNumber
+        FROM
+        project_park_region AS region
+        INNER JOIN project_parking_place AS place ON region.parkRegionId = place.parkRegionId
+        INNER JOIN project_person_info AS person ON place.personId = person.personId
+        LEFT JOIN project_par_car_register AS car ON place.placeId = car.parkPlaceId
+
+        where place.relType > 0
+        <if test="query.parkId != null and query.parkId != ''">
+            AND region.parkId like concat('%', #{query.parkId},'%')
+        </if>
+
+        <if test="query.placeName != null and query.placeName != ''">
+            AND place.placeName like concat('%', #{query.placeName},'%')
+        </if>
+
+        <if test="query.personName != null and query.personName != ''">
+            AND person.personName like concat('%', #{query.personName},'%')
+        </if>
+
+        <if test="query.parkRegionName != null and query.parkRegionName != ''">
+            AND region.parkRegionName like concat('%', #{query.parkRegionName},'%')
+        </if>
+        order by place.updateTime desc,region.parkRegionName,place.placeName
+    </select>
+
+
+    <select id="getParkingOwnershipInformation" resultMap="projectParkingPlaceAssignmentVoMap">
+        SELECT
+        *
+        FROM
+        project_parking_place ppp
+        LEFT JOIN project_person_info ppi ON ppp.personId = ppi.personId
+        WHERE ppi.pStatus != 0
+        AND ppp.placeId = #{placeId}
+    </select>
+
+
+    <select id="getParkingHistory" resultType="com.aurine.cloudx.estate.vo.ProjectParkingPlaceHisVo">
+        SELECT
+        *
+        FROM
+        project_parking_place_his ppph
+        WHERE
+         ppph.placeId = #{placeId}
+        order by
+        ppph.createTime desc
+    </select>
+
+
+
+    <select id="listPlaceIdByAddress" resultType="String">
+        SELECT placeId FROM (SELECT
+            CONCAT(parking_info.parkName,'-',region.parkRegionName,'-',place.placeName) placeAddress,
+             placeId
+        FROM
+            project_parking_place place
+            LEFT JOIN project_park_region region ON place.parkRegionId = region.parkRegionId
+            LEFT JOIN project_parking_info parking_info ON parking_info.parkId = region.parkId
+        WHERE region.isPublic = 0) as placeTable
+        WHERE placeAddress = #{placeAddress}
+    </select>
+
+    <select id="getPublicFreePlaceNum" resultType="int">
+        SELECT COUNT(*) FROM project_parking_place
+        WHERE
+        parkId = #{parkId}
+        AND (placeName = '' OR placeName IS NULL )
+        AND (personId IS NULL OR personId = '')
+    </select>
+    <select id="listByParkRegionId" resultType="com.aurine.cloudx.estate.entity.ProjectParkingPlace">
+        SELECT
+        	*
+        FROM
+        	project_parking_place
+        WHERE
+        	parkRegionId = #{parkRegionId}
+        ORDER BY
+        	regexp_replace ( placeName, '[^0-9]', '' ) + 0,
+        	placeName;
+    </select>
+
+
+</mapper>

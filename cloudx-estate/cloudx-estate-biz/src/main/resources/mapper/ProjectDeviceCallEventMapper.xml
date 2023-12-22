@@ -1,0 +1,370 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectDeviceCallEventMapper">
+
+    <resultMap id="ProjectDeviceCallEventMap" type="com.aurine.cloudx.estate.entity.ProjectDeviceCallEvent">
+        <id property="seq" column="seq"/>
+        <result property="eventId" column="eventId"/>
+        <result property="caller" column="caller"/>
+        <result property="callType" column="callType"/>
+        <result property="callerType" column="callerType"/>
+        <result property="callerName" column="callerName"/>
+        <result property="answerer" column="answerer"/>
+        <result property="answererType" column="answererType"/>
+        <result property="answererName" column="answererName"/>
+        <result property="callTime" column="callTime"/>
+        <result property="callDuration" column="callDuration"/>
+        <result property="callResponse" column="callResponse"/>
+        <result property="projectId" column="projectId"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="pageCallEvent" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceCallEventVo">
+        SELECT
+        pdce.seq,
+        pdce.eventId,
+        pdce.caller,
+        pdce.callerType,
+        pdce.callerName,
+        pdce.answerer,
+        pdce.answererType,
+        pdce.answererName,
+        pdce.callTime,
+        pdce.callDuration,
+        pdce.callResponse,
+        pdce.projectId,
+        pdce.tenant_id,
+        pdce.createTime,
+        pdce.updateTime
+        FROM
+        project_device_call_event AS pdce
+        <where>
+            <if test="query.callResponse != null and query.callResponse != ''">
+                AND
+                pdce.callResponse = #{query.callResponse}
+            </if>
+            <if test="query.callerType != null and query.callerType != ''">
+                AND
+                pdce.callerType = #{query.callerType}
+            </if>
+            <if test="query.answererType != null and query.answererType != ''">
+                AND
+                pdce.answererType = #{query.answererType}
+            </if>
+            <if test="query.callerName != null and query.callerName != ''">
+                AND
+                pdce.callerName LIKE CONCAT('%', #{query.callerName}, '%')
+            </if>
+            <if test="query.answererName != null and query.answererName != ''">
+                AND
+                pdce.answererName LIKE CONCAT('%', #{query.answererName}, '%')
+            </if>
+            <if test="query.callTimeBegin != null and query.callTimeEnd != null">
+                AND
+                pdce.callTime BETWEEN #{query.callTimeBegin} AND #{query.callTimeEnd}
+            </if>
+            <if test="query.projectId != null and query.projectId != ''">
+                AND
+                pdce.projectId = #{query.projectId}
+            </if>
+        </where>
+        ORDER BY
+        pdce.callTime DESC
+    </select>
+
+    <select id="pageCallEventByProject" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceCallEventVo">
+        with recursive r as
+        (
+        SELECT k.*,
+        ( CASE
+        WHEN k.callDeviceType = 1 and k.answerPersonId is not null THEN '1'
+        WHEN k.callPersonId is not null and k.answerDeviceType = 1 THEN '1'
+        ELSE '0' END
+        ) AS isPrivacy
+        from (
+        SELECT
+        pdce.seq,
+        pdce.eventId,
+        pdce.caller,
+        pdce.callType,
+        pdce.callerType,
+        pdce.callerName,
+        pdce.answerer,
+        pdce.answererType,
+        pdce.answererName,
+        pdce.callTime,
+        pdce.callDuration,
+        pdce.callResponse,
+        pdce.projectId,
+        pdce.tenant_id,
+        pdce.createTime,
+        pdce.updateTime,
+        callPdi.deviceType as callDeviceType,
+        answerPdi.deviceType as answerDeviceType,
+        callPerson.personId as callPersonId,
+        answerPerson.personId as answerPersonId
+        FROM
+        project_device_call_event AS pdce
+        left join project_device_info callPdi on pdce.caller = callPdi.deviceId and pdce.callerType = 1
+        left join project_device_info answerPdi on pdce.answerer = answerPdi.deviceId and pdce.answererType = 1
+        left join project_person_info callPerson on pdce.caller = callPerson.personId and pdce.callerType = 2
+        left join project_person_info answerPerson on pdce.caller = answerPerson.personId and pdce.answererType = 2
+        ) as k
+        <where>
+            <if test="query.callResponse != null and query.callResponse != ''">
+                AND
+                k.callResponse = #{query.callResponse}
+            </if>
+            <if test="query.callType != null and query.callType != ''">
+                AND
+                k.callType = #{query.callType}
+            </if>
+            <if test="query.callerType != null and query.callerType != ''">
+                AND
+                k.callerType = #{query.callerType}
+            </if>
+            <if test="query.answererType != null and query.answererType != ''">
+                AND
+                k.answererType = #{query.answererType}
+            </if>
+            <if test="query.callerName != null and query.callerName != ''">
+                AND
+                k.callerName LIKE CONCAT('%', #{query.callerName}, '%')
+            </if>
+            <if test="query.answererName != null and query.answererName != ''">
+                AND
+                k.answererName LIKE CONCAT('%', #{query.answererName}, '%')
+            </if>
+            <if test="query.callTimeBegin != null and query.callTimeEnd != null">
+                AND
+                k.callTime BETWEEN #{query.callTimeBegin} AND #{query.callTimeEnd}
+            </if>
+            <if test="query.projectId != null and query.projectId != ''">
+                AND
+                k.projectId = #{query.projectId}
+            </if>
+        </where>
+        )
+        SELECT * from r where r.isPrivacy = 0
+        ORDER BY
+        r.callTime DESC
+    </select>
+
+    <select id="pageCallEventByStaff" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceCallEventVo">
+        SELECT
+        pdce.seq,
+        pdce.eventId,
+        pdce.caller,
+        pdce.callerType,
+        pdce.callerName,
+        pdce.answerer,
+        pdce.answererType,
+        pdce.answererName,
+        pdce.callTime,
+        pdce.callDuration,
+        pdce.callResponse,
+        pdce.projectId,
+        pdce.tenant_id,
+        pdce.createTime,
+        pdce.updateTime
+        FROM
+        project_device_call_event AS pdce
+        INNER JOIN
+        project_staff AS ps ON pdce.answerer = ps.staffId
+        <where>
+            <if test="query.callResponse != null and query.callResponse != ''">
+                AND
+                pdce.callResponse = #{query.callResponse}
+            </if>
+            <if test="query.callerType != null and query.callerType != ''">
+                AND
+                pdce.callerType = #{query.callerType}
+            </if>
+            <if test="query.answererType != null and query.answererType != ''">
+                AND
+                pdce.answererType = #{query.answererType}
+            </if>
+            <if test="query.callerName != null and query.callerName != ''">
+                AND
+                pdce.callerName LIKE CONCAT('%', #{query.callerName}, '%')
+            </if>
+            <if test="query.answererName != null and query.answererName != ''">
+                AND
+                pdce.answererName LIKE CONCAT('%', #{query.answererName}, '%')
+            </if>
+            <if test="query.callTimeBegin != null and query.callTimeEnd != null">
+                AND
+                pdce.callTime BETWEEN #{query.callTimeBegin} AND #{query.callTimeEnd}
+            </if>
+            <if test="query.projectId != null and query.projectId != ''">
+                AND
+                pdce.projectId = #{query.projectId}
+            </if>
+        </where>
+        ORDER BY
+        pdce.callTime DESC
+    </select>
+
+    <select id="pageCallEventByProject" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceCallEventVo">
+        SELECT
+            pdce.seq,
+            pdce.eventId,
+            pdce.caller,
+            pdce.callerType,
+            pdce.callerName,
+            pdce.answerer,
+            pdce.answererType,
+            pdce.answererName,
+            pdce.callTime,
+            pdce.callDuration,
+            pdce.callResponse,
+            pdce.projectId,
+            pdce.tenant_id,
+            pdce.createTime,
+            pdce.updateTime
+        FROM
+            project_device_call_event AS pdce
+        <where>
+            <if test="query.callResponse != null and query.callResponse != ''">
+                AND
+                    pdce.callResponse = #{query.callResponse}
+            </if>
+            <if test="query.callerType != null and query.callerType != ''">
+                AND
+                    pdce.callerType = #{query.callerType}
+            </if>
+            <if test="query.answererType != null and query.answererType != ''">
+                AND
+                    pdce.answererType = #{query.answererType}
+            </if>
+            <if test="query.callerName != null and query.callerName != ''">
+                AND
+                    pdce.callerName LIKE CONCAT('%', #{query.callerName}, '%')
+            </if>
+            <if test="query.answererName != null and query.answererName != ''">
+                AND
+                    pdce.answererName LIKE CONCAT('%', #{query.answererName}, '%')
+            </if>
+            <if test="query.callTimeBegin != null and query.callTimeEnd != null">
+                AND
+                    pdce.callTime BETWEEN #{query.callTimeBegin} AND #{query.callTimeEnd}
+            </if>
+            <if test="query.projectId != null and query.projectId != ''">
+                AND
+                    pdce.projectId = #{query.projectId}
+            </if>
+        </where>
+        ORDER BY
+            pdce.callTime DESC
+    </select>
+
+    <select id="pageCallEventByStaff" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceCallEventVo">
+        SELECT
+            pdce.seq,
+            pdce.eventId,
+            pdce.caller,
+            pdce.callerType,
+            pdce.callerName,
+            pdce.answerer,
+            pdce.answererType,
+            pdce.answererName,
+            pdce.callTime,
+            pdce.callDuration,
+            pdce.callResponse,
+            pdce.projectId,
+            pdce.tenant_id,
+            pdce.createTime,
+            pdce.updateTime
+        FROM
+            project_device_call_event AS pdce
+        INNER JOIN
+            project_staff AS ps ON pdce.answerer = ps.staffId
+        <where>
+            <if test="query.callResponse != null and query.callResponse != ''">
+                AND
+                    pdce.callResponse = #{query.callResponse}
+            </if>
+            <if test="query.callerType != null and query.callerType != ''">
+                AND
+                    pdce.callerType = #{query.callerType}
+            </if>
+            <if test="query.answererType != null and query.answererType != ''">
+                AND
+                    pdce.answererType = #{query.answererType}
+            </if>
+            <if test="query.callerName != null and query.callerName != ''">
+                AND
+                    pdce.callerName LIKE CONCAT('%', #{query.callerName}, '%')
+            </if>
+            <if test="query.answererName != null and query.answererName != ''">
+                AND
+                    pdce.answererName LIKE CONCAT('%', #{query.answererName}, '%')
+            </if>
+            <if test="query.callTimeBegin != null and query.callTimeEnd != null">
+                AND
+                    pdce.callTime BETWEEN #{query.callTimeBegin} AND #{query.callTimeEnd}
+            </if>
+            <if test="query.projectId != null and query.projectId != ''">
+                AND
+                    pdce.projectId = #{query.projectId}
+            </if>
+        </where>
+        ORDER BY
+            pdce.callTime DESC
+    </select>
+
+    <select id="getPhone" resultType="com.pig4cloud.pigx.admin.api.entity.SysUser">
+        select * from pigxx.sys_user where user_id =#{userId}
+    </select>
+
+    <select id="getPerson" resultType="com.aurine.cloudx.estate.entity.ProjectPersonInfo">
+        SELECT
+        p.*
+        FROM
+        project_person_info p
+        left join project_service ps on p .projectId = ps.projectId
+        left join sys_service_cfg ssc on ps.serviceId = ssc.serviceId
+        WHERE
+        p.telephone = #{phone}
+        AND userId = #{userId}
+        and ssc.serviceCode = 'YDJ-TX'
+        <if test="projectId != null and projectId != ''">
+            and p.projectId = #{projectId}
+        </if>
+    </select>
+
+    <select id="getHouse" resultType="com.aurine.cloudx.estate.entity.ProjectHouseInfo">
+        SELECT
+            *
+        FROM
+            project_house_info
+        WHERE
+            houseCode = #{callTarget}
+          AND projectId = #{projectId}
+    </select>
+
+    <select id="getFrameNameByHouseId" parameterType="string" resultType="string">
+        SELECT (
+                   with recursive r as
+                                      (
+                                          select *
+                                          from project_frame_info pfi
+                                          where pfi.entityId = frame.entityId
+                                          union all
+                                          select pfi.*
+                                          from project_frame_info pfi,
+                                               r
+                                          where pfi.entityId = r.puid
+                                      )
+                   select GROUP_CONCAT(entityName ORDER BY r.LEVEL DESC SEPARATOR '-')
+                   from r
+                   GROUP BY projectId
+                   LIMIT 1 ) frameName
+        FROM project_frame_info frame, project_house_info info
+        WHERE frame.entityId = info.houseId
+          AND info.houseId = #{houseId}
+    </select>
+</mapper>

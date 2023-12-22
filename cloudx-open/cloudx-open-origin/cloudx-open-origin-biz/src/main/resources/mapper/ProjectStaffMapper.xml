@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectStaffMapper">
+    <update id="updatePhoneByUserId">
+        update aurine.project_staff s
+        set s.mobile=#{phone}
+        where s.userId = #{userId}
+    </update>
+    <update id="updateUserIdByPhone">
+        update aurine.project_staff s
+        set s.userId= #{userId}
+        where s.mobile = #{phone}
+    </update>
+
+    <!--查询当前项目下的所有员工-->
+    <select id="pageAll" resultType="com.aurine.cloudx.open.origin.vo.ProjectStaffListVo">
+        select staff.staffName,
+        staff.staffId,
+        spd.deptName,
+        staff.staffPost,
+        staff.grade,
+        staff.mobile,
+        staff.employerPhone,
+        spd.deptId
+        from project_staff staff
+        left join sys_project_dept spd on staff.departmentId = spd.deptId
+        <where>
+            <!--数据库没配置默认值故这里假设存在空值情况-->
+            and (staff.staffStatus ='1' or staff.staffStatus is null)
+            and staff.projectId=#{projectId}
+            <if test="name!=null and name!=''">
+                and staff.staffName like concat('%',#{name},'%')
+            </if>
+        </where>
+        order by spd.deptName
+    </select>
+    <select id="getManagerRegionStaffIdList" resultType="com.aurine.cloudx.open.origin.vo.StaffRegionVo">
+        -- SELECT
+        -- *
+        -- FROM
+        -- (
+        SELECT
+        staff.staffId, staff.staffName, staff.departmentId, COUNT( staff_region.seq ) regionNum
+        FROM
+        project_staff staff
+        LEFT JOIN project_staff_region staff_region ON staff_region.staffId = staff.staffId
+        WHERE staff.projectId = #{projectId}
+        GROUP BY
+        staff.staffId
+        -- ) staff_manager_region_num
+        <!--<if test="unManagerRegion">
+        WHERE regionNum != 0 || staffId IN
+            <foreach collection="staffIdLIst" item="id" index="index" open="(" close=")" separator=",">
+                #{id}
+            </foreach>
+        </if>-->
+    </select>
+
+    <select id="getStaffIdByRegionId" resultType="java.lang.String">
+        SELECT staff.staffId
+        FROM project_staff staff
+                 LEFT JOIN project_staff_region staff_region ON staff_region.staffId = staff.staffId
+        WHERE staff_region.regionId = #{regionId}
+        GROUP BY staff.staffId
+    </select>
+    <select id="getStaffPage" resultType="com.aurine.cloudx.open.origin.vo.ProjectStaffListVo">
+        select staff.staffName,
+        staff.staffId,
+        spd.deptName,
+        staff.staffPost,
+        staff.grade,
+        staff.mobile,
+        staff.employerPhone,
+        spd.deptId
+        from project_staff staff
+        left join sys_project_dept spd on staff.departmentId = spd.deptId
+        <where>
+            <if test="grade>2">
+                and staff.grade <![CDATA[<=]]> #{grade}
+            </if>
+            <if test="grade==2">
+                and staff.staffId = #{staffId}
+                or (staff.grade &lt; #{grade}
+                and staff.departmentId = #{departmentId})
+            </if>
+            <if test="name!=null and name!=''">
+                and staff.staffName like concat('%',#{name},'%')
+            </if>
+        </where>
+        order by spd.deptName
+    </select>
+
+    <delete id="removeByUserId">
+        delete
+        from project_staff staff
+        where staff.userId = #{userId}
+          and staff.projectId = #{projectId}
+    </delete>
+    <select id="getStaffByUserId" resultType="com.aurine.cloudx.open.origin.entity.ProjectStaff">
+        select *
+        from project_staff staff
+        where staff.userId = #{userId}
+          and staff.projectId = #{projectId}
+    </select>
+
+    <select id="getStaffListByUserId" resultType="com.aurine.cloudx.open.origin.entity.ProjectStaff">
+        select *
+        from project_staff staff
+        where staff.userId = #{userId}
+
+    </select>
+
+
+    <select id="getUserVosByDeptId" resultType="com.aurine.cloudx.open.origin.vo.SysUserVo">
+        select u.user_id       userId,
+               u.username,
+               staff.staffName trueName,
+               u.phone,
+               staff.credentialNo,
+               staff.sex,
+               r.dept_id       deptId,
+               null oldRoleId,
+               ur.role_id      roleId,
+               staff.picUrl    avatar,
+               null deptTypeId
+        from pigxx.sys_user u
+                 left join pigxx.sys_user_role ur on ur.user_id = u.user_id
+                 left join pigxx.sys_role r on r.role_id = ur.role_id
+                 left join aurine.project_staff staff on ur.user_id = staff.userId and staff.projectId = r.dept_id
+        where r.dept_id = #{projectId}
+          and r.role_name like #{roleName}
+    </select>
+
+    <select id="getStaffIdListByMenuId" resultType="String">
+        SELECT
+            staff.staffId
+        FROM
+            pigxx.sys_menu menu
+                LEFT JOIN pigxx.sys_role_menu role_menu ON role_menu.menu_id = menu.menu_id
+                LEFT JOIN project_staff staff ON staff.roleId = role_menu.role_id
+        WHERE
+            menu.menu_id = #{menuId} AND staffId IS NOT NULL AND staff.projectId = #{projectId}
+    </select>
+
+    <select id="getDepartmentId" resultType="java.lang.Integer">
+        select dept_id from pigxx.sys_dept where parent_id  = #{projectId} limit 0,1
+    </select>
+
+    <select id="getRoleId" resultType="java.lang.Integer">
+        select role_id from pigxx.sys_role where dept_id = #{projectId} and ds_type = '0' and del_flag = '0' limit 0,1
+    </select>
+
+    <update id="updatePhoneById">
+
+    </update>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectStaff"
+            resultType="com.aurine.cloudx.open.common.entity.vo.StaffInfoVo"
+    >
+        SELECT
+        *
+        FROM project_staff ps
+        <where>
+            <if test="query.projectId != null">
+                AND ps.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND ps.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.staffId != null and query.staffId != ''">
+                AND ps.staffId = #{query.staffId}
+            </if>
+            <if test="query.staffCode != null and query.staffCode != ''">
+                AND ps.staffCode = #{query.staffCode}
+            </if>
+            <if test="query.staffName != null and query.staffName != ''">
+                AND ps.staffName LIKE concat('%', #{query.staffName}, '%')
+            </if>
+            <if test="query.sex != null and query.sex != ''">
+                AND ps.sex = #{query.sex}
+            </if>
+            <if test="query.mobile != null and query.mobile != ''">
+                AND ps.mobile LIKE concat('%', #{query.mobile}, '%')
+            </if>
+            <if test="query.staffPost != null and query.staffPost != ''">
+                AND ps.staffPost LIKE concat('%', #{query.staffPost}, '%')
+            </if>
+            <if test="query.departmentId != null and query.departmentId != ''">
+                AND ps.departmentId = #{query.departmentId}
+            </if>
+            <if test="query.grade != null and query.grade != ''">
+                AND ps.grade = #{query.grade}
+            </if>
+            <if test="query.credentialType != null and query.credentialType != ''">
+                AND ps.credentialType = #{query.credentialType}
+            </if>
+            <if test="query.credentialNo != null and query.credentialNo != ''">
+                AND ps.credentialNo = #{query.credentialNo}
+            </if>
+            <if test="query.staffType != null and query.staffType != ''">
+                AND ps.staffType = #{query.staffType}
+            </if>
+            <if test="query.staffStatus != null and query.staffStatus != ''">
+                AND ps.staffStatus = #{query.staffStatus}
+            </if>
+            <if test="query.provinceCode != null and query.provinceCode != ''">
+                AND ps.provinceCode = #{query.provinceCode}
+            </if>
+            <if test="query.cityCode != null and query.cityCode != ''">
+                AND ps.cityCode = #{query.cityCode}
+            </if>
+            <if test="query.countyCode != null and query.countyCode != ''">
+                AND ps.countyCode = #{query.countyCode}
+            </if>
+            <if test="query.streetCode != null and query.streetCode != ''">
+                AND ps.streetCode = #{query.streetCode}
+            </if>
+            <if test="query.address != null and query.address != ''">
+                AND ps.address LIKE concat('%', #{query.address}, '%')
+            </if>
+            <if test="query.peopleMobileType != null and query.peopleMobileType != ''">
+                AND ps.peopleMobileType = #{query.peopleMobileType}
+            </if>
+            <if test="query.nationCode != null and query.nationCode != ''">
+                AND ps.nationCode LIKE concat('%', #{query.nationCode}, '%')
+            </if>
+        </where>
+    </select>
+
+</mapper>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectStaffRotaMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectStaffRota" id="ProjectStaffRotaMap">
+        <id property="rotaId" column="rotaId" jdbcType="VARCHAR"/>
+        <result property="startDate" column="startDate" jdbcType="OTHER"/>
+        <result property="endDate" column="endDate" jdbcType="OTHER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+</mapper>

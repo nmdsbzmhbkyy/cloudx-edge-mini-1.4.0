@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectMediaRepoMapper">
+
+    <resultMap id="projectMediaRepoMap" type="com.aurine.cloudx.estate.entity.ProjectMediaRepo">
+
+        <id property="repoId" column="repoId"/>
+        <result property="repoName" column="repoName"/>
+        <result property="repoType" column="repoType"/>
+        <result property="repoFormat" column="repoFormat"/>
+        <result property="repoDuration" column="repoDuration"/>
+        <result property="repoUrl" column="repoUrl"/>
+        <result property="appId" column="appId"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="queryObj" resultType="com.aurine.cloudx.estate.entity.ProjectMediaRepo">
+        select m.* from aurine.project_media_ad_playlist pnd
+        left join aurine.project_media_repo m on pnd.repoId = m.repoId
+        where pnd.adId = #{repoId} order by pnd.seq
+    </select>
+
+
+    <select id="listMediaRepoByAdSeq" resultType="com.aurine.cloudx.estate.entity.ProjectMediaRepo">
+        SELECT
+            repo.*
+        FROM
+            project_media_ad ad
+                LEFT JOIN project_media_ad_playlist play_list ON play_list.adId = ad.adId
+                LEFT JOIN project_media_repo repo ON repo.repoId = play_list.repoId
+        WHERE ad.seq = #{adSeq}
+    </select>
+
+    <select id="getMediaRepoList" resultType="com.aurine.cloudx.estate.vo.ProjectMediaRepoVo">
+        select * from  project_media_repo
+        where repoId in
+        <foreach collection="query" item="item" open="(" close=")" separator=",">
+        #{item}
+        </foreach>
+
+    </select>
+</mapper>

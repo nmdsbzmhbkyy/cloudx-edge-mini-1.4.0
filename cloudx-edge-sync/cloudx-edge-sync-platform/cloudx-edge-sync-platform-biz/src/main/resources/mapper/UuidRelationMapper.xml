@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, lengleng All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: lengleng (wangiegie@gmail.com)
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.edge.sync.biz.mapper.UuidRelationMapper">
+
+    <resultMap id="uuidRelationMap" type="com.aurine.cloudx.edge.sync.common.entity.po.UuidRelation">
+        <id property="seq" column="seq"/>
+        <result property="uuid" column="uuid"/>
+        <result property="thirdUuid" column="thirdUuid"/>
+        <result property="tenantId" column="tenantId"/>
+        <result property="projectUUID" column="projectUuid"/>
+        <result property="serviceName" column="serviceName"/>
+        <result property="oldMd5" column="oldMd5"/>
+    </resultMap>
+    <update id="updateByMarks">
+        update uuid_relation
+        set oldMd5 = #{uuidRelation.oldMd5}
+        where
+        tenantId = #{uuidRelation.tenantId}
+        AND projectUuid = #{uuidRelation.projectUUID}
+        AND serviceName = #{uuidRelation.serviceName}
+        <if test="uuidRelation.uuid != null">
+            AND uuid = #{uuidRelation.uuid}
+        </if>
+        <if test="uuidRelation.thirdUuid != null">
+            AND thirdUuid = #{uuidRelation.thirdUuid}
+        </if>
+        <if test="uuidRelation.thirdUuid == null and uuidRelation.uuid == null">
+            AND 1=0
+        </if>
+    </update>
+
+    <delete id="deleteByMarks">
+        delete
+        from uuid_relation
+        where
+        tenantId = #{uuidRelation.tenantId}
+        AND projectUuid = #{uuidRelation.projectUUID}
+        AND serviceName = #{uuidRelation.serviceName}
+        <if test="uuidRelation.uuid != null">
+            AND uuid = #{uuidRelation.uuid}
+        </if>
+        <if test="uuidRelation.thirdUuid != null">
+            AND thirdUuid = #{uuidRelation.thirdUuid}
+        </if>
+        <if test="uuidRelation.thirdUuid == null and uuidRelation.uuid == null">
+            AND 1=0
+        </if>
+    </delete>
+
+</mapper>

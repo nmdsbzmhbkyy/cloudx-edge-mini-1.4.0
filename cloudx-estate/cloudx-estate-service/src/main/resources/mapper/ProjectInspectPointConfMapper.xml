@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, lengleng All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: lengleng (wangiegie@gmail.com)
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectInspectPointConfMapper">
+
+    <select id="fetchList" resultType="com.aurine.cloudx.estate.vo.ProjectInspectPointConfVo">
+        SELECT * FROM(
+            SELECT
+                DISTINCT point.pointId,
+                point.pointName,
+                point.isBlueTeeth,
+                point.deviceId,
+                point.temperature,
+                point.humidity,
+                point.remark,
+                point.status,
+                point.createTime,
+                admin_user.true_name 'operatorName',
+                (SELECT count(*) FROM project_inspect_point_device_rel WHERE point.pointId = project_inspect_point_device_rel.pointId) 'associatedDeviceNum',
+                IFNULL((
+                    SELECT count(project_device_monitor_conf.monitorId) 'checkItemNum' FROM
+                    project_inspect_point_conf
+                    LEFT JOIN project_inspect_point_device_rel ON project_inspect_point_conf.pointId = project_inspect_point_device_rel.pointId
+                    LEFT JOIN project_device_info ON project_device_info.deviceId = project_inspect_point_device_rel.deviceId
+                    LEFT JOIN project_device_monitor_conf ON project_device_info.deviceType = project_device_monitor_conf.deviceTypeId
+                    WHERE project_inspect_point_conf.pointId = point.pointId AND project_device_monitor_conf.projectId = point.projectId
+                    GROUP BY project_inspect_point_conf.pointId
+                ),'0') 'checkItemNum'
+            FROM
+                project_inspect_point_conf point
+                LEFT JOIN project_inspect_point_device_rel point_device ON point.pointId = point_device.pointId
+                LEFT JOIN project_device_info device_info ON device_info.deviceId = point_device.deviceId
+                LEFT JOIN pigxx.sys_user admin_user ON admin_user.user_id = point.operator
+                    <where>
+                        <if test="query.dateRange!=null and query.dateRange.length > 0">
+                            AND STR_TO_DATE((DATE_FORMAT(point.createTime,'%Y-%m-%d')),'%Y-%m-%d') BETWEEN #{query.dateRange[0]} AND
+                            #{query.dateRange[1]}
+                        </if>
+                        <if test="query.pointName!=null and query.pointName != ''">
+                            AND point.pointName like concat('%', #{query.pointName},'%')
+                        </if>
+                        <if test="query.pointIdList != null">
+                            NOT FIND_IN_SET(point.pointId,#{query.pointIdList})
+                         </if>
+                    </where>
+            ORDER BY point.createTime desc
+        ) point_list
+        <!--<where>
+            <if test="query.address!=null and query.address != ''">
+                AND address like concat('%', #{query.address},'%')
+            </if>
+        </where>-->
+    </select>
+
+    <select id="fetchListInSelectPage" resultType="com.aurine.cloudx.estate.vo.ProjectInspectPointConfVo">
+        SELECT
+            point.pointId,
+            point.pointName,
+            point.temperature,
+            point.humidity,
+            point.remark,
+            point.status,
+            (
+            SELECT count(project_inspect_point_device_rel.relId) FROM
+            project_inspect_point_conf
+            LEFT JOIN project_inspect_point_device_rel ON project_inspect_point_conf.pointId = project_inspect_point_device_rel.pointId
+            WHERE point.pointId = project_inspect_point_conf.pointId AND project_inspect_point_conf.projectId = point.projectId
+            GROUP BY project_inspect_point_conf.pointId
+            ) 'deviceNum',
+            IFNULL((
+            SELECT count(project_device_monitor_conf.monitorId) 'checkItemNum' FROM
+            project_inspect_point_conf
+            LEFT JOIN project_inspect_point_device_rel ON project_inspect_point_conf.pointId = project_inspect_point_device_rel.pointId
+            LEFT JOIN project_device_info ON project_device_info.deviceId = project_inspect_point_device_rel.deviceId
+            LEFT JOIN project_device_monitor_conf ON project_device_info.deviceType = project_device_monitor_conf.deviceTypeId
+            WHERE project_inspect_point_conf.pointId = point.pointId AND project_device_monitor_conf.projectId = point.projectId
+            GROUP BY project_inspect_point_conf.pointId
+            ),'0') 'checkItemNum'
+        FROM
+            project_inspect_point_conf point
+        <where>
+            <if test="query.dateRange!=null and query.dateRange.length > 0">
+                AND STR_TO_DATE((DATE_FORMAT(point.createTime,'%Y-%m-%d')),'%Y-%m-%d') BETWEEN #{query.dateRange[0]}
+                AND #{query.dateRange[1]}
+            </if>
+            <if test="query.pointName!=null and query.pointName != ''">
+                AND point.pointName like concat('%', #{query.pointName},'%')
+            </if>
+            AND status = 1
+        </where>
+        ORDER BY point.createTime
+    </select>
+
+    <select id="listInspectionByRouteId" resultType="com.aurine.cloudx.estate.vo.ProjectInspectPointConfVo">
+        SELECT
+            DISTINCT point.pointId,
+            point.pointName,
+            point.isBlueTeeth,
+            point.deviceId,
+            point.temperature,
+            point.humidity,
+            point.remark,
+            point.status,
+            point.createTime,
+            route_point_conf.sort,
+            (SELECT count(*) FROM project_inspect_point_device_rel WHERE point.pointId = project_inspect_point_device_rel.pointId) 'associatedDeviceNum',
+            IFNULL((
+            SELECT count(project_device_monitor_conf.monitorId) 'checkItemNum' FROM
+            project_inspect_point_conf
+            LEFT JOIN project_inspect_point_device_rel ON project_inspect_point_conf.pointId = project_inspect_point_device_rel.pointId
+            LEFT JOIN project_device_info ON project_device_info.deviceId = project_inspect_point_device_rel.deviceId
+            LEFT JOIN project_device_monitor_conf ON project_device_info.deviceType = project_device_monitor_conf.deviceTypeId
+            WHERE project_inspect_point_conf.pointId = point.pointId AND project_device_monitor_conf.projectId = point.projectId
+            GROUP BY project_inspect_point_conf.pointId
+            ),'0') 'checkItemNum'
+        FROM
+            project_inspect_route_point_conf route_point_conf
+            LEFT JOIN project_inspect_point_conf point ON route_point_conf.inspectPointId = point.pointId
+            LEFT JOIN project_inspect_point_device_rel point_device ON point.pointId = point_device.pointId
+            LEFT JOIN project_device_info device_info ON device_info.deviceId = point_device.deviceId
+            WHERE status = 1 AND route_point_conf.inspectRouteId = #{inspectRouteId}
+        ORDER BY route_point_conf.sort
+    </select>
+
+</mapper>

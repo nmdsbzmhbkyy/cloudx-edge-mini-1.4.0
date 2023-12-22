@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectPlateNumberDeviceMapper">
+    <select id="countByProjectId" resultType="com.aurine.cloudx.open.origin.vo.ParkingDeviceCertDlstatusCountVo">
+        SELECT deviceId,
+               SUM(dlStatus = '0')                             successNum,
+               SUM(dlStatus = '1')                             failedNum,
+               SUM(dlStatus = '2')                             downloadingNum,
+               SUM(plateNumberStatus = '0' AND dlStatus = '0') normalSuccessNum,
+               SUM(plateNumberStatus = '0' AND dlStatus = '1') normalFailedNum,
+               SUM(plateNumberStatus = '1' AND dlStatus = '0') noEntrySuccessNum,
+               SUM(plateNumberStatus = '1' AND dlStatus = '1') noEntryFailedNum,
+               projectId
+        FROM project_plate_number_device
+        WHERE projectId = #{projectId}
+        GROUP BY deviceId, projectId
+    </select>
+
+    <select id="listVoByDeviceId" resultType="com.aurine.cloudx.open.origin.vo.ProjectPlateNumberDeviceVo">
+        SELECT
+            *,
+            IF
+                ( project_plate_number_device.plateNumberStatus = '0', '正常', '禁止通行' ) plateNumberStatusCh,
+            CASE
+                WHEN ( project_plate_number_device.dlStatus = '0') THEN '下载成功'
+                WHEN ( project_plate_number_device.dlStatus = '1') THEN '下载失败'
+                WHEN ( project_plate_number_device.dlStatus = '2') THEN '下载中'
+                WHEN ( project_plate_number_device.dlStatus = '3') THEN '删除中'
+                WHEN ( project_plate_number_device.dlStatus = '4') THEN '删除失败'
+                ELSE NULL END AS dlStatusCh
+        FROM
+            project_plate_number_device
+        WHERE deviceId = #{deviceId}
+        ORDER BY sendTime DESC
+    </select>
+</mapper>

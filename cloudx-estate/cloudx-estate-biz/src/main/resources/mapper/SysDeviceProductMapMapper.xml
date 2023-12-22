@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, lengleng All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: lengleng (wangiegie@gmail.com)
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.SysDeviceProductMapMapper">
+
+  <resultMap id="sysDeviceProductMapMap" type="com.aurine.cloudx.estate.entity.SysDeviceProductMap">
+                  <id property="seq" column="seq"/>
+                        <result property="deviceTypeId" column="deviceTypeId"/>
+                        <result property="productId" column="productId"/>
+                        <result property="productCode" column="productCode"/>
+                        <result property="productType" column="productType"/>
+                        <result property="productName" column="productName"/>
+                        <result property="productModel" column="productModel"/>
+                        <result property="modelId" column="modelId"/>
+                        <result property="manufacture" column="manufacture"/>
+                        <result property="productDesc" column="productDesc"/>
+                        <result property="protocal" column="protocal"/>
+                        <result property="dataFormat" column="dataFormat"/>
+                        <result property="industry" column="industry"/>
+                        <result property="capabilities" column="capabilities"/>
+                        <result property="capability" column="capability"/>
+                        <result property="adaptionId" column="adaptionId"/>
+                        <result property="thirdPartyNo" column="thirdPartyNo"/>
+                        <result property="projectId" column="projectId"/>
+<!--                        <result property="tenantId" column="tenant_id"/>-->
+                        <result property="operator" column="operator"/>
+                        <result property="createTime" column="createTime"/>
+                        <result property="updateTime" column="updateTime"/>
+            </resultMap>
+
+      <select id="getProductList" resultType="com.aurine.cloudx.estate.vo.SysDeviceProductMapVo">
+        SELECT
+            tmp_product_device.deviceNum,
+            tmp_product_device.deviceType,
+            product_map.*
+        FROM
+            sys_device_product_map product_map
+                LEFT JOIN (
+                SELECT
+                    product_map.productId,
+                    count( device.deviceId ) deviceNum,
+                    device.deviceType
+                FROM
+                    sys_device_product_map product_map
+                    LEFT JOIN project_device_info device ON device.productId = product_map.productId
+                GROUP BY product_map.productId, device.deviceType
+            ) tmp_product_device ON tmp_product_device.productId = product_map.productId
+        WHERE deviceNum != 0
+      </select>
+</mapper>

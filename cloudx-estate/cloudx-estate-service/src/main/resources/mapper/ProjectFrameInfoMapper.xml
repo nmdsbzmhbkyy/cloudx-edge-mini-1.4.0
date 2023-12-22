@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectFrameInfoMapper">
+
+    <resultMap id="frameInfoMap" type="com.aurine.cloudx.estate.entity.ProjectFrameInfo">
+        <!--                  <id property="seq" column="seq"/>-->
+        <id property="entityId" column="entityId"/>
+        <result property="entityCode" column="entityCode"/>
+        <!--                        <result property="projectId" column="projectId"/>-->
+        <result property="entityName" column="entityName"/>
+        <result property="puid" column="puid"/>
+        <result property="isBuilding" column="isBuilding"/>
+        <result property="isUnit" column="isUnit"/>
+        <result property="isHouse" column="isHouse"/>
+        <result property="level" column="level"/>
+        <!--                        <result property="tenantId" column="tenant_id"/>-->
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="getFrameInfoById" parameterType="string" resultType="string">
+        with recursive r as
+                           (
+                               select *
+                               from project_frame_info pfi
+                               where pfi.entityId = #{entityId}
+                               union all
+                               select pfi.*
+                               from project_frame_info pfi,
+                                    r
+                               where pfi.entityId = r.puid
+                           )
+        select GROUP_CONCAT(entityName)
+        from r
+        GROUP BY projectId;
+    </select>
+
+
+    <select id="listFrameAndPersonCounts" resultType="com.aurine.cloudx.estate.dto.ProjectFrameCountDTO">
+        with recursive r as
+        (
+
+        <if test="entityId != null and entityId != ''">
+            select * from project_frame_info s1 where s1.entityid = #{entityId}
+            union all
+            select s1.* from project_frame_info s1, r where s1.puid = r.entityid
+        </if>
+
+        <if test="entityId == null or entityId == ''">
+            select * from project_frame_info where 1=1 and tenant_id = #{tenantId} and projectid = #{projectId}
+        </if>
+
+
+        ) select count(*) as entityCount,level,sum(rel.personCount) as personCount from r
+        left join (select count(*) as personCount,pl.houseid from project_house_person_rel pl where auditStatus = 2
+        group by pl.houseid) rel
+        left join (select count(*) as personCount,pl.houseid from project_house_person_rel pl group by pl.houseid) rel
+        on r.entityId = rel.houseId
+
+        where 1=1 and r.level   <![CDATA[<]]>  4 group by level;
+    </select>
+
+    <select id="getHouseIdByAddressNotGroup" resultType="java.lang.String">
+        SELECT houseId
+        FROM (
+                 SELECT CONCAT(building.entityName, '-', unit.entityName, '-', house.entityName) address,
+                        house.entityId                                                           houseId
+                 FROM project_frame_info house
+                          LEFT JOIN project_frame_info unit ON unit.entityId = house.puid
+                          LEFT JOIN project_frame_info building ON building.entityId = unit.puid
+                 WHERE house.`isHouse` = 1) AS houseAddress
+        WHERE houseAddress.address = #{address}
+
+    </select>
+
+    <select id="getHouseIdByAddressGroup" resultType="java.lang.String">
+        SELECT DISTINCT houseId
+        FROM (
+                 SELECT house.entityId houseId,
+                        (
+                            with recursive r as (
+                                select *
+                                from project_frame_info pfi
+                                where pfi.entityId = house.entityId
+                                union all
+                                select pfi.*
+                                from project_frame_info pfi,
+                                     r
+                                where pfi.entityId = r.puid
+                            )
+                            select group_concat(
+                                           r.entityName
+                                           order by
+                                           level desc SEPARATOR '-'
+                                       )
+                            from r
+                            GROUP BY projectId
+                            ORDER BY level
+                        )              address
+                 FROM project_frame_info AS house
+                          LEFT JOIN project_frame_info AS unit ON unit.entityId = house.puid
+                          LEFT JOIN project_frame_info AS building ON building.entityId = unit.puid
+                          LEFT JOIN project_house_person_rel ON house.entityId = project_house_person_rel.houseId
+                          LEFT JOIN project_person_info
+                                    ON project_person_info.personId = project_house_person_rel.personId
+             ) houseAddressTable
+        where address = #{address}
+    </select>
+
+    <select id="getByLevel" resultType="com.aurine.cloudx.estate.entity.ProjectFrameInfo">
+        select info.entityId,
+               info.entityCode,
+               info.projectId,
+               case
+                   when info.level = 3 then (
+                       with recursive r as
+                                          (
+                                              select *
+                                              from project_frame_info pfi
+                                              where pfi.entityId = info.entityId
+                                              union all
+                                              select pfi.*
+                                              from project_frame_info pfi,
+                                                   r
+                                              where pfi.entityId = r.puid
+                                          )
+                       select group_concat(r.entityName order by level desc SEPARATOR '-')
+                       from r
+                       GROUP BY projectId
+                       ORDER BY level
+                   )
+                   else info.entityName end entityName,
+               info.puid,
+               info.isBuilding,
+               info.isUnit,
+               info.isHouse,
+               info.level,
+               info.tenant_id,
+               info.operator,
+               info.createTime,
+               info.updateTime
+        from project_frame_info info
+        where info.level <![CDATA[<=]]> #{level}
+        order by info.createTime
+    </select>
+    <select id="listByPuid" resultType="com.aurine.cloudx.estate.entity.ProjectFrameInfo">
+        SELECT *
+        FROM project_frame_info
+        where puid = #{puid}
+        ORDER BY regexp_replace(entityName, '[^0-9]', '') + 0, entityName
+    </select>
+    <select id="countByProjectIdAndCode" resultType="java.lang.Integer">
+        select count(*)
+        from project_frame_info
+        where entityCode = #{frameCode}
+          and projectId = #{projectId}
+    </select>
+    <select id="getByCode" resultType="com.aurine.cloudx.estate.vo.ProjectFrameInfoVo">
+        select *
+        from project_frame_info
+        where entityCode = #{frameCode}
+          and projectId = #{projectId}
+    </select>
+    <select id="getCountByIndoor" resultType="java.lang.Integer">
+        with recursive child_frame as
+        (
+        select pfi.* from project_frame_info pfi
+        where 1=1
+        <if test="ids!=null and ids.size>0">
+            and pfi.entityId in
+            <foreach collection="ids" item="id" open="(" close=")" separator=",">
+                #{id}
+            </foreach>
+            or pfi.projectId in
+            <foreach collection="ids" item="id" open="(" close=")" separator=",">
+                #{id}
+            </foreach>
+        </if>
+        union all
+        select t1.* from project_frame_info t1, child_frame t2 where t1.puid = t2.entityId
+        )
+        select count( DISTINCT f.entityId) from child_frame f where f.isHouse ='1' and exists (select 1 from
+        project_house_person_rel rel where rel.houseId=f.entityId )
+    </select>
+
+    <select id="getCheckedIndoorId" resultType="String">
+        with recursive child_frame as
+        (
+        select pfi.* from project_frame_info pfi
+        where 1=1
+        <if test="ids!=null and ids.size>0">
+            and pfi.entityId in
+            <foreach collection="ids" item="id" open="(" close=")" separator=",">
+                #{id}
+            </foreach>
+            or pfi.projectId in
+            <foreach collection="ids" item="id" open="(" close=")" separator=",">
+                #{id}
+            </foreach>
+        </if>
+        union all
+        select t1.* from project_frame_info t1, child_frame t2 where t1.puid = t2.entityId
+        )
+        select  DISTINCT f.entityId from child_frame f where f.isHouse ='1' and exists (select 1 from
+        project_house_person_rel rel where rel.houseId=f.entityId )
+    </select>
+
+    <select id="getFrameInfoByPerson" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceSelectTreeVo">
+        select frame.entityId   id,
+               frame.entityName name,
+               frame.projectId  parentId,
+               frame.isHouse    type
+        from project_frame_info frame
+        where frame.isBuilding = 1
+          and frame.projectId = #{puid}
+        union all
+        select frame1.entityId   id,
+               frame1.entityName name,
+               frame1.puid       parentId,
+               frame1.isHouse    type
+        from project_frame_info frame1
+        where frame1.isUnit = 1
+          and frame1.puid = #{puid}
+        union all
+        select frame2.entityId   id,
+               frame2.entityName name,
+               frame2.puid       parentId,
+               frame2.isHouse    type
+        from project_frame_info frame2
+        where frame2.isHouse = 1
+          and frame2.puid = #{puid}
+          and exists(select 1 from project_house_person_rel rel where rel.houseId = frame2.entityId)
+    </select>
+    <select id="getAllFrameInfosOnPerson" resultType="com.aurine.cloudx.estate.vo.ProjectDeviceSelectTreeVo">
+        select frame.entityId   id,
+               frame.entityName name,
+               frame.projectId  parentId,
+               frame.isHouse    type
+        from project_frame_info frame
+        where frame.isBuilding = 1
+        union all
+        select frame1.entityId   id,
+               frame1.entityName name,
+               frame1.puid       parentId,
+               frame1.isHouse    type
+        from project_frame_info frame1
+        where frame1.isUnit = 1
+        union all
+        select frame2.entityId   id,
+               frame2.entityName name,
+               frame2.puid       parentId,
+               frame2.isHouse    type
+        from project_frame_info frame2
+        where frame2.isHouse = 1
+          and exists(select 1 from project_house_person_rel rel where rel.houseId = frame2.entityId)
+    </select>
+
+    <insert id="saveFrame">
+        INSERT
+        INTO project_frame_info
+        (entityId, entityCode, projectId, entityName, puid, isBuilding, isUnit, isHouse, level, tenant_id, operator)
+        VALUES (#{frameInfo.entityId},
+                #{frameInfo.entityCode},
+                #{frameInfo.projectId},
+                #{frameInfo.entityName},
+                #{frameInfo.puid},
+                #{frameInfo.isBuilding},
+                #{frameInfo.isUnit},
+                #{frameInfo.isHouse},
+                #{frameInfo.level},
+                #{frameInfo.tenantId},
+                #{frameInfo.operator})
+
+    </insert>
+
+</mapper>

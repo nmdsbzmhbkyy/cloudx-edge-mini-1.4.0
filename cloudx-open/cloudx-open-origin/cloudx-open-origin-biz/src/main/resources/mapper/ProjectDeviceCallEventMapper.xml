@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectDeviceCallEventMapper">
+
+    <resultMap id="ProjectDeviceCallEventMap" type="com.aurine.cloudx.open.origin.entity.ProjectDeviceCallEvent">
+        <id property="seq" column="seq"/>
+        <result property="eventId" column="eventId"/>
+        <result property="caller" column="caller"/>
+        <result property="callerType" column="callerType"/>
+        <result property="callerName" column="callerName"/>
+        <result property="answerer" column="answerer"/>
+        <result property="answererType" column="answererType"/>
+        <result property="answererName" column="answererName"/>
+        <result property="callTime" column="callTime"/>
+        <result property="callDuration" column="callDuration"/>
+        <result property="callResponse" column="callResponse"/>
+        <result property="projectId" column="projectId"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="pageCallEvent" resultType="com.aurine.cloudx.open.origin.vo.ProjectDeviceCallEventVo">
+        SELECT
+            pdce.seq,
+            pdce.eventId,
+            pdce.caller,
+            pdce.callerType,
+            pdce.callerName,
+            pdce.answerer,
+            pdce.answererType,
+            pdce.answererName,
+            pdce.callTime,
+            pdce.callDuration,
+            pdce.callResponse,
+            pdce.projectId,
+            pdce.tenant_id,
+            pdce.createTime,
+            pdce.updateTime
+        FROM
+            project_device_call_event AS pdce
+        <where>
+            <if test="query.callResponse != null and query.callResponse != ''">
+                AND
+                    pdce.callResponse = #{query.callResponse}
+            </if>
+            <if test="query.callerType != null and query.callerType != ''">
+                AND
+                    pdce.callerType = #{query.callerType}
+            </if>
+            <if test="query.answererType != null and query.answererType != ''">
+                AND
+                    pdce.answererType = #{query.answererType}
+            </if>
+            <if test="query.callerName != null and query.callerName != ''">
+                AND
+                    pdce.callerName LIKE CONCAT('%', #{query.callerName}, '%')
+            </if>
+            <if test="query.answererName != null and query.answererName != ''">
+                AND
+                    pdce.answererName LIKE CONCAT('%', #{query.answererName}, '%')
+            </if>
+            <if test="query.callTimeBegin != null and query.callTimeEnd != null">
+                AND
+                    pdce.callTime BETWEEN #{query.callTimeBegin} AND #{query.callTimeEnd}
+            </if>
+            <if test="query.projectId != null and query.projectId != ''">
+                AND
+                    pdce.projectId = #{query.projectId}
+            </if>
+        </where>
+        ORDER BY
+            pdce.callTime DESC
+    </select>
+
+    <select id="pageCallEventByProject" resultType="com.aurine.cloudx.open.origin.vo.ProjectDeviceCallEventVo">
+        SELECT
+            pdce.seq,
+            pdce.eventId,
+            pdce.caller,
+            pdce.callerType,
+            pdce.callerName,
+            pdce.answerer,
+            pdce.answererType,
+            pdce.answererName,
+            pdce.callTime,
+            pdce.callDuration,
+            pdce.callResponse,
+            pdce.projectId,
+            pdce.tenant_id,
+            pdce.createTime,
+            pdce.updateTime
+        FROM
+            project_device_call_event AS pdce
+        <where>
+            <if test="query.callResponse != null and query.callResponse != ''">
+                AND
+                    pdce.callResponse = #{query.callResponse}
+            </if>
+            <if test="query.callerType != null and query.callerType != ''">
+                AND
+                    pdce.callerType = #{query.callerType}
+            </if>
+            <if test="query.answererType != null and query.answererType != ''">
+                AND
+                    pdce.answererType = #{query.answererType}
+            </if>
+            <if test="query.callerName != null and query.callerName != ''">
+                AND
+                    pdce.callerName LIKE CONCAT('%', #{query.callerName}, '%')
+            </if>
+            <if test="query.answererName != null and query.answererName != ''">
+                AND
+                    pdce.answererName LIKE CONCAT('%', #{query.answererName}, '%')
+            </if>
+            <if test="query.callTimeBegin != null and query.callTimeEnd != null">
+                AND
+                    pdce.callTime BETWEEN #{query.callTimeBegin} AND #{query.callTimeEnd}
+            </if>
+            <if test="query.projectId != null and query.projectId != ''">
+                AND
+                    pdce.projectId = #{query.projectId}
+            </if>
+        </where>
+        ORDER BY
+            pdce.callTime DESC
+    </select>
+
+    <select id="pageCallEventByStaff" resultType="com.aurine.cloudx.open.origin.vo.ProjectDeviceCallEventVo">
+        SELECT
+            pdce.seq,
+            pdce.eventId,
+            pdce.caller,
+            pdce.callerType,
+            pdce.callerName,
+            pdce.answerer,
+            pdce.answererType,
+            pdce.answererName,
+            pdce.callTime,
+            pdce.callDuration,
+            pdce.callResponse,
+            pdce.projectId,
+            pdce.tenant_id,
+            pdce.createTime,
+            pdce.updateTime
+        FROM
+            project_device_call_event AS pdce
+        INNER JOIN
+            project_staff AS ps ON pdce.answerer = ps.staffId
+        <where>
+            <if test="query.callResponse != null and query.callResponse != ''">
+                AND
+                    pdce.callResponse = #{query.callResponse}
+            </if>
+            <if test="query.callerType != null and query.callerType != ''">
+                AND
+                    pdce.callerType = #{query.callerType}
+            </if>
+            <if test="query.answererType != null and query.answererType != ''">
+                AND
+                    pdce.answererType = #{query.answererType}
+            </if>
+            <if test="query.callerName != null and query.callerName != ''">
+                AND
+                    pdce.callerName LIKE CONCAT('%', #{query.callerName}, '%')
+            </if>
+            <if test="query.answererName != null and query.answererName != ''">
+                AND
+                    pdce.answererName LIKE CONCAT('%', #{query.answererName}, '%')
+            </if>
+            <if test="query.callTimeBegin != null and query.callTimeEnd != null">
+                AND
+                    pdce.callTime BETWEEN #{query.callTimeBegin} AND #{query.callTimeEnd}
+            </if>
+            <if test="query.projectId != null and query.projectId != ''">
+                AND
+                    pdce.projectId = #{query.projectId}
+            </if>
+        </where>
+        ORDER BY
+            pdce.callTime DESC
+    </select>
+
+</mapper>

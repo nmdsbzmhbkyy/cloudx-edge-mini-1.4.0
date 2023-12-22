@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectFingerprintsMapper">
+
+    <resultMap id="projectFingerprintsMap" type="com.aurine.cloudx.open.origin.entity.ProjectFingerprints">
+
+        <id property="fingerprintId" column="fingerprintId"/>
+        <result property="fingerprintCode" column="fingerprintCode"/>
+        <result property="personType" column="personType"/>
+        <result property="personId" column="personId"/>
+        <result property="fpUrl" column="fpUrl"/>
+        <result property="status" column="status"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="getByCode" resultType="com.aurine.cloudx.open.origin.entity.ProjectFingerprints">
+                SELECT
+                    finger.seq,
+                    finger.fingerprintId,
+                    finger.fingerprintCode,
+                    finger.fingerprintName,
+                    finger.projectId,
+                    finger.personType,
+                    finger.personId,
+                    finger.fpUrl,
+                    finger.`status`,
+                    finger.tenant_id,
+                    finger.operator,
+                    finger.createTime,
+                    finger.updateTime
+                    FROM
+                    project_fingerprints AS finger
+                    WHERE
+                    finger.fingerprintCode = #{code} AND
+                    finger.projectId = #{projectId}
+
+    </select>
+</mapper>

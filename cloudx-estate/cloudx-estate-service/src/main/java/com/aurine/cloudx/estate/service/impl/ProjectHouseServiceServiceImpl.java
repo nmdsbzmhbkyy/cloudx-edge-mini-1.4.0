@@ -1,0 +1,109 @@
+
+package com.aurine.cloudx.estate.service.impl;
+
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.StrUtil;
+import com.aurine.cloudx.estate.entity.ProjectHouseInfo;
+import com.aurine.cloudx.estate.entity.ProjectHouseService;
+import com.aurine.cloudx.estate.entity.SysServiceCfg;
+import com.aurine.cloudx.estate.mapper.ProjectHouseServiceMapper;
+import com.aurine.cloudx.estate.service.ProjectHouseInfoService;
+import com.aurine.cloudx.estate.service.ProjectHouseServiceService;
+import com.aurine.cloudx.estate.service.SysServiceCfgService;
+import com.aurine.cloudx.estate.vo.ProjectHouseServiceInfoVo;
+import com.aurine.cloudx.estate.vo.ServiceHouseSaveVo;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 房屋增值服务
+ *
+ * @author guhl@aurine.cn
+ * @date 2020-06-04 15:23:14
+ */
+@Service
+public class ProjectHouseServiceServiceImpl extends ServiceImpl<ProjectHouseServiceMapper, ProjectHouseService> implements ProjectHouseServiceService {
+
+    @Autowired
+    SysServiceCfgService sysServiceCfgService;
+
+    @Autowired
+    ProjectHouseInfoService projectHouseInfoService;
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean saveByHouse(ServiceHouseSaveVo serviceHouseSaveVo) {
+        List<String> serviceIds = serviceHouseSaveVo.getServiceIds();
+        String houseId = serviceHouseSaveVo.getHouseId();
+        List<ProjectHouseService> projectHouseServices = new ArrayList<>();
+        baseMapper.delete(Wrappers.lambdaUpdate(ProjectHouseService.class).eq(ProjectHouseService::getHouseId, houseId));
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        serviceIds.forEach(e -> {
+            ProjectHouseService projectHouseService = new ProjectHouseService();
+            projectHouseService.setServiceId(e);
+            projectHouseService.setHouseId(houseId);
+            if (StrUtil.isNotEmpty(serviceHouseSaveVo.getExpTime())) {
+                projectHouseService.setExpTime(LocalDateTime.parse(serviceHouseSaveVo.getExpTime(), df));
+            }
+            projectHouseServices.add(projectHouseService);
+        });
+        projectHouseInfoService.update(Wrappers.lambdaUpdate(ProjectHouseInfo.class)
+                .set(ProjectHouseInfo::getServiceExpTime, serviceHouseSaveVo.getExpTime())
+                .eq(ProjectHouseInfo::getHouseId, houseId));
+        return super.saveBatch(projectHouseServices);
+    }
+
+/*    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean saveByHouseIds(ServiceHouseIdsSaveVo serviceHouseIdsSaveVo) {
+        List<ProjectHouseService> projectHouseServices = new ArrayList<>();
+        List<String> houseIds = serviceHouseIdsSaveVo.getHouseIds();
+        List<String> serviceIds = serviceHouseIdsSaveVo.getServiceIds();
+        houseIds.forEach(e -> {
+            baseMapper.delete(Wrappers.lambdaUpdate(ProjectHouseService.class).eq(ProjectHouseService::getHouseId, e));
+            serviceIds.forEach(f -> {
+                ProjectHouseService projectHouseService = new ProjectHouseService();
+                projectHouseService.setHouseId(e);
+                projectHouseService.setServiceId(f);
+                projectHouseServices.add(projectHouseService);
+            });
+        });
+        return super.saveBatch(projectHouseServices);
+    }*/
+
+    @Override
+    public List<ProjectHouseServiceInfoVo> getHouseServiceByHouseId(String houseId) {
+        List<ProjectHouseService> projectHouseServices = baseMapper.selectList(Wrappers.lambdaQuery(ProjectHouseService.class)
+                .eq(ProjectHouseService::getHouseId, houseId)
+                .and(qw -> qw.gt(ProjectHouseService::getExpTime, LocalDateTime.now()).or().isNull(ProjectHouseService::getExpTime)));
+        List<String> serviceIds = new ArrayList<>();
+        projectHouseServices.forEach(e -> {
+            serviceIds.add(e.getServiceId());
+        });
+        if (CollectionUtil.isNotEmpty(serviceIds)) {
+            LocalDateTime expTime = projectHouseServices.get(0).getExpTime();
+            List<SysServiceCfg> sysServiceCfgs = sysServiceCfgService.listByIds(serviceIds);
+            List<ProjectHouseServiceInfoVo> projectHouseServiceInfoVos = new ArrayList<>();
+            sysServiceCfgs.forEach(e -> {
+                ProjectHouseServiceInfoVo projectHouseServiceInfoVo = new ProjectHouseServiceInfoVo();
+                BeanUtils.copyProperties(e, projectHouseServiceInfoVo);
+                projectHouseServiceInfoVo.setExpTime(expTime);
+                projectHouseServiceInfoVos.add(projectHouseServiceInfoVo);
+            });
+            return projectHouseServiceInfoVos;
+        } else {
+            return new ArrayList<>();
+        }
+    }
+
+
+}

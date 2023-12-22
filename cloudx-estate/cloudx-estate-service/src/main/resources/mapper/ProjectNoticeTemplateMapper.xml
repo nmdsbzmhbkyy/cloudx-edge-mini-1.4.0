@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectNoticeTemplateMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectNoticeTemplate" id="ProjectNoticeTemplateMap">
+
+        <result property="templateId" column="templateId" jdbcType="VARCHAR"/>
+        <result property="typeId" column="typeId" jdbcType="VARCHAR"/>
+        <result property="title" column="title" jdbcType="VARCHAR"/>
+        <result property="content" column="content" jdbcType="VARCHAR"/>
+        <result property="isActive" column="isActive" jdbcType="VARCHAR"/>
+        <result property="creator" column="creator" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <insert id="saveTemplate">
+        INSERT
+        INTO project_notice_template
+            (templateId, title, isActive, typeId, content, projectId)
+        VALUES (#{data.templateId}, #{data.title}, #{data.isActive}, #{data.typeId}, #{data.content}, #{data.projectId})
+    </insert>
+    <update id="updateActiveById">
+        update project_notice_template set isActive=#{isActive} where templateId=#{id}
+    </update>
+    <select id="pageVo" resultType="com.aurine.cloudx.estate.vo.ProjectNoticeTemplateVo">
+        select t.*,if(t.projectId=1,
+        <choose>
+            <when test=" query.projectId!=null and  query.projectId==1">
+                 su.username
+            </when>
+            <otherwise>
+                '系统'
+            </otherwise>
+        </choose>
+        ,ps.staffName) createName ,
+        if(t.projectId=1,
+        <choose>
+            <when test=" query.projectId!=null and query.projectId==1">
+              up.username
+            </when>
+            <otherwise>
+                '系统'
+            </otherwise>
+        </choose>
+        ,cs.staffName) updateName from
+        project_notice_template t left join project_staff ps on t.operator =
+        ps.userId and t.projectId=ps.projectId left join project_staff cs on t.operator =
+        cs.userId and t.projectId = cs.projectId left join pigxx.sys_user su
+        on su.user_id=t.operator left join pigxx.sys_user up on up.user_id=t.operator
+        <where>
+            <if test="query!=null and query.title!=null and query.title!=''">
+                and t.title like concat('%',#{query.title},'%')
+            </if>
+            <if test="query!=null and query.typeId!=null and query.typeId!=''">
+                and t.typeId = #{query.typeId}
+            </if>
+            <if test="query!=null and query.effTime != null and query.expTime">
+                AND DATE_FORMAT(t.updateTime, '%Y-%m-%d') <![CDATA[>=]]> DATE_FORMAT(#{query.effTime}, '%Y-%m-%d')
+                AND DATE_FORMAT(t.updateTime, '%Y-%m-%d') <![CDATA[<=]]> DATE_FORMAT(#{query.expTime}, '%Y-%m-%d')
+            </if>
+            <if test="query!=null and query.isActive!=null and query.isActive!=''">
+                and t.isActive = #{query.isActive}
+            </if>
+            <if test="query!=null and query.content!=null and query.content!=''">
+                and t.content like concat('%',#{query.content},'%')
+            </if>
+            <if test="query!=null and query.projectId!=null and query.projectId!=''">
+                and (t.projectId=#{query.projectId} or t.projectId=1)
+            </if>
+        </where>
+        order by t.seq
+    </select>
+    <select id="getVoById" resultType="com.aurine.cloudx.estate.entity.ProjectNoticeTemplate">
+        select * from project_notice_template where templateId=#{id}
+    </select>
+    <select id="countByTypeId" resultType="java.lang.Integer">
+        select count(1)  from project_notice_template t where t.typeId=#{typeId}
+    </select>
+
+
+</mapper>

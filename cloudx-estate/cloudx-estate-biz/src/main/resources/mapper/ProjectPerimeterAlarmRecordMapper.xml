@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPerimeterAlarmRecordMapper">
+
+    <select id="findPage" resultType="com.aurine.cloudx.estate.vo.ProjectPerimeterAlarmRecordVo">
+        SELECT
+        user.true_name `name`,
+        record.*
+        FROM
+        aurine.project_perimeter_alarm_record record
+        LEFT JOIN pigxx.sys_user `user` ON record.operator = user.user_id
+        <where>
+            <if test="query.operateType != null and query.operateType != ''">
+                and record.operateType= #{query.operateType}
+            </if>
+            <if test="query.operateStatus != null and query.operateStatus != ''">
+                and record.operateStatus= #{query.operateStatus}
+            </if>
+            <if test="query.beginTime != null and query.beginTime != ''">
+                AND DATE_FORMAT(record.createTime, '%Y-%m-%d') <![CDATA[>=]]>
+                #{query.beginTime}
+            </if>
+            <if test="query.endTime != null and query.beginTime != ''">
+                AND DATE_FORMAT(record.createTime, '%Y-%m-%d') <![CDATA[<=]]>
+                #{query.endTime}
+            </if>
+        </where>
+        ORDER BY record.createTime desc
+    </select>
+
+</mapper>

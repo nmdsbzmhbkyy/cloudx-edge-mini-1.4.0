@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.aurine</groupId>
+    <artifactId>cloudx</artifactId>
+    <version>2107.0.0-SNAPSHOT</version>
+    <name>${project.artifactId}</name>
+    <packaging>pom</packaging>
+
+    <properties>
+        <spring-boot.version>2.2.4.RELEASE</spring-boot.version>
+        <spring-cloud.version>Hoxton.SR2</spring-cloud.version>
+        <spring-cloud-alibaba.version>2.2.0.RELEASE</spring-cloud-alibaba.version>
+        <spring-platform.version>Cairo-SR8</spring-platform.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <spring-boot-admin.version>2.2.2</spring-boot-admin.version>
+        <hutool.version>5.3.1</hutool.version>
+        <kaptcha.version>1.6.2</kaptcha.version>
+        <swagger.fox.version>2.9.2</swagger.fox.version>
+        <knife4j.version>2.0.1</knife4j.version>
+        <curator.version>2.10.0</curator.version>
+        <velocity.version>1.7</velocity.version>
+        <lcn.version>4.1.0</lcn.version>
+        <jasypt.version>2.1.1</jasypt.version>
+        <ttl.version>2.11.2</ttl.version>
+        <minio.version>6.0.11</minio.version>
+        <elastic-job-lite.version>2.1.5</elastic-job-lite.version>
+        <xxl.job.version>2.1.1</xxl.job.version>
+        <security.oauth.version>2.3.6.RELEASE</security.oauth.version>
+        <activiti.version>5.22.0</activiti.version>
+        <pigx.version>Aurine.B2-SNAPSHOT</pigx.version>
+        <cloudx.version>2107.0.0-SNAPSHOT</cloudx.version>
+
+<!--                <docker.registry>10.110.18.201:81</docker.registry>-->
+<!--                <docker.namespace>cloudx</docker.namespace>-->
+<!--                <docker.password>Harbor12345</docker.password>-->
+
+<!--        <docker.registry>121.36.19.192:40080</docker.registry>-->
+<!--        <docker.password>pt5@HB.aurine</docker.password>-->
+<!--        <docker.namespace>saas4.0</docker.namespace>-->
+
+<!--        <docker.host>http://10.110.18.201:2375</docker.host>-->
+<!--        <docker.username>admin</docker.username>-->
+        <docker.plugin.version>0.32.0</docker.plugin.version>
+        <jmockdata.version>4.2.0</jmockdata.version>
+
+
+        <!--common-eth 公共包-->
+<!--        <lombok.version>1.18.12</lombok.version>
+        <bcprov-aes.version>1.46</bcprov-aes.version>
+        <commons-codec.version>1.7</commons-codec.version>
+        <commons-lang3.version>3.7</commons-lang3.version>
+        <jboss-xnio-nio.version>3.3.8.Final</jboss-xnio-nio.version>
+        &lt;!&ndash;        <snakeyaml.version>1.23</snakeyaml.version>&ndash;&gt;
+        <testng.version>6.2</testng.version>
+        <swagger.bui.version>1.9.5</swagger.bui.version>
+        <java.version>1.8</java.version>
+        <apache-httpclient.version>4.5.13</apache-httpclient.version>
+        <fastjson.version>1.2.83</fastjson.version>-->
+        <!--common-eth 公共包 end-->
+    </properties>
+
+    <dependencies>
+
+        <!--配置文件处理器-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!--Lombok-->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!--测试依赖-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <modules>
+        <module>cloudx-estate</module>
+        <module>cloudx-common</module>
+        <module>cloudx-push</module>
+        <module>cloudx-face</module>
+        <module>cloudx-dashboard</module>
+        <module>cloudx-wjy</module>
+        <module>cloudx-health</module>
+        <module>cloudx-open</module>
+        <module>cloudx-edge-sync</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.pig4cloud</groupId>
+                <artifactId>pigx</artifactId>
+                <version>${pigx.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.aurine</groupId>
+                <artifactId>cloudx-common-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--        jmockdata-->
+            <dependency>
+                <groupId>com.github.jsonzou</groupId>
+                <artifactId>jmockdata</artifactId>
+                <version>${jmockdata.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.jsqlparser</groupId>
+                <artifactId>jsqlparser</artifactId>
+                <version>3.2</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+<!--            &lt;!&ndash; ============================== common =====================&ndash;&gt;
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+
+
+            &lt;!&ndash; 支持 AES算法 PKCS7Padding &ndash;&gt;
+            &lt;!&ndash;<dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk16</artifactId>
+                <version>${bcprov-aes.version}</version>
+            </dependency>&ndash;&gt;
+
+            &lt;!&ndash;websocket客户端 &ndash;&gt;
+            &lt;!&ndash;            <dependency>&ndash;&gt;
+            &lt;!&ndash;                <groupId>org.java-websocket</groupId>&ndash;&gt;
+            &lt;!&ndash;                <artifactId>Java-WebSocket</artifactId>&ndash;&gt;
+            &lt;!&ndash;                <version>1.3.5</version>&ndash;&gt;
+            &lt;!&ndash;            </dependency>&ndash;&gt;
+
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>${fastjson.version}</version>
+            </dependency>
+
+            &lt;!&ndash; ============================== end common =====================&ndash;&gt;
+
+
+            &lt;!&ndash; ============================== http  =====================&ndash;&gt;
+            &lt;!&ndash; https://mvnrepository.com/artifact/org.apache.httpcomponents/httpclient &ndash;&gt;
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${apache-httpclient.version}</version>
+            </dependency>
+            &lt;!&ndash; ============================== end http =====================&ndash;&gt;
+
+            &lt;!&ndash; spring-beans 工具 &ndash;&gt;
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-beans</artifactId>
+                <version>5.3.9</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna</artifactId>
+                <version>4.5.2</version>
+                &lt;!&ndash;            <version>5.6.0</version>&ndash;&gt;
+            </dependency>-->
+
+        </dependencies>
+
+    </dependencyManagement>
+
+    <build>
+        <finalName>${project.name}</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>repackage</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <version>${docker.plugin.version}</version>
+                    <configuration>
+                        <dockerHost>${docker.host}</dockerHost>
+                        <registry>${docker.registry}</registry>
+                        <authConfig>
+                            <push>
+                                <username>${docker.username}</username>
+                                <password>${docker.password}</password>
+                            </push>
+                        </authConfig>
+                        <images>
+                            <image>
+                                <name>${docker.registry}/${docker.namespace}/${project.name}:${project.version}</name>
+                                <build>
+                                    <dockerFile>${project.basedir}/Dockerfile</dockerFile>
+                                </build>
+                            </image>
+                        </images>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
+                    <target>${maven.compiler.target}</target>
+                    <source>${maven.compiler.source}</source>
+                    <encoding>UTF-8</encoding>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>2.2.5</version>
+            </plugin>
+        </plugins>
+    </build>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>aliyun-plugin</id>
+            <url>https://maven.aliyun.com/repository/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <distributionManagement>
+        <!--发行仓库 -->
+        <repository>
+            <id>aurine-releases</id>
+            <name>Nexus Release Repository</name>
+            <url>http://10.110.18.202:8081/repository/aurine-release/</url>
+        </repository>
+        <!--快照仓库 -->
+        <snapshotRepository>
+            <id>aurine-snapshots</id>
+            <name>Nexus Snapshot Repository</name>
+            <url>http://10.110.18.202:8081/repository/aurine-snapshot/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <repositories>
+        <repository>
+            <id>aurine-releases</id>
+            <name>Nexus Release Repository</name>
+            <url>http://10.110.18.202:8081/repository/aurine-release/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>aurine-snapshots</id>
+            <name>Nexus Snapshot Repository</name>
+            <url>http://10.110.18.202:8081/repository/aurine-snapshot/</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+        <repository>
+            <id>aliyun</id>
+            <name>aliyun</name>
+            <url>http://maven.aliyun.com/nexus/content/groups/public</url>
+        </repository>
+        <repository>
+            <id>aurine-edge-release</id>
+            <name>Nexus Release Repository</name>
+            <url>http://10.110.18.202:8081/repository/maven-releases/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
+    </repositories>
+
+    <profiles>
+        <profile>
+            <id>dev</id>
+            <properties>
+                <!-- 环境标识，需要与配置文件的名称相对应 -->
+                <profiles.active>dev</profiles.active>
+                <docker.registry>node.dev:9222</docker.registry>
+                <docker.namespace>edge-mini-1.4.0</docker.namespace>
+                <docker.password>Harbor12345</docker.password>
+                <docker.host>http://10.110.18.201:2375</docker.host>
+                <docker.username>admin</docker.username>
+
+            </properties>
+            <activation>
+                <!-- 默认环境 -->
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <profile>
+            <id>test</id>
+            <properties>
+                <profiles.active>test</profiles.active>
+                <docker.registry>testcloud.aurine.cn:5000</docker.registry>
+                <docker.namespace>saas4.0_test</docker.namespace>
+                <docker.password>dev@Aurine2022</docker.password>
+                <docker.host>http://10.110.18.201:2375</docker.host>
+                <docker.username>dev</docker.username>
+            </properties>
+        </profile>
+        <profile>
+            <id>prod</id>
+            <properties>
+                <profiles.active>prod</profiles.active>
+                <docker.registry>121.36.19.192:40080</docker.registry>
+                <docker.namespace>saas4.0</docker.namespace>
+                <docker.password>pt5@HB.aurine</docker.password>
+                <docker.host>http://10.110.18.201:2375</docker.host>
+                <docker.username>admin</docker.username>
+            </properties>
+        </profile>
+        <profile>
+            <id>pre</id>
+            <properties>
+                <profiles.active>pre</profiles.active>
+                <docker.registry>121.36.19.192:40080</docker.registry>
+                <docker.namespace>saas4.0_pre</docker.namespace>
+                <docker.password>pt5@HB.aurine</docker.password>
+                <docker.host>http://10.110.18.201:2375</docker.host>
+                <docker.username>admin</docker.username>
+            </properties>
+        </profile>
+    </profiles>
+
+</project>

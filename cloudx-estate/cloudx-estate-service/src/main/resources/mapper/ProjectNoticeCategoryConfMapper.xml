@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectNoticeCategoryConfMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectNoticeCategoryConf" id="ProjectNoticeCategoryConfMap">
+
+        <result property="typeId" column="typeId" jdbcType="VARCHAR"/>
+        <result property="typeName" column="typeName" jdbcType="VARCHAR"/>
+        <result property="isActive" column="isActive" jdbcType="VARCHAR"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="creator" column="creator" jdbcType="INTEGER"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <select id="pageVo" resultType="com.aurine.cloudx.estate.vo.ProjectNoticeCategoryConfVo">
+        select c.*,su.true_name createName
+        from project_notice_category_conf c
+        left join pigxx.sys_user su on c.creator = su.user_id
+        <where>
+            <if test="query!=null and query.typeName!=null and query.typeName !=''">
+                and c.typeName like concat('%',#{query.typeName},'%')
+            </if>
+            <if test="query!=null and query.isActive!=null and query.isActive!=''">
+                and c.isActive = #{query.isActive}
+            </if>
+        </where>
+        order by c.seq
+    </select>
+
+</mapper>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectRightDeviceCacheMapper">
+
+
+    <select id="getRightDeviceCache" resultType="com.aurine.cloudx.estate.entity.ProjectRightDeviceCache">
+        SELECT
+            c.*
+        FROM
+            project_right_device_cache c
+        WHERE
+            EXISTS ( SELECT * FROM project_right_device r WHERE r.deviceId = c.deviceId AND (r.certMediaInfo = c.passNo or r.certMediaCode = c.passNo))
+            LIMIT 100
+    </select>
+</mapper>

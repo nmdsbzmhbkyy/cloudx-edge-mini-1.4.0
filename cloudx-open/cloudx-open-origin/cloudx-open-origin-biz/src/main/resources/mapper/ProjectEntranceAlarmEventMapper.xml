@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectEntranceAlarmEventMapper">
+
+    <resultMap id="projectEntranceAlarmEventMap" type="com.aurine.cloudx.open.origin.entity.ProjectEntranceAlarmEvent">
+
+        <id property="eventId" column="eventId"/>
+        <result property="personType" column="personType"/>
+        <result property="personName" column="personName"/>
+        <result property="deviceId" column="deviceId"/>
+        <result property="eventDesc" column="eventDesc"/>
+        <result property="eventTime" column="eventTime"/>
+        <result property="picUrl" column="picUrl"/>
+        <result property="status" column="status"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <select id="select" parameterType="com.aurine.cloudx.open.origin.vo.ProjectEntranceAlarmEventVo"
+            resultType="com.aurine.cloudx.open.origin.vo.ProjectEntranceAlarmEventVo">
+        SELECT
+        p_a_event.*,
+        p_a_event.deviceRegionName AS regionName,
+        p_a_handle.*,
+        p_a_handle.seq AS handleSeq,
+        p_a_handle.operator AS handleOperator,
+        p_config.alarmTimeLimit,
+        p_d_info.deviceRegionId,
+        s_e_t_conf.eventTypeName,
+        s_e_t_conf.eventCategory
+        FROM project_entrance_alarm_event p_a_event
+        LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId
+        LEFT JOIN project_config p_config ON p_config.projectId=p_a_event.projectId
+        LEFT JOIN project_device_info p_d_info ON p_a_event.deviceId = p_d_info.deviceId
+        LEFT Join sys_event_type_conf s_e_t_conf ON p_a_event.eventTypeId = s_e_t_conf.eventTypeId
+        <where>
+            AND p_a_event.projectId = #{param.projectId}
+            AND p_a_event.tenant_id = #{param.tenantId}
+            <if test="param.handleOperator != null">
+                AND p_a_handle.operator = #{param.handleOperator}
+            </if>
+            <if test="param.personName != null and param.personName != ''">
+                AND p_a_event.personName LIKE concat('%',#{param.personName},'%')
+            </if>
+            <if test="param.deviceTypeName != null and param.deviceTypeName != ''">
+                AND p_a_event.deviceTypeName = #{param.deviceTypeName}
+            </if>
+            <if test="param.deviceName != null and param.deviceName != ''">
+                AND p_a_event.deviceName LIKE concat('%',#{param.deviceName},'%')
+            </if>
+            <if test="param.status != null and param.status != ''">
+                AND p_a_event.status = #{param.status}
+            </if>
+            <if test="param.notStatus != null and param.notStatus != ''">
+                AND p_a_event.status != #{param.notStatus}
+            </if>
+            <if test="param.timeLeave != null and param.timeLeave != ''">
+                AND (p_a_handle.timeLeave LIKE concat('%',#{param.timeLeave},'%')
+                <if test='param.timeLeave == "未超限"'>
+                    OR (p_a_handle.timeLeave IS NULL AND timestampdiff(second,p_a_event.eventTime,NOW())  <![CDATA[<=]]>
+                    p_config.alarmTimeLimit * 60)
+                </if>
+                <if test='param.timeLeave == "超限确认"'>
+                    OR ((p_a_handle.timeLeave IS NULL AND timestampdiff(second,p_a_event.eventTime,NOW())  <![CDATA[>]]>
+                    p_config.alarmTimeLimit * 60) OR p_a_handle.timeLeave = '超限处理')
+                </if>
+                )
+            </if>
+            <if test="param.effTime != null">
+                AND p_a_handle.dealDuration <![CDATA[>=]]>
+                #{param.effTime}
+            </if>
+            <if test="param.expTime != null">
+                AND p_a_handle.dealDuration <![CDATA[<=]]>
+                #{param.expTime}
+            </if>
+            <if test="param.startTime != null">
+                AND
+                DATE_FORMAT(p_a_event.eventTime, '%Y-%m-%d %H:%i:%s')
+                <![CDATA[>=]]>
+                DATE_FORMAT(#{param.startTime}, '%Y-%m-%d %H:%i:%s')
+            </if>
+            <if test="param.endTime != null">
+                AND
+                DATE_FORMAT(p_a_event.eventTime, '%Y-%m-%d %H:%i:%s')
+                <![CDATA[<=]]>
+                DATE_FORMAT(#{param.endTime}, '%Y-%m-%d %H:%i:%s')
+            </if>
+        </where>
+        ORDER BY p_a_event.eventTime DESC
+    </select>
+
+    <!--    &#45;&#45;         SELECT-->
+    <!--    &#45;&#45;         p_a_event.*,-->
+    <!--    &#45;&#45;         p_a_event.deviceRegionName AS regionName,-->
+    <!--    &#45;&#45;         p_a_handle.timeLeave,-->
+    <!--    &#45;&#45;         p_a_handle.handleBeginTime,-->
+    <!--    &#45;&#45;         p_a_handle.handleEndTime,-->
+    <!--    &#45;&#45;         p_a_handle.dealDuration,-->
+    <!--    &#45;&#45;         p_a_handle.result,-->
+    <!--    &#45;&#45;         p_a_handle.operator AS handleOperator,-->
+    <!--    &#45;&#45;         p_config.alarmTimeLimit,-->
+    <!--    &#45;&#45;         p_d_info.deviceRegionId,-->
+    <!--    &#45;&#45;         s_e_t_conf.eventTypeName,-->
+    <!--    &#45;&#45;         s_e_t_conf.eventCategory-->
+    <select id="appSelect" parameterType="com.aurine.cloudx.open.origin.vo.ProjectEntranceAlarmEventVo"
+            resultType="com.aurine.cloudx.open.origin.vo.ProjectEntranceAlarmEventVo">
+        SELECT
+        p_a_event.*,
+        p_a_event.deviceRegionName AS regionName,
+        p_a_handle.timeLeave,
+        p_a_handle.handleBeginTime,
+        p_a_handle.handleEndTime,
+        p_a_handle.dealDuration,
+        p_a_handle.result,
+        p_a_handle.seq AS handleSeq,
+        p_a_handle.picUrl AS livePic,
+        p_a_handle.operator AS handleOperator,
+        p_config.alarmTimeLimit,
+        p_d_info.deviceRegionId,
+        s_e_t_conf.eventTypeName,
+        s_e_t_conf.eventCategory
+        FROM project_entrance_alarm_event p_a_event
+        LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId
+        LEFT JOIN project_config p_config ON p_config.projectId=p_a_event.projectId
+        LEFT JOIN project_device_info p_d_info ON p_a_event.deviceId = p_d_info.deviceId
+        LEFT Join sys_event_type_conf s_e_t_conf ON p_a_event.eventTypeId = s_e_t_conf.eventTypeId
+        <where>
+            AND p_a_event.projectId = #{param.projectId}
+            AND p_a_event.tenant_id = #{param.tenantId}
+            <if test="param.status != null and param.status != ''">
+                <if test="param.status == '2'.toString()">
+                    AND p_a_event.status = '2'
+                </if>
+                <if test="param.status == '1'.toString()">
+                    AND (p_a_event.status = '1' or p_a_event.status = '0')
+                </if>
+            </if>
+
+        </where>
+        ORDER BY if(p_a_handle.operator = #{param.handleOperator} &amp;&amp; p_a_event.status = "1", 0,1) ASC,
+        if(p_a_event.status = "1" || p_a_event.status = "0" ,0,2) ASC ,
+        if(p_a_handle.operator != 66738,0,2) DESC,
+        p_a_event.eventLevel DESC,
+        if(timestampdiff(second,p_a_event.eventTime,NOW()) > p_config.alarmTimeLimit * 60,
+        0,timestampdiff(second,p_a_event.eventTime,NOW())) Desc,
+        p_a_event.eventTime DESC
+    </select>
+
+    <select id="operatorAppSelect" parameterType="com.aurine.cloudx.open.origin.vo.ProjectEntranceAlarmEventVo"
+            resultType="com.aurine.cloudx.open.origin.vo.ProjectEntranceAlarmEventVo">
+        -- SELECT
+        -- p_a_event.*,
+        -- p_a_event.deviceRegionName AS regionName,
+        -- p_a_handle.*,
+        -- p_a_handle.seq AS handleSeq,
+        -- p_a_handle.operator AS handleOperator,
+        -- p_config.alarmTimeLimit,
+        -- p_d_info.deviceRegionId,
+        -- s_e_t_conf.eventTypeName,
+        -- s_e_t_conf.eventCategory
+        SELECT
+        p_a_event.*,
+        p_a_event.deviceRegionName AS regionName,
+        p_a_handle.timeLeave,
+        p_a_handle.handleBeginTime,
+        p_a_handle.handleEndTime,
+        p_a_handle.dealDuration,
+        p_a_handle.result,
+        p_a_handle.seq AS handleSeq,
+        p_a_handle.picUrl AS livePic,
+        p_a_handle.operator AS handleOperator,
+        p_config.alarmTimeLimit,
+        p_d_info.deviceRegionId,
+        s_e_t_conf.eventTypeName,
+        s_e_t_conf.eventCategory
+        FROM project_entrance_alarm_event p_a_event
+        LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId
+        LEFT JOIN project_config p_config ON p_config.projectId=p_a_event.projectId
+        LEFT JOIN project_device_info p_d_info ON p_a_event.deviceId = p_d_info.deviceId
+        LEFT Join sys_event_type_conf s_e_t_conf ON p_a_event.eventTypeId = s_e_t_conf.eventTypeId
+        <where>
+            AND p_a_event.projectId = #{param.projectId}
+            AND p_a_event.tenant_id = #{param.tenantId}
+            <if test="param.handleOperator != null and param.handleOperator != ''">
+                AND p_a_handle.operator = #{param.handleOperator}
+            </if>
+        </where>
+        ORDER BY p_a_handle.handleEndTime DESC
+    </select>
+
+
+    <select id="findNum" resultType="com.aurine.cloudx.open.origin.vo.ProjectEntranceAlarmEventVo">
+        SELECT
+        COUNT(*) AS monthNum,
+        p_config.alarmTimeLimit AS alarmTimeLimit,
+        (
+        SELECT COUNT(p_a_event.eventId)
+        FROM project_entrance_alarm_event p_a_event
+        LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId
+        <where>
+            (
+            (p_a_handle.timeLeave LIKE '%超限处理%')
+            OR
+            (p_a_handle.timeLeave IS NULL AND timestampdiff(second,p_a_event.eventTime,NOW()) > p_config.alarmTimeLimit
+            * 60)
+            )
+            AND EXTRACT(YEAR FROM eventTime) = EXTRACT(YEAR FROM now())
+            AND EXTRACT(MONTH FROM eventTime) = EXTRACT(MONTH FROM now())
+            AND p_a_event.projectId = #{projectId}
+            AND p_a_event.tenant_id = #{tenantId}
+        </where>
+        ) AS timeLeaveNum
+
+        FROM project_entrance_alarm_event p_a_event
+        LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId
+        LEFT JOIN project_config p_config ON p_config.projectId=p_a_event.projectId
+        <where>
+            AND p_a_event.projectId = #{projectId}
+            AND p_a_event.tenant_id = #{tenantId}
+            AND EXTRACT(YEAR FROM eventTime) = EXTRACT(YEAR FROM now())
+            AND EXTRACT(MONTH FROM eventTime) = EXTRACT(MONTH FROM now())
+        </where>
+        GROUP BY
+        p_config.alarmTimeLimit
+    </select>
+    <select id="countNum" resultType="com.aurine.cloudx.open.origin.vo.ProjectEntranceAlarmEventVo">
+        SELECT
+        COUNT(*) AS monthNum,
+        p_config.alarmTimeLimit AS alarmTimeLimit,
+        (
+        SELECT COUNT(p_a_event.eventId)
+        FROM project_entrance_alarm_event p_a_event
+        LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId
+        <where>
+            (
+            (p_a_handle.timeLeave LIKE '%超限处理%')
+            OR
+            (p_a_handle.timeLeave IS NULL AND timestampdiff(second,p_a_event.eventTime,NOW()) > p_config.alarmTimeLimit
+            * 60)
+            )
+            -- AND EXTRACT(YEAR FROM eventTime) = EXTRACT(YEAR FROM now())
+            -- AND EXTRACT(MONTH FROM eventTime) = EXTRACT(MONTH FROM now())
+            AND p_a_event.projectId = #{projectId}
+            AND p_a_event.tenant_id = #{tenantId}
+        </where>
+        ) AS timeLeaveNum
+
+        FROM project_entrance_alarm_event p_a_event
+        LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId
+        LEFT JOIN project_config p_config ON p_config.projectId=p_a_event.projectId
+        <where>
+            AND p_a_event.projectId = #{projectId}
+            AND p_a_event.tenant_id = #{tenantId}
+            -- AND EXTRACT(YEAR FROM eventTime) = EXTRACT(YEAR FROM now())
+            -- AND EXTRACT(MONTH FROM eventTime) = EXTRACT(MONTH FROM now())
+        </where>
+        GROUP BY
+        p_config.alarmTimeLimit
+    </select>
+    <select id="findById" resultType="com.aurine.cloudx.open.origin.vo.ProjectEntranceAlarmEventVo">
+--         SELECT p_a_event.*,
+--                p_a_handle.*,
+--                p_a_handle.seq    AS handleSeq,
+--                p_a_handle.picUrl AS livePic,
+--                p_a_handle.operator AS handleOperator,
+--                s_e_t_conf.eventTypeName,
+        SELECT
+        p_a_event.*,
+        p_a_event.deviceRegionName AS regionName,
+        p_a_handle.timeLeave,
+        p_a_handle.handleBeginTime,
+        p_a_handle.handleEndTime,
+        p_a_handle.dealDuration,
+        p_a_handle.result,
+        p_a_handle.seq    AS handleSeq,
+        p_a_handle.picUrl AS livePic,
+        p_a_handle.operator AS handleOperator,
+        p_config.alarmTimeLimit,
+        p_d_info.deviceRegionId,
+        s_e_t_conf.eventTypeName,
+        s_e_t_conf.eventCategory
+        FROM project_entrance_alarm_event p_a_event
+        LEFT JOIN project_alarm_handle p_a_handle ON p_a_event.eventId = p_a_handle.eventId
+        LEFT JOIN project_config p_config ON p_config.projectId=p_a_event.projectId
+        LEFT JOIN project_device_info p_d_info ON p_a_event.deviceId = p_d_info.deviceId
+        LEFT Join sys_event_type_conf s_e_t_conf ON p_a_event.eventTypeId = s_e_t_conf.eventTypeId
+        WHERE p_a_event.eventId = #{eventId}
+          AND p_a_event.projectId = #{projectId}
+          AND p_a_event.tenant_id = #{tenantId}
+    </select>
+
+    <select id="findAllEventId" resultType="java.lang.String">
+        SELECT
+        eventId
+        FROM
+        project_entrance_alarm_event p_a_event
+        <where>
+            AND p_a_event.status !=2
+            AND p_a_event.projectId = #{projectId}
+            AND p_a_event.tenant_id = #{tenantId}
+        </where>
+    </select>
+
+    <select id="countCurrDayEvent" resultType="java.lang.Integer">
+        SELECT count(1)
+        FROM project_entrance_alarm_event alert
+        WHERE alert.eventTime BETWEEN DATE_FORMAT(NOW(), '%Y-%m-%d 00:00:00')
+            AND DATE_FORMAT(NOW(), '%Y-%m-%d 23:59:59')
+          AND alert.projectId = #{projectId}
+          AND alert.tenant_id = #{tenantId}
+
+    </select>
+
+    <select id="countByMonth" resultType="java.lang.Integer">
+        SELECT count(0) AS c
+        FROM project_entrance_alarm_event
+        WHERE date_format(eventTime, '%Y-%m') = #{date}
+          AND projectId = #{projectId}
+          AND tenant_id = #{tenantId}
+    </select>
+
+    <select id="countByMonthOff" resultType="java.lang.Integer">
+        SELECT count(0) AS c
+        FROM project_entrance_alarm_event
+        WHERE date_format(eventTime, '%Y-%m') = #{date}
+          AND status = '0'
+          AND projectId = #{projectId}
+          AND tenant_id = #{tenantId}
+    </select>
+    <select id="getProjectStaff" resultType="com.aurine.cloudx.open.origin.entity.ProjectStaff">
+         SELECT staff.*
+        FROM aurine.project_staff staff
+        WHERE staff.roleId IN (
+            SELECT role.role_id
+            FROM pigxx.sys_menu menu
+                     LEFT JOIN pigxx.sys_role_menu role_menu ON menu.menu_id = role_menu.menu_id
+                     LEFT JOIN pigxx.sys_role role ON role_menu.role_id = role.role_id
+            WHERE menu.menu_id = '10578')
+            AND staff.projectId = #{projectId}
+            AND staff.tenant_id = #{tenantId}
+    </select>
+    <select id="findCount" resultType="int">
+        SELECT count(*) FROM `project_entrance_alarm_event` where status =0        AND projectId = #{projectId}
+                                                              AND tenant_id = #{tenantId}
+    </select>
+    <select id="findUserName" resultType="java.lang.String">
+        SELECT true_name FROM pigxx.sys_user where user_id = #{userId}
+    </select>
+
+    <select
+            id="page"
+            parameterType="com.aurine.cloudx.open.origin.entity.ProjectEntranceAlarmEvent"
+            resultType="com.aurine.cloudx.open.common.entity.vo.AlarmEventVo"
+    >
+        SELECT
+        *
+        FROM project_entrance_alarm_event peae
+        <where>
+            <if test="query.projectId != null">
+                AND peae.projectId = #{query.projectId}
+            </if>
+            <if test="query.tenantId != null">
+                AND peae.tenantId = #{query.tenantId}
+            </if>
+            <if test="query.eventCode != null and query.eventCode != ''">
+                AND peae.eventCode = #{query.eventCode}
+            </if>
+            <if test="query.personType != null and query.personType != ''">
+                AND peae.personType = #{query.personType}
+            </if>
+            <if test="query.personName != null and query.personName != ''">
+                AND peae.personName LIKE concat('%', #{query.personName}, '%')
+            </if>
+            <if test="query.deviceId != null and query.deviceId != ''">
+                AND peae.deviceId = #{query.deviceId}
+            </if>
+            <if test="query.deviceName != null and query.deviceName != ''">
+                AND peae.deviceName LIKE concat('%', #{query.deviceName}, '%')
+            </if>
+            <if test="query.deviceTypeName != null and query.deviceTypeName != ''">
+                AND peae.deviceTypeName LIKE concat('%', #{query.deviceTypeName}, '%')
+            </if>
+            <if test="query.deviceRegionName != null and query.deviceRegionName != ''">
+                AND peae.deviceRegionName LIKE concat('%', #{query.deviceRegionName}, '%')
+            </if>
+            <if test="query.eventDesc != null and query.eventDesc != ''">
+                AND peae.eventDesc LIKE concat('%', #{query.eventDesc}, '%')
+            </if>
+            <if test="query.status != null and query.status != ''">
+                AND peae.status = #{query.status}
+            </if>
+            <if test="query.eventTypeId != null and query.eventTypeId != ''">
+                AND peae.eventTypeId = #{query.eventTypeId}
+            </if>
+            <if test="query.eventLevel != null and query.eventLevel != ''">
+                AND peae.eventLevel = #{query.eventLevel}
+            </if>
+        </where>
+    </select>
+
+</mapper>

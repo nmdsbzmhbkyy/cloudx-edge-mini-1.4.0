@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectParkingPlaceHisMapper">
+
+  <resultMap id="projectParkingPlaceHisMap" type="com.aurine.cloudx.estate.entity.ProjectParkingPlaceHis">
+                  <id property="seq" column="seq"/>
+                        <result property="placeId" column="placeId"/>
+                        <result property="placeCode" column="placeCode"/>
+                        <result property="placeName" column="placeName"/>
+                        <result property="parkId" column="parkId"/>
+                        <result property="personName" column="personName"/>
+                        <result property="relType" column="relType"/>
+                        <result property="effTime" column="effTime"/>
+                        <result property="expTime" column="expTime"/>
+                        <result property="action" column="action"/>
+                        <result property="operator" column="operator"/>
+            </resultMap>
+</mapper>

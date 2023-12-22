@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, lengleng All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: lengleng (wangiegie@gmail.com)
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.cert.mapper.SysCertAdownRequestMapper">
+
+	<resultMap id="sysCertAdownRequestMap" type="com.aurine.cloudx.estate.cert.entity.SysCertAdownRequest">
+		<id property="seq" column="seq"/>
+		<result property="requestId" column="requestId"/>
+		<result property="projectId" column="projectId"/>
+		<result property="priotity" column="priotity"/>
+		<result property="body" column="body"/>
+		<result property="state" column="state"/>
+		<result property="errMsg" column="errMsg"/>
+		<result property="certMediaType" column="certMediaType"/>
+		<result property="deviceId" column="deviceId"/>
+		<result property="deviceName" column="deviceName"/>
+		<!--                        <result property="createTime" column="createTime"/>-->
+		<!--                        <result property="updateTime" column="updateTime"/>-->
+	</resultMap>
+
+	<select id="listRequest" resultType="com.aurine.cloudx.estate.cert.entity.SysCertAdownRequest">
+		-- 		-- 获取目前空闲设备的首个可下发请求列表
+-- 		SELECT a.* FROM	sys_cert_adown_request a
+-- 		JOIN
+-- 			(select	MIN(seq) seq from sys_cert_adown_request c 	where -- 获取某个设备下最旧的未下发请求
+-- 				state = 0
+-- 				and NOT EXISTS (	-- 排除正在下发中\下载中的设备
+-- 					select * from sys_cert_adown_request d	where
+-- 						c.deviceId = d.deviceId
+-- 						and	d.state in(1,2)
+-- 				)
+-- 			GROUP BY deviceId
+-- 			-- 可按优先级扩展
+-- 			) b
+-- 		ON a.seq = b.seq
+		-- 获取目前空闲设备的首个可下发请求列表
+		select a.*
+		from
+			-- 根据设备，按照优先度和seq进行正序分组排序
+			(select c.*, row_number() over(partition by c.deviceId order by c.priotity,c.seq) as n
+			 from sys_cert_adown_request c
+			 where state = '0'
+			   and c.deviceId is not null
+			   and NOT EXISTS( -- 排除正在下发中\下载中的设备
+					 select *
+					 from sys_cert_adown_request d
+					 where c.deviceId = d.deviceId
+					   and d.state in ('1', '2')
+				 )
+			) a
+
+		where n <![CDATA[<=]]> 1 limit #{size}
+	</select>
+
+	<update id="saviourDispatch">
+
+		-- 更新已响应了n分钟，并且未继续执行的任务
+		UPDATE
+			sys_cert_adown_request
+		SET state = '0',responseTime = null
+		WHERE state IN ('1', '2')
+		  and responseTime is not null
+ 		  and responseTime <![CDATA[<=]]>  ${sql}
+
+	</update>
+</mapper>

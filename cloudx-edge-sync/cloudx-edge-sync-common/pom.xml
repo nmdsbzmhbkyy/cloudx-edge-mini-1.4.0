@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>cloudx-edge-sync</artifactId>
+        <groupId>com.aurine</groupId>
+        <version>2107.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>cloudx-edge-sync-common</artifactId>
+    <packaging>jar</packaging>
+    <description>入云服务-common-api</description>
+    <dependencies>
+        <!--mybatis plus extension,包含了mybatis plus core-->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-extension</artifactId>
+        </dependency>
+<!--        &lt;!&ndash;core 工具类&ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.pig4cloud</groupId>-->
+<!--            <artifactId>pigx-common-core</artifactId>-->
+<!--        </dependency>-->
+        <!--open api-->
+        <dependency>
+            <groupId>com.aurine</groupId>
+            <artifactId>cloudx-open-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aurine</groupId>
+            <artifactId>cloudx-open-api-inner</artifactId>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.alibaba/fastjson -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.73</version>
+        </dependency>
+    </dependencies>
+</project>

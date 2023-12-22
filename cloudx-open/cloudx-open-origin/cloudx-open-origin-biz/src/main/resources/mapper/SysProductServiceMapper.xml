@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.SysProductServiceMapper">
+
+    <select id="listParamConf" resultType="com.aurine.cloudx.open.origin.vo.SysServiceParamConfVo">
+        SELECT
+            CONCAT( rootServiceId, parParamIds ) props,
+            cusTable.*
+        FROM
+            project_device_info device LEFT JOIN
+            (
+                SELECT
+                    (
+                        WITH recursive r AS (
+                            SELECT
+                                *
+                            FROM
+                                sys_product_service pc1
+                            WHERE
+                                pc1.serviceId = sys_product_service.serviceId UNION ALL
+                            SELECT
+                                pc2.*
+                            FROM
+                                sys_product_service pc2,
+                                r
+                            WHERE
+                                pc2.serviceId = r.parServId
+                        ) SELECT
+                            serviceId
+                        FROM
+                            r
+                        ORDER BY
+                            servLevel
+                        LIMIT 1
+            ) AS rootServiceId,
+            (
+                WITH recursive r AS (
+                    SELECT
+                        *
+                    FROM
+                        sys_product_service pc1
+                    WHERE
+                        pc1.paramId = sys_product_service.paramId UNION ALL
+                    SELECT
+                        pc2.*
+                    FROM
+                        sys_product_service pc2,
+                        r
+                    WHERE
+                        pc2.paramId = r.parParamId
+                ) SELECT REPLACE
+                             ( CONCAT( '/', GROUP_CONCAT( DISTINCT paramId ORDER BY servLevel ) ), ',', '/' ) fieldNames
+                FROM
+                    r
+            ) AS parParamIds,
+            sys_product_service.*
+            FROM
+		sys_product_service
+	) cusTable ON device.productId = cusTable.productId
+        WHERE
+          cusTable.rootServiceId IN
+          <foreach collection="serviceIdList" item="serviceId" index="index" open="(" close=")" separator=",">
+              #{serviceId}
+          </foreach>
+          AND cusTable.isVisible = 1
+          AND parParamIds IS NOT NULL AND rootServiceId IS NOT NULL
+          AND device.deviceId = #{deviceId}
+        ORDER BY
+            servLevel,
+            seq
+    </select>
+
+</mapper>

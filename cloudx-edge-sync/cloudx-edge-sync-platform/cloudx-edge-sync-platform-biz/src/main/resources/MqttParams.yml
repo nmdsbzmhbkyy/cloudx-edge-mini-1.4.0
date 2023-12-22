@@ -1,0 +1,6 @@
+!!com.aurine.driver.config.MqttParamObj {ai: 3E99VS001.VS00AIGL0, appId: '0000', cascade: 0,
+  communityId: '', driverSwitch: 0, driverType: other, driverUrl: 'http://127.0.0.1:7878/msg',
+  ha80: 3G99GW01HA.3T00FFHA.3M9810HA.3S00FFHA.3M11WM27HA.EL00WD24HA.EL00M81SHA, m121: 3E99EN01M121.3M99M121HD,
+  mqttBrokerIp: 124.70.92.136, mqttBrokerPort: 1883, mqttClientId: saas_sync_dev9,
+  mqttClientSwitch: 1, other: '', password: 30c7e6224bfb00325e4e68e62e05c0b3, qos: 1,
+  userName: saas_sync_dev, ver: '1.0'}

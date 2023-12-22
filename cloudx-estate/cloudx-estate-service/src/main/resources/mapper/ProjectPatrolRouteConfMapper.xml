@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPatrolRouteConfMapper">
+
+    <select id="selectAllList" resultType="com.aurine.cloudx.estate.vo.ProjectPatrolRouteConfVo">
+        SELECT
+        p_route.*,
+        DATE_FORMAT(p_route.createTime, '%Y-%m-%d') RouteCreateTime,
+        s_plan.planName AS planName,
+        (
+          SELECT
+          COUNT(*)
+          FROM
+          project_patrol_route_point_conf p_conf
+          LEFT JOIN
+          project_patrol_point_conf p_point ON p_conf.patrolPointId = p_point.pointId
+          WHERE
+          p_conf.patrolRouteId = p_route.patrolRouteId
+          AND p_point.status = 1
+        ) AS patrolRouteNum,
+        s_user.username AS operatorName
+        FROM
+        aurine.project_patrol_route_conf p_route
+        LEFT JOIN
+        aurine.project_shift_plan s_plan ON p_route.schedulePlanId = s_plan.planId
+        JOIN
+        pigxx.sys_user s_user ON p_route.operator = s_user.user_id
+        <where>
+            AND p_route.projectId = #{param.projectId}
+            <if test="param.effTime != null">
+                AND DATE_FORMAT(p_route.createTime, '%Y-%m-%d') <![CDATA[>=]]> DATE_FORMAT(#{param.effTime}, '%Y-%m-%d')
+            </if>
+            <if test="param.expTime != null">
+                AND DATE_FORMAT(p_route.createTime, '%Y-%m-%d') <![CDATA[<=]]> DATE_FORMAT(#{param.expTime}, '%Y-%m-%d')
+            </if>
+            <if test='param.status != null and param.status != ""'>
+                AND p_route.status = #{param.status}
+            </if>
+            <if test="param.patrolRouteName != null and param.patrolRouteName !=''">
+                AND p_route.patrolRouteName LIKE CONCAT('%',#{param.patrolRouteName},'%')
+            </if>
+        </where>
+    </select>
+
+    <select id="select" resultType="com.aurine.cloudx.estate.vo.ProjectPatrolRouteConfVo">
+        SELECT
+        p_route.*,
+        p_route.mon AS monTime,
+        p_route.tue AS tueTime,
+        p_route.wed AS wedTime,
+        p_route.thu AS thuTime,
+        p_route.fri AS friTime,
+        p_route.sat AS satTime,
+        p_route.sun AS sunTime,
+        DATE_FORMAT(p_route.createTime, '%Y-%m-%d') RouteCreateTime,
+        s_plan.planName AS planName,
+        (
+        SELECT
+        COUNT(*)
+        FROM
+        project_patrol_route_point_conf p_conf
+        WHERE
+        p_conf.patrolRouteId = p_route.patrolRouteId
+        ) AS patrolRouteNum
+        FROM
+        project_patrol_route_conf p_route
+        LEFT JOIN
+        project_shift_plan s_plan ON p_route.schedulePlanId = s_plan.planId
+        <where>
+            AND p_route.projectId = #{projectId}
+            <if test='routeId != null and routeId != ""'>
+                AND p_route.patrolRouteId = #{routeId}
+            </if>
+        </where>
+    </select>
+</mapper>

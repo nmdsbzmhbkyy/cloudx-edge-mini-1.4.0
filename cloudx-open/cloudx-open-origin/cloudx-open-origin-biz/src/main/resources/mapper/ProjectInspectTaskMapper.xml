@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectInspectTaskMapper">
+    <insert id="saveTaskBatch">
+
+
+    </insert>
+
+    <select id="listAllPlanTask" resultType="com.aurine.cloudx.open.origin.vo.ProjectInspectTaskVo">
+        SELECT DISTINCT shift.recordId,
+                        plan.planName,
+                        plan.planId           'inspectPlanId',
+                        plan.gapType,
+                        plan.planName         'inspectPlanName',
+                        plan.ifSatOrSun,
+                        plan.cronType,
+                        plan.projectId,
+                        plan.tenant_id,
+                        route_conf.inspectRouteName,
+                        route_conf.inspectRouteId,
+                        shift.frequency,
+                        shift.curDay,
+                        route_conf.isSort,
+                        (
+                            SELECT GROUP_CONCAT(DISTINCT staff.staffName) 'planStaff'
+                            FROM project_inspect_plan_shift_staff
+                                     LEFT JOIN project_staff staff
+                                               ON project_inspect_plan_shift_staff.staffId = staff.staffId
+                            WHERE project_inspect_plan_shift_staff.recordId = shift.recordId
+                              AND project_inspect_plan_shift_staff.projectId = shift.projectId
+                            GROUP BY shift.recordId
+                        )                     'planStaff',
+                        (
+                            SELECT GROUP_CONCAT(DISTINCT staff.staffId) 'planStaffIds'
+                            FROM project_inspect_plan_shift_staff
+                                     LEFT JOIN project_staff staff
+                                               ON project_inspect_plan_shift_staff.staffId = staff.staffId
+                            WHERE project_inspect_plan_shift_staff.recordId = shift.recordId
+                              AND project_inspect_plan_shift_staff.projectId = shift.projectId
+                            GROUP BY shift.recordId
+                        )                     'planStaffIds',
+                        CONCAT(date_format(DATE_ADD(NOW(), INTERVAL 1 DAY), '%Y-%m-%d'), ' ', shift.startTime, ' 至 ',
+                               date_format(DATE_ADD(NOW(), INTERVAL 1 DAY), '%Y-%m-%d'), ' ',
+                               shift.endTime) 'planInspectTime'
+        FROM project_inspect_plan_shift3 shift
+                 LEFT JOIN project_inspect_plan plan ON shift.planId = plan.planId
+                 LEFT JOIN project_inspect_plan_shift_staff shift_staff ON shift_staff.recordId = shift.recordId
+                 LEFT JOIN project_staff staff ON shift_staff.staffId = staff.staffId
+                 LEFT JOIN project_inspect_route_conf route_conf ON route_conf.inspectRouteId = plan.inspectRouteId
+        WHERE STR_TO_DATE((DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 1 DAY), '%Y-%m-%d')), '%Y-%m-%d')
+            BETWEEN
+            STR_TO_DATE((DATE_FORMAT(plan.startTime, '%Y-%m-%d')), '%Y-%m-%d')
+            AND
+            STR_TO_DATE((DATE_FORMAT(plan.endTime, '%Y-%m-%d')), '%Y-%m-%d')
+          AND plan.status = '1'
+    </select>
+
+    <select id="listByLastWeek" resultType="com.aurine.cloudx.open.origin.entity.ProjectInspectTask">
+        SELECT *
+        FROM project_inspect_task
+        WHERE createTime &lt; STR_TO_DATE(#{date}, '%Y-%m-%d')
+          and inspectPlanId = #{planId}
+        ORDER BY createTime DESC
+    </select>
+
+    <select id="fetchList" resultType="com.aurine.cloudx.open.origin.vo.ProjectInspectTaskPageVo">
+        SELECT
+        task.taskId,
+        task.inspectTaskCode,
+        task.inspectPlanId,
+        task.inspectPlanName,
+        task.planInspectTime,
+        task.inspectRouteName,
+        task.planStaff,
+        task.isSort,
+        task.status,
+        task.execStaff,
+        task.result,
+        task.inspectTime,
+        task.timeElapsed,
+        task.checkInStatus,
+        task.projectId,
+        task.tenant_id,
+        task.operator,
+        task.createTime,
+        task.updateTime,
+        ( select GROUP_CONCAT(inspect_staff.staffId) from project_inspect_task_staff inspect_staff where
+        inspect_staff.taskId = task.taskId and inspect_staff.staffType='1') 'planStaffIds',
+        ( select GROUP_CONCAT(inspect_staff.staffId) from project_inspect_task_staff inspect_staff where
+        inspect_staff.taskId = task.taskId and inspect_staff.staffType='2') 'execStaffIds'
+        FROM
+        project_inspect_task task
+        <where>
+            <if test="query.dateRange!=null and query.dateRange.length>0">
+                STR_TO_DATE(SUBSTRING_INDEX(SUBSTRING_INDEX(planInspectTime,' 至 ',1), ' ',1),'%Y-%m-%d') BETWEEN
+                #{query.dateRange[0]} AND #{query.dateRange[1]}
+            </if>
+            <if test="query.inspectPlanName!=null and query.inspectPlanName != ''">
+                AND task.inspectPlanName like concat('%', #{query.inspectPlanName},'%')
+            </if>
+            <if test="query.checkInStatus!=null and query.checkInStatus != ''">
+                AND task.checkInStatus = #{query.checkInStatus}
+            </if>
+            <if test="query.status!=null and query.status != ''">
+                AND task.status = #{query.status}
+            </if>
+            <if test="query.result!=null and query.result != ''">
+                AND task.result = #{query.result}
+            </if>
+            <if test="query.date!=null and query.result != ''">
+                AND date_format(task.createTime, '%Y-%m') = #{query.date}
+            </if>
+        </where>
+        GROUP BY task.taskId
+        ORDER BY task.createTime desc
+/*        ORDER BY (
+            case task.status
+            when '0' then 1
+            when '1' then 2
+            when '2' then 3
+            when '3' then 4
+            when '4' then 5
+            else '' end
+        ),
+        SUBSTRING_INDEX(task.planInspectTime,' 至 ', 1) DESC;*/
+    </select>
+
+    <update id="updateAllTimeOut">
+        update project_inspect_task task
+        set task.status='4'
+        where STR_TO_DATE(SUBSTRING_INDEX(planInspectTime, ' 至 ', -1), '%Y-%m-%d %H:%i:%s') &lt; NOW()
+          AND status = '0'
+    </update>
+
+    <select id="getTaskCode" resultType="string" flushCache="true">
+        select getNextVal('inspectTaskCode', #{projectId})
+    </select>
+    <select id="selectForMe" resultType="com.aurine.cloudx.open.origin.vo.ProjectInspectTaskPageVo">
+        SELECT task.taskId,
+               task.inspectTaskCode,
+               task.inspectPlanId,
+               task.inspectPlanName,
+               task.planInspectTime,
+               task.inspectRouteName,
+               task.planStaff,
+               task.isSort,
+               task.status,
+               task.execStaff,
+               task.result,
+               task.inspectTime,
+               task.timeElapsed,
+               task.checkInStatus,
+               task.projectId,
+               task.tenant_id,
+               task.operator,
+               task.createTime,
+               task.updateTime,
+               (select GROUP_CONCAT(inspect_staff.staffId)
+                from project_inspect_task_staff inspect_staff
+                where inspect_staff.taskId = task.taskId
+                  and inspect_staff.staffType = '1') 'planStaffIds',
+               (select GROUP_CONCAT(inspect_staff.staffId)
+                from project_inspect_task_staff inspect_staff
+                where inspect_staff.taskId = task.taskId
+                  and inspect_staff.staffType = '2') 'execStaffIds'
+        FROM project_inspect_task task
+        where task.planStaff is not null
+          and task.execStaff is null
+          and task.status = '0'
+          and task.taskId in
+              (select taskId from project_inspect_task_staff where staffId = #{staffId} and staffType = '1')
+          and task.taskId not in
+              (select taskId from project_inspect_task_staff where staffId = #{staffId} and staffType = '2')
+          and (select GROUP_CONCAT(inspect_staff.staffId) from project_inspect_task_staff inspect_staff
+              where inspect_staff.taskId = task.taskId and inspect_staff.staffType = '2') is null
+        ORDER BY task.createTime DESC
+    </select>
+
+    <select id="selectToDo" resultType="com.aurine.cloudx.open.origin.vo.ProjectInspectTaskPageVo">
+        SELECT task.taskId,
+               task.inspectTaskCode,
+               task.inspectPlanId,
+               task.inspectPlanName,
+               task.planInspectTime,
+               task.inspectRouteName,
+               task.planStaff,
+               task.isSort,
+               task.status,
+               task.execStaff,
+               task.result,
+               task.inspectTime,
+               task.timeElapsed,
+               task.checkInStatus,
+               task.projectId,
+               task.tenant_id,
+               task.operator,
+               task.createTime,
+               task.updateTime,
+               (select GROUP_CONCAT(inspect_staff.staffId)
+                from project_inspect_task_staff inspect_staff
+                where inspect_staff.taskId = task.taskId
+                  and inspect_staff.staffType = '1') 'planStaffIds',
+               (select GROUP_CONCAT(inspect_staff.staffId)
+                from project_inspect_task_staff inspect_staff
+                where inspect_staff.taskId = task.taskId
+                  and inspect_staff.staffType = '2') 'execStaffIds'
+        FROM project_inspect_task task
+        where task.planStaff is not null
+          and task.execStaff is not null
+          and task.status != '2'
+          and task.taskId in
+              (select taskId from project_inspect_task_staff where staffId = #{staffId} and staffType = '2')
+        ORDER BY (
+            case task.status
+            when '0' then 1
+            when '1' then 2
+            when '2' then 3
+            when '3' then 4
+            when '4' then 5
+            else '' end
+        ),
+        SUBSTRING_INDEX(task.planInspectTime,' 至 ', 1) DESC
+    </select>
+    <select id="getCount" resultType="java.lang.Integer">
+        SELECT count(taskId) num
+        FROM project_inspect_task pit
+        WHERE pit.taskId in (
+            SELECT taskId
+            FROM project_inspect_task_staff inspect_staff
+            WHERE inspect_staff.staffId = #{staffId}
+                AND inspect_staff.staffType = '2'
+                AND date_format(inspect_staff.createTime, '%Y-%m') = #{date}
+        )
+        <if test="status!=null">
+            AND pit.status = #{status}
+        </if>
+    </select>
+    <select id="selectDateToDo" resultType="com.aurine.cloudx.open.origin.vo.ProjectInspectTaskPageVo">
+        SELECT task.taskId,
+        task.inspectTaskCode,
+        task.inspectPlanId,
+        task.inspectPlanName,
+        task.planInspectTime,
+        task.inspectRouteName,
+        task.planStaff,
+        task.isSort,
+        task.status,
+        task.execStaff,
+        task.result,
+        task.inspectTime,
+        task.timeElapsed,
+        task.checkInStatus,
+        task.projectId,
+        task.tenant_id,
+        task.operator,
+        task.createTime,
+        task.updateTime,
+        ( SELECT MAX(pitd.endTime) FROM project_inspect_task_detail pitd
+        WHERE pitd.taskId = task.taskId) 'doneTime',
+        (select GROUP_CONCAT(inspect_staff.staffId)
+        from project_inspect_task_staff inspect_staff
+        where inspect_staff.taskId = task.taskId
+        and inspect_staff.staffType = '1') 'planStaffIds',
+        (select GROUP_CONCAT(inspect_staff.staffId)
+        from project_inspect_task_staff inspect_staff
+        where inspect_staff.taskId = task.taskId
+        and inspect_staff.staffType = '2') 'execStaffIds'
+        FROM project_inspect_task task
+        where task.planStaff is not null
+        and task.execStaff is not null
+        and task.status = '2'
+        <if test="date!=null">
+            AND DATE_FORMAT((SELECT MAX(pitd.endTime) FROM project_inspect_task_detail pitd
+            WHERE pitd.taskId = task.taskId), '%Y-%m') = #{date}
+        </if>
+        and task.taskId in
+        (select taskId from project_inspect_task_staff where staffId = #{staffId} and staffType = '2')
+        ORDER BY doneTime DESC
+    </select>
+</mapper>

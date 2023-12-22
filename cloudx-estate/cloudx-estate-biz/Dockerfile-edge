@@ -1,0 +1,10 @@
+FROM node.dev:9222/basic/jre:8
+MAINTAINER  www.aurine.cn
+ENV TZ=Asia/Shanghai
+RUN ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+WORKDIR /opt
+ADD ./target/cloudx-estate-biz.jar ./
+COPY liblinkcp.so  /lib64
+EXPOSE 4001
+CMD java -Xms2048m -Xmx4096m -Djava.security.egd=file:/dev/./urandom  -Xdebug -Xrunjdwp:transport=dt_socket,suspend=n,server=y,address=55555  -jar cloudx-estate-biz.jar --spring.profiles.active=pre
+##docker run --name test --privileged  -v /sbin/dmidecode:/sbin/dmidecode -v /dev/mem:/dev/mem -v /opt/Auedge/public/machineSN:/opt/public/machineSN --net=host -d test:1.0.0

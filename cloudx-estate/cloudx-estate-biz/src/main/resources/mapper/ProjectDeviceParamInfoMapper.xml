@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectDeviceParamInfoMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectDeviceParamInfo" id="ProjectDeviceParamInfoMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="deviceId" column="deviceId" jdbcType="VARCHAR"/>
+        <result property="deviceParam" column="deviceParam" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <update id="updateParamInfo">
+        update project_device_param_info set deviceParam =#{deviceParam} where deviceId =#{deviceId} and serviceId =#{serviceId}
+    </update>
+
+    <select id="listValidDeviceParamInfo" resultType="com.aurine.cloudx.estate.entity.ProjectDeviceParamInfo">
+        SELECT
+            param_info.serviceId,
+            param_info.deviceParam
+        FROM
+            project_device_param_info param_info
+        where param_info.deviceId = #{deviceId}
+    </select>
+
+</mapper>

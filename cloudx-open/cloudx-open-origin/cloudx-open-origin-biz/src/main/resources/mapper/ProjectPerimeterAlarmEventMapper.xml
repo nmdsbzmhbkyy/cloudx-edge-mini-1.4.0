@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectPerimeterAlarmEventMapper">
+
+
+    <select id="selectAll" resultType="com.aurine.cloudx.open.origin.vo.ProjectPerimeterAlarmEventVo">
+        SELECT USER
+        .true_name NAME,
+        info.deviceRegionId deviceRegionId,
+        alarm.*
+        FROM
+        aurine.project_perimeter_alarm_event alarm
+        LEFT JOIN pigxx.sys_user USER ON alarm.operator = USER.user_id
+        left join project_device_info info on alarm.deviceId = info.deviceId
+        where 1=1
+        <if test="alaramType!=null and alaramType!=''">
+            and alarm.alaramType=#{alaramType}
+        </if>
+
+        <if test="execStatus!=null and execStatus!=''">
+            and alarm.execStatus=#{execStatus}
+        </if>
+        <if test="alarmTimeBegin!=null and alarmTimeEnd!=null">
+            and alarm.alaramTime &lt;= DATE(#{alarmTimeEnd}) AND
+            alarm.alaramTime &gt;= DATE(#{alarmTimeBegin})
+        </if>
+        <if test="processType!=null and processType==0">
+            and alarm.execStatus=#{processType}
+        </if>
+        <if test="processType!=null and processType==1">
+            and alarm.execStatus=#{processType}
+        </if>
+        <if test="processType!=null and processType==2">
+            and alarm.operator=#{deviceRegionId}
+        </if>
+        <if test="processType==null || processType==0">
+            ORDER BY alarm.alaramTime desc
+        </if>
+        <if test="processType==3">
+            ORDER BY alarm.execStatus,alarm.alaramTime desc
+        </if>
+        <if test="processType==1 || processType==2 ">
+            ORDER BY alarm.updateTime desc
+        </if>
+        <if test="current!=null and size!=null">
+            limit #{current}, #{size}
+        </if>
+
+
+    </select>
+    <select id="getCount" resultType="java.lang.Integer">
+        select count(*) from (
+        SELECT
+        *
+        FROM
+        project_perimeter_alarm_event
+        where 1=1
+        <if test="alaramType!=null and alaramType!=''">
+            and project_perimeter_alarm_event.alaramType=#{alaramType}
+        </if>
+
+        <if test="execStatus!=null and execStatus!=''">
+            and project_perimeter_alarm_event.execStatus=#{execStatus}
+        </if>
+        <if test="alarmTimeBegin!=null and alarmTimeEnd!=null">
+            and project_perimeter_alarm_event.alaramTime &lt;= DATE(#{alarmTimeEnd}) AND
+            project_perimeter_alarm_event.alaramTime &gt;= DATE(#{alarmTimeBegin})
+        </if>
+        ) a
+    </select>
+
+
+    <select id="getAlarm" resultType="com.aurine.cloudx.open.origin.entity.ProjectPerimeterAlarmEvent">
+        SELECT alarm.infoUid     deviceId,
+               region.regionName regionName,
+               z.deviceName      deviceName,
+               alarm.channelName channelName,
+               alarm.channelNo   channelId,
+               info.deviceCode   moduleNo
+        FROM project_perimeter_alarm_area alarm
+                 LEFT JOIN project_device_info info ON info.deviceId = alarm.infoUid
+                 LEFT JOIN (
+            SELECT *
+            FROM project_device_info
+            WHERE deviceId IN (SELECT DISTINCT info1.deviceId
+                               FROM project_device_info info1,
+                                    project_perimeter_alarm_area alarm
+                               WHERE alarm.deviceId = info1.deviceId
+                                 AND info1.sn = #{sn})) z ON alarm.deviceId = z.deviceId
+                 LEFT JOIN project_device_region region ON info.deviceRegionId = region.regionId
+        WHERE alarm.channelNo = #{channel}
+    </select>
+    <select id="countByoffxj" resultType="int">
+        SELECT
+        count(*)
+        FROM project_patrol_info t1
+        WHERE t1.status = '0'
+    </select>
+
+</mapper>

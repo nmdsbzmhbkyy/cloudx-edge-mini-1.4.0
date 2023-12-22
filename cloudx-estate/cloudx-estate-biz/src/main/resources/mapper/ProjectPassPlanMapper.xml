@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPassPlanMapper">
+
+  <resultMap id="projectPassPlanMap" type="com.aurine.cloudx.estate.entity.ProjectPassPlan">
+                        <id property="planId" column="planId"/>
+                        <result property="planName" column="planName"/>
+                        <result property="planObject" column="planObject"/>
+                        <result property="operator" column="operator"/>
+                        <result property="createTime" column="createTime"/>
+                        <result property="updateTime" column="updateTime"/>
+            </resultMap>
+
+
+</mapper>

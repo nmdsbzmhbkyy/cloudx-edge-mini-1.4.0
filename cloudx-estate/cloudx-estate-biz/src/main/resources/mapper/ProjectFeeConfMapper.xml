@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectFeeConfMapper">
+
+    <resultMap type="com.aurine.cloudx.estate.entity.ProjectFeeConf" id="ProjectFeeConfMap">
+        <result property="feeId" column="feeId" jdbcType="VARCHAR"/>
+        <result property="feeName" column="feeName" jdbcType="VARCHAR"/>
+        <result property="feeType" column="feeType" jdbcType="VARCHAR"/>
+        <result property="feeCycleType" column="feeCycleType" jdbcType="VARCHAR"/>
+        <result property="feeAmount" column="feeAmount" jdbcType="NUMERIC"/>
+        <result property="feeCycle" column="feeCycle" jdbcType="VARCHAR"/>
+        <result property="billCycleType" column="billCycleType" jdbcType="VARCHAR"/>
+        <result property="feeStartDayType" column="feeStartDayType" jdbcType="VARCHAR"/>
+        <result property="feeStartDay" column="feeStartDay" jdbcType="VARCHAR"/>
+        <result property="fixAmountOrNot" column="isFixAmount" jdbcType="VARCHAR"/>
+        <result property="fixAmount" column="fixAmount" jdbcType="NUMERIC"/>
+        <result property="differentialOrNot" column="isDifferential" jdbcType="VARCHAR"/>
+        <result property="formula" column="formula" jdbcType="VARCHAR"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <select id="pageFee" resultType="com.aurine.cloudx.estate.vo.ProjectFeeConfVo">
+        select pfc.* , case when pfc.isFixAmount='1' then CONCAT('金额: ',pfc.fixAmount,'元') else CONCAT('单价:
+        ',pfc.unitPrice,'元') end
+        unitString
+        from project_fee_conf pfc
+        <where>
+            <if test="query.feeType!=null and query.feeType!=''">
+                and pfc.feeType=#{query.feeType}
+            </if>
+            <if test="query.feeCycleType!=null and query.feeCycleType!=''">
+                and pfc.feeCycleType=#{query.feeCycleType}
+            </if>
+            <if test="query.feeName!=null and query.feeName!=''">
+                and pfc.feeName like concat('%',#{query.feeName},'%')
+            </if>
+            <if test="query.status!=null and query.status!=''">
+                and pfc.status=#{query.status}
+            </if>
+        </where>
+
+    </select>
+    <select id="liseFee" resultType="com.aurine.cloudx.estate.vo.ProjectFeeConfVo">
+        select pfc.*,
+        case
+        when pfc.isFixAmount = '1' then CONCAT('金额: ', pfc.fixAmount, '元')
+        else CONCAT('单价:
+        ', pfc.unitPrice, '元') end
+        unitString
+        from project_fee_conf pfc
+        <where>
+            <!--如果是预存费用则费用列表排除押金和违约金-->
+            <if test="type!=null and type=='1'">
+                and pfc.feeType in ('1','2','3','6')
+            </if>
+            <if test="type!=null and type=='1'">
+                and pfc.feeCycleType ='1'
+            </if>
+            <if test="status!=null and status!=''">
+                and pfc.status=#{status}
+            </if>
+        </where>
+    </select>
+
+    <select id="getActiveConfig" resultMap="ProjectFeeConfMap">
+        SELECT * FROM `project_fee_conf` LEFT JOIN (SELECT
+			t.dict_id AS dictGroupCode,
+			t.`VALUE` AS dictCode,
+			max( t.label ) AS dictValue,
+			min( t.STATUS ) AS status
+			FROM
+			(
+			SELECT
+				sd.dict_id,
+				sd.`VALUE`,
+				sd.label,
+				'1' AS `STATUS`
+			FROM
+				pigxx.sys_dict_item sd
+			WHERE
+				sd.dict_id = ( SELECT DISTINCT sd1.dict_id FROM pigxx.sys_dict_item sd1 WHERE sd1.type = 'fee_type') UNION ALL
+			SELECT
+				dictGroupCode AS dict_id,
+				dictCode AS `VALUE`,
+				dictValue AS `label`,
+				`STATUS`
+			FROM
+				aurine.project_dict
+			WHERE
+				projectId = #{query.projectId}
+			) t
+			GROUP BY
+			t.dict_id,
+			t.`VALUE`) a
+
+    on project_fee_conf.feeType = a.dictCode
+
+    where project_fee_conf.`status` = 1 and a.`status` = 1
+        and project_fee_conf.projectId = #{query.projectId}
+    </select>
+</mapper>

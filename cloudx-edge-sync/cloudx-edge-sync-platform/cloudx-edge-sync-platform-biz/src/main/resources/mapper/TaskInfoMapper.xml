@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~
+  ~      Copyright (c) 2018-2025, lengleng All rights reserved.
+  ~
+  ~  Redistribution and use in source and binary forms, with or without
+  ~  modification, are permitted provided that the following conditions are met:
+  ~
+  ~ Redistributions of source code must retain the above copyright notice,
+  ~  this list of conditions and the following disclaimer.
+  ~  Redistributions in binary form must reproduce the above copyright
+  ~  notice, this list of conditions and the following disclaimer in the
+  ~  documentation and/or other materials provided with the distribution.
+  ~  Neither the name of the pig4cloud.com developer nor the names of its
+  ~  contributors may be used to endorse or promote products derived from
+  ~  this software without specific prior written permission.
+  ~  Author: lengleng (wangiegie@gmail.com)
+  ~
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.edge.sync.biz.mapper.TaskInfoMapper">
+
+    <resultMap id="taskInfoMap" type="com.aurine.cloudx.edge.sync.common.entity.po.TaskInfo">
+        <id property="seq" column="seq"/>
+        <result property="tenantId" column="tenantId"/>
+        <result property="projectUUID" column="projectUuid"/>
+        <result property="uuid" column="uuid"/>
+        <result property="serviceType" column="serviceType"/>
+        <result property="serviceName" column="serviceName"/>
+        <result property="type" column="type"/>
+        <result property="errMsg" column="errMsg"/>
+        <result property="retriesCount" column="retriesCount"/>
+        <result property="lastErrTime" column="lastErrTime"/>
+        <result property="newMd5" column="newMd5"/>
+        <result property="data" column="data"/>
+        <result property="state" column="state"/>
+        <result property="source" column="source"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+
+    <select id="getDispatchQueueList" resultType="String">
+       SELECT projectUuid FROM
+        (SELECT any_value(seq) as seq,projectUuid
+            FROM task_info
+            WHERE (state = '0'
+            OR state = '1')
+            AND serviceType <![CDATA[<>]]> 'event'
+			ORDER BY seq
+        ) t
+		GROUP BY projectUuid
+    </select>
+
+    <select id="getEventDispatchQueueList" resultType="String">
+       SELECT projectUuid FROM
+        (SELECT any_value(seq) as seq,projectUuid
+            FROM task_info
+            WHERE (state = '0'
+            OR state = '1')
+            AND serviceType = 'event'
+			ORDER BY seq
+        ) t
+		GROUP BY projectUuid
+    </select>
+
+    <select id="getSendQueueList" resultType="String">
+       SELECT projectUuid FROM task_info
+        WHERE state = '1'
+        AND serviceType <![CDATA[<>]]> 'event'
+        GROUP BY projectUuid
+    </select>
+
+    <select id="getEventSendQueueList" resultType="String">
+       SELECT projectUuid FROM task_info
+        WHERE state = '1'
+        AND serviceType = 'event'
+        GROUP BY projectUuid
+    </select>
+
+    <select id="getTaskInfoByMarks" resultMap="taskInfoMap">
+        SELECT * FROM task_info
+        WHERE tenantId = #{query.tenantId}
+        AND projectUuid = #{query.projectUUID}
+        AND serviceType = #{query.serviceType}
+        AND serviceName = #{query.serviceName}
+        AND type = #{query.type}
+        AND state = #{query.state}
+        <if test="query.uuid != null and query.uuid != ''">
+            AND uuid = #{query.uuid}
+        </if>
+    </select>
+    <select id="getProjectIdByProjectUuid" resultType="java.lang.Integer">
+        select projectId from aurine.project_info where projectUuid = #{projectUuid}
+    </select>
+</mapper>

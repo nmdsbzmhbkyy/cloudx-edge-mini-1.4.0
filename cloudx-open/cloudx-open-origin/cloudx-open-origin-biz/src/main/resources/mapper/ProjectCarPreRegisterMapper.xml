@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectCarPreRegisterMapper">
+
+    <select id="fetchList" resultType="com.aurine.cloudx.open.origin.dto.ProjectCarPreRegisterDto">
+        SELECT
+        reg.plateNumber,
+        ppi.personName,
+        ppi.telephone,
+        ppi.personId,
+        reg.auditRemark,
+        reg.preRegId,
+        DATE_FORMAT( reg.commitTime, '%Y-%m-%d %H:%i' ) commitTime,
+        reg.auditStatus,
+        group_concat(
+        (
+        WITH recursive t_frame AS (
+        SELECT
+        entityId,
+        entityName,
+        puid,
+        `level`
+        FROM
+        aurine.project_frame_info
+        WHERE
+        projectId = #{projectId}
+        AND entityId = rel.houseId UNION ALL
+        SELECT
+        fra.entityId,
+        fra.entityName,
+        fra.puid,
+        fra.`level`
+        FROM
+        t_frame,
+        aurine.project_frame_info fra
+        WHERE
+        t_frame.puid = fra.entityId
+        ) SELECT
+        group_concat( entityName ORDER BY LEVEL DESC SEPARATOR '-' )
+        FROM
+        t_frame
+        )
+        ) AS address
+        FROM
+        project_car_pre_register reg
+        LEFT JOIN aurine.project_person_info ppi ON ppi.personId = reg.personId
+        LEFT JOIN aurine.project_house_person_rel rel ON rel.personId = reg.personId
+        <where>
+            reg.projectId = #{projectId}
+            AND rel.auditStatus = '2'
+            AND ppi.projectId = #{projectId}
+            <if test="query.personName != null and query.personName != ''">
+                AND ppi.personName LIKE concat('%',#{query.personName},'%')
+            </if>
+            <if test="query.plateNumber != null and query.plateNumber != ''">
+                AND reg.plateNumber LIKE concat('%',#{query.plateNumber},'%')
+            </if>
+            <if test="query.auditStatus != null and query.auditStatus != ''">
+                AND reg.auditStatus = #{query.auditStatus}
+            </if>
+        </where>
+        GROUP BY
+        reg.plateNumber,
+        ppi.personName,
+        ppi.telephone,
+        reg.commitTime,
+        reg.auditStatus,
+        reg.preRegId,
+        reg.auditRemark
+
+    </select>
+
+    <select id="getAuditObj" resultType="com.aurine.cloudx.open.origin.dto.ProjectCarPreRegisterAuditDto">
+        SELECT pre_reg.preRegId,
+               pre_reg.plateNumber,
+               person.personId,
+               person.telephone,
+               person.personName,
+               pre_reg.createTime,
+               pre_reg.updateTime,
+               if(reg.registerId IS NOT NULL, '1', '0') 'plateNumberHasRegister'
+        FROM project_car_pre_register pre_reg
+                 LEFT JOIN aurine.project_person_info person ON person.personId = pre_reg.personId
+                 LEFT JOIN project_par_car_register reg ON reg.plateNumber = pre_reg.plateNumber
+        WHERE pre_reg.preRegId = #{preRegId}
+        AND reg.isCancelled = '0'
+    </select>
+
+    <select id="getAuditInfo" resultType="com.aurine.cloudx.open.origin.vo.ProjectCarPreRegisterInfoVo">
+        SELECT pre.plateNumber,
+               person.telephone,
+               person.personName,
+               parking.parkName,
+               region.parkRegionName,
+               place.placeName,
+               place.relType,
+               place.ruleId,
+               DATE_FORMAT(register.startTime, '%Y-%m-%d') startTime,
+               DATE_FORMAT(register.endTime, '%Y-%m-%d')   endTime,
+               rule.MonthlyRent,
+               rule.ruleName,
+               rule.ruleType
+        FROM project_car_pre_register pre
+                 LEFT JOIN project_par_car_register register ON register.plateNumber = pre.plateNumber
+                 LEFT JOIN aurine.project_person_info person ON person.personId = pre.personId
+                 LEFT JOIN project_parking_place place ON place.placeId = register.parkPlaceId
+                 LEFT JOIN project_park_region region ON region.parkRegionId = place.parkRegionId
+                 LEFT JOIN project_parking_info parking ON parking.parkId = register.parkId
+--                  LEFT JOIN project_park_billing_rule rule ON rule.ruleId = place.ruleId
+                 LEFT JOIN project_park_billing_rule rule ON rule.ruleId = register.ruleId
+        WHERE pre.auditStatus = 2
+          AND pre.preRegId = #{preRegId}
+          AND register.isCancelled = '0'
+    </select>
+    <select id="countByOff" resultType="int">
+        SELECT count(*)
+        FROM project_car_pre_register pre
+        WHERE pre.auditStatus = '1'
+    </select>
+</mapper>

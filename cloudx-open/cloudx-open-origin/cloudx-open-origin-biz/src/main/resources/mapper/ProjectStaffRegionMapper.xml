@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectStaffRegionMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectStaffRegion" id="ProjectStaffRegionMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="staffId" column="staffId" jdbcType="VARCHAR"/>
+        <result property="regionId" column="regionId" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+</mapper>

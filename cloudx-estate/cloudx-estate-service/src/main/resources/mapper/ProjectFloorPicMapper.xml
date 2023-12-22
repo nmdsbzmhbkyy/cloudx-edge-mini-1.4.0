@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectFloorPicMapper">
+    <select id="select" parameterType="com.aurine.cloudx.estate.vo.ProjectFloorPicSearchCondition" resultType="com.aurine.cloudx.estate.vo.ProjectFloorPicVo">
+        <!-- 3层结构情况下  楼栋、单元、房间、业主及其关系 -->
+        SELECT * FROM aurine.project_floor_pic projectFloorPic join pigxx.sys_user u on projectFloorPic.operator = u.user_id
+        <where>
+            <if test="searchCondition.picName != null and searchCondition.picName != ''">
+                AND projectFloorPic.picName like concat('%', #{searchCondition.picName},'%')
+            </if>
+            <if test="searchCondition.projectId != null">
+                and projectFloorPic.projectId = #{searchCondition.projectId}
+            </if>
+            <if test="searchCondition.regionId != null">
+                and projectFloorPic.regionId = #{searchCondition.regionId}
+            </if>
+        </where>
+        ORDER BY projectFloorPic.updateTime desc
+    </select>
+
+</mapper>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectStaffRotaDetailMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectStaffRotaDetail" id="ProjectStaffRotaDetailMap">
+        <id property="rotaDetailId" column="rotaDetailId" jdbcType="VARCHAR"/>
+        <result property="rotaId" column="rotaId" jdbcType="VARCHAR"/>
+        <result property="startTime" column="startTime" jdbcType="OTHER"/>
+        <result property="endTime" column="endTime" jdbcType="OTHER"/>
+        <result property="rotaStaffList" column="rotaStaffList" jdbcType="VARCHAR"/>
+        <result property="staffName" column="staffName" jdbcType="VARCHAR"/>
+        <result property="operator" column="operator" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+</mapper>

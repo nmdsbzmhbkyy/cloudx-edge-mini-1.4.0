@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectCardMapper">
+
+    <resultMap id="projectCardMap" type="com.aurine.cloudx.estate.entity.ProjectCard">
+        <id property="seq" column="seq"/>
+        <result property="cardNo" column="cardNo"/>
+        <result property="personType" column="personType"/>
+        <result property="personId" column="personId"/>
+        <result property="status" column="status"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+    <select id="getByCode" resultType="com.aurine.cloudx.estate.entity.ProjectCard">
+            SELECT
+            card.seq,
+            card.cardId,
+            card.cardCode,
+            card.cardNo,
+            card.projectId,
+            card.personType,
+            card.personId,
+            card.`status`,
+            card.tenant_id,
+            card.operator,
+            card.createTime,
+            card.updateTime
+            FROM
+            project_card AS card
+            WHERE
+            card.projectId = #{projectId} AND
+            card.cardCode = #{code}
+
+    </select>
+    <select id="getByCardNo" resultType="com.aurine.cloudx.estate.entity.ProjectCard">
+            SELECT
+            card.seq,
+            card.cardId,
+            card.cardCode,
+            card.cardNo,
+            card.projectId,
+            card.personType,
+            card.personId,
+            card.`status`,
+            card.tenant_id,
+            card.operator,
+            card.createTime,
+            card.updateTime
+            FROM
+            project_card AS card
+            WHERE
+            card.projectId = #{projectId} AND
+            card.cardNo = #{cardNo}
+
+    </select>
+
+    <select id="cardPage" resultType="com.aurine.cloudx.estate.vo.ProjectCardVo">
+        WITH result AS (
+        SELECT
+        c.cardNo,
+        group_concat( if( (d.deviceAlias is not null and d.deviceAlias != '') , d.deviceAlias,d.deviceName) ) device
+        FROM
+        project_card c
+        LEFT JOIN project_right_device r ON c.cardNo = r.certMediaInfo
+        LEFT JOIN project_device_info d ON r.deviceId = d.deviceId
+        WHERE
+        c.projectId = #{projectId}
+        and r.projectId = #{projectId}
+        and d.projectId = #{projectId}
+        GROUP BY
+        c.cardNo
+        )
+        SELECT
+        c.cardNo,
+        c.cardStatus,
+        if(c.personType = '1',p.personName,if(c.personType = '2',s.staffName,v.visitorName)) name,
+        c.personType,
+        result.device device,
+        if(c.personType = '1',p.telephone,if(c.personType = '2',s.mobile,vor.mobileNo)) phone
+        FROM
+        project_card c
+        LEFT JOIN result ON c.cardNo = result.cardNo
+        left join project_person_info p on c.personId = p.personId
+        left join project_staff s on c.personId = s.staffId
+        left join project_visitor_his v on c.personId = v.visitId
+        left join project_visitor vor on v.visitorId = vor.visitorId
+
+        WHERE
+        c.projectId = #{projectId}
+        and c.status = '1'
+        <if test="query.cardNo != null and query.cardNo != ''">
+            and c.cardNo like concat('%',#{query.cardNo},'%')
+        </if>
+        <if test="query.name != null and query.name != ''">
+            and (p.personName like concat('%',#{query.name},'%') or s.staffName like concat('%',#{query.name},'%') or v.visitorName like concat('%',#{query.name},'%') )
+        </if>
+        <if test="query.personType != null and query.personType != ''">
+            and c.personType = #{query.personType}
+        </if>
+        <if test="query.device != null and query.device != ''">
+            and result.device like concat('%',#{query.device},'%')
+        </if>
+        <if test="query.phone != null and query.phone != ''">
+            and (p.telephone like concat('%',#{query.phone},'%') or s.mobile like concat('%',#{query.phone},'%') or vor.mobileNo like concat('%',#{query.phone},'%'))
+        </if>
+        order by CONVERT( name USING gbk ) COLLATE gbk_chinese_ci asc
+    </select>
+
+    <select id="getPersonStatus" resultType="java.lang.Integer">
+        SELECT
+            count(1)
+        FROM
+            project_person_plan_rel
+        WHERE
+            personId = #{personId}
+          and  isActive = '1'
+          and expTime > NOW()
+    </select>
+
+    <select id="getVisitorStatus" resultType="java.lang.Integer">
+        SELECT
+            count(1)
+        FROM
+            project_visitor_his
+        WHERE
+            visitId = #{personId}
+          and passEndTime > NOW()
+    </select>
+
+    <select id="getVisitorInfo" resultType="com.aurine.cloudx.estate.vo.ProjectCardVo">
+        select
+            pv.personName name,
+            pv.mobileNo phone,
+            c.personType personType,
+            c.cardNo,
+            pvh.visitHouseId houseId
+        from
+            project_card c
+                left join project_visitor_his pvh on pvh.visitId = c.personId
+                left join project_visitor pv on pv.visitorId = pvh.visitorId
+        where
+            c.cardNo = #{cardNo}
+    </select>
+</mapper>

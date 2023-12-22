@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectPasswdMapper">
+
+
+
+    <select id="getByCode" resultType="com.aurine.cloudx.estate.entity.ProjectPasswd">
+          SELECT
+            passwd.seq,
+            passwd.passId,
+            passwd.passCode,
+            passwd.passwd,
+            passwd.projectId,
+            passwd.personType,
+            passwd.personId,
+            passwd.`status`,
+            passwd.tenant_id,
+            passwd.operator,
+            passwd.createTime,
+            passwd.updateTime
+            FROM
+            project_passwd AS passwd
+            WHERE
+            passwd.passCode = #{code} AND
+            passwd.projectId = #{projectId}
+    </select>
+</mapper>

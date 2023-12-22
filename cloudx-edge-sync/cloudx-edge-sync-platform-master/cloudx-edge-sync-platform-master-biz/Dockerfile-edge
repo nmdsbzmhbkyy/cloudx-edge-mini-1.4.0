@@ -1,0 +1,10 @@
+FROM pig4cloud/java:8-jre
+MAINTAINER  www.aurine.cn
+ENV TZ=Asia/Shanghai
+RUN ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+WORKDIR /opt
+EXPOSE 5902
+ADD ./target/cloudx-edge-sync-platform-master-biz.jar ./
+ADD ./target/classes/MqttParams.yml ./
+CMD java -Xms1024m -Xmx2048m  -jar cloudx-edge-sync-platform-master-biz.jar --server.port=5902 --spring.profiles.active=pre

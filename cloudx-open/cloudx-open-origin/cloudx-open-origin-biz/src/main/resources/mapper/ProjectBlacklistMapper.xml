@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectBlacklistMapper">
+
+    <resultMap id="projectBlacklistMap" type="com.aurine.cloudx.open.origin.entity.ProjectBlacklist">
+        <id property="blackId" column="blackId"/>
+        <result property="parkId" column="parkId"/>
+        <result property="plateNumber" column="plateNumber"/>
+        <result property="projectId" column="projectId"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="limitStartDate" column="limitStartDate"/>
+        <result property="limitEndDate" column="limitEndDate"/>
+        <result property="reason" column="reason"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+
+    <select id="getBlacklistPage" resultType="com.aurine.cloudx.open.origin.vo.ProjectBlacklistVo">
+        select
+        bl.blackId,
+        bl.parkId,
+        pi.parkName,
+        bl.plateNumber,
+        bl.projectId,
+        bl.tenant_id,
+        bl.limitStartDate,
+        bl.limitEndDate,
+        bl.reason,
+        bl.operator,
+        bl.createTime,
+        bl.updateTime
+        from
+        project_blacklist bl
+        left join  project_parking_info pi on bl.parkId = pi.parkId
+        <where>
+            <if test="query.plateNumber!=null and query.plateNumber != '' ">
+                and bl.plateNumber like concat('%', #{query.plateNumber}, '%')
+            </if>
+            <if test="query.parkId!=null and query.parkId != '' ">
+                and bl.parkId = #{query.parkId}
+            </if>
+        </where>
+        ORDER BY bl.createTime DESC
+    </select>
+</mapper>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aurine.cloudx.open.origin.mapper.ProjectDeviceParamHisMapper">
+
+    <resultMap type="com.aurine.cloudx.open.origin.entity.ProjectDeviceParamHis" id="ProjectDeviceParamHisMap">
+        <result property="seq" column="seq" jdbcType="INTEGER"/>
+        <result property="deviceId" column="deviceId" jdbcType="VARCHAR"/>
+        <result property="SN" column="SN" jdbcType="VARCHAR"/>
+        <result property="productId" column="productId" jdbcType="VARCHAR"/>
+        <result property="modelId" column="modelId" jdbcType="VARCHAR"/>
+        <result property="configTime" column="configTime" jdbcType="TIMESTAMP"/>
+        <result property="result" column="result" jdbcType="VARCHAR"/>
+        <result property="execResult" column="execResult" jdbcType="VARCHAR"/>
+        <result property="projectId" column="projectId" jdbcType="INTEGER"/>
+        <result property="tenant_id" column="tenant_id" jdbcType="INTEGER"/>
+        <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <select id="page" resultType="com.aurine.cloudx.open.origin.vo.ProjectDeviceParamHisPageVo"
+            parameterType="com.aurine.cloudx.open.origin.vo.ProjectDeviceParamHisPageVo">
+        select his.*
+        from project_device_param_his his
+        <where>
+            <if test="query.SN!=null and query.SN != '' ">
+                and his.SN like concat('%', #{query.SN}, '%')
+            </if>
+            <if test="query.result!=null and query.result != '' ">
+                and his.result like concat('%', #{query.result}, '%')
+            </if>
+            <if test="query.execResult!=null and query.execResult != '' ">
+                and his.execResult like concat('%', #{query.execResult}, '%')
+            </if>
+            <if test="query.deviceName!=null and query.deviceName != '' ">
+                and his.deviceDesc like concat('%', #{query.deviceName}, '%')
+            </if>
+        </where>
+        order by his.configTime desc
+    </select>
+</mapper>

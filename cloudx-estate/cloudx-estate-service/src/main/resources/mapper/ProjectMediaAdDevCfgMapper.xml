@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aurine.cloudx.estate.mapper.ProjectMediaAdDevCfgMapper">
+
+    <resultMap id="projectMediaAdDevCfgMap" type="com.aurine.cloudx.estate.entity.ProjectMediaAdDevCfg">
+
+        <result property="adId" column="adId"/>
+        <result property="deviceId" column="deviceId"/>
+        <result property="dlStatus" column="dlStatus"/>
+        <result property="appId" column="appId"/>
+        <result property="operator" column="operator"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+    <select id="pageMediaAdDevCfg" resultType="com.aurine.cloudx.estate.vo.ProjectMediaAdDevCfgVo">
+        select pnd.*,pdi.deviceName,pbi.entityName buildingName,pbi.entityId buildingId,pui.entityName
+        unitName,pui.entityId unitId from aurine.project_media_ad_dev_cfg pnd
+        left join aurine.project_device_info pdi on pdi.deviceId=pnd.deviceId
+        left join aurine.project_frame_info pbi on pbi.entityId=pdi.buildingId
+        left join aurine.project_frame_info pui on pui.entityId=pdi.unitId
+        <where>
+            and pnd.adId= #{query.adId}
+            <if test="query.dlStatus !=null and query.dlStatus!=''">
+                and pnd.dlStatus= #{query.dlStatus}
+            </if>
+            <if test="query.deviceName!=null and query.deviceName!=''">
+                and pdi.deviceName like concat('%',#{query.deviceName},'%')
+            </if>
+            <if test="query.buildingName!=null and query.buildingName!=''">
+                and pbi.entityName like concat('%',#{query.buildingName},'%')
+            </if>
+            <if test="query.unitName!=null and query.unitName!=''">
+                and pui.entityName like concat('%',#{query.unitName},'%')
+            </if>
+        </where>
+    </select>
+</mapper>
